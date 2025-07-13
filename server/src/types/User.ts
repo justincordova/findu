@@ -4,6 +4,7 @@ export interface User {
     username: string;
     f_name: string;
     l_name: string;
+    password_hash?: string;
     created_at: string;
     updated_at: string;
   }
