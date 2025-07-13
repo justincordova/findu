@@ -1,39 +1,27 @@
 # Node modules
-/node_modules/
+node_modules/
+
+# TypeScript build output
+dist/
+build/
 
 # Environment variables
 .env
-.env.local
-.env.*.local
-
-# Build output
-/dist/
-/build/
 
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# OS files
+# OS-specific files
 .DS_Store
 Thumbs.db
 
-# IDE/editor files
+# Optional cache/tools
+.cache/
+coverage/
 .vscode/
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
 
-# TypeScript
+# ts-node dev temporary files
 *.tsbuildinfo
-
-# Optional: coverage reports
-coverage/
-
-# Optional: debug output
-debug.log
