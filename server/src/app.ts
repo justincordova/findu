@@ -1,17 +1,14 @@
-import Fastify from 'fastify';
+import Fastify, { FastifyInstance } from 'fastify'; // Type Safety using FastifyInstance
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 
-const app = Fastify({
+const app: FastifyInstance = Fastify({ // Type Safety using FastifyInstance
   logger: true,
 });
 
 // Register CORS (adjust origin as needed)
 app.register(cors, {
-  origin: (origin, cb) => {
-    // Allow requests from any origin for now
-    cb(null, true);
-  },
+  origin: true, //temp
 });
 
 // Security headers
