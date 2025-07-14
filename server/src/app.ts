@@ -3,7 +3,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Middleware & Security
+// Middleware & Security (add more config later)
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -12,6 +12,8 @@ import rateLimit from 'express-rate-limit';
 
 // Custom Middleware
 import { injectSupabase } from './middleware/injectSupabase';
+import { notFoundHandler } from './middleware/notFoundHandler';
+import { errorHandler } from './middleware/errorHandler';
 
 // Route Imports
 import userRoutes from './routes/users';
@@ -23,7 +25,16 @@ const app = express();
 app.use(express.json());
 
 // Third-party Middleware
-app.use(cors());
+// CORS Configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com']
+    : ['http://localhost:3000', 'http://localhost:3001'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+app.use(cors(corsOptions));
 app.use(helmet());
 app.use(compression());
 app.use(morgan('dev'));
@@ -39,17 +50,19 @@ app.use(limiter);
 app.use(injectSupabase);
 
 // Routes
-app.use('/api/users', userRoutes);
+app.use('/api/v1/users', userRoutes);
 
-// 404 Handler
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({ error: 'Route not found' });
+// Health Check Route
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
-// Global Error Handler
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal Server Error' });
-});
+app.use(notFoundHandler);  // 404 handler
+app.use(errorHandler);     // global error handler
+
 
 export default app;
