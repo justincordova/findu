@@ -20,6 +20,7 @@
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
     "express-validator": "^7.2.1",
+    "morgan": "^1.10.0",
     "nodemailer": "^7.0.5"
   },
   "devDependencies": {
@@ -28,6 +29,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
+    "@types/morgan": "^1.9.10",
     "@types/node": "^24.0.13",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.36.0",

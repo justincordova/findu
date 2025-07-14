@@ -1,23 +1,28 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { createClient } from '@supabase/supabase-js';
+import morgan from 'morgan';
 import dotenv from 'dotenv';
-import userRoutes from './routes/users'
+import { injectSupabase } from './middleware/injectSupabase';
+import userRoutes from './routes/users';
 
 dotenv.config();
-
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
-
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(morgan('dev'));
+app.use(injectSupabase);
 
-// Routes
 app.use('/api/users', userRoutes);
+
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal Server Error' });
+});
 
 export default app;
