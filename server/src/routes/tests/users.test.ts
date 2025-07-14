@@ -3,7 +3,7 @@ import app from "../../app"; // Make sure your app exports the Express instance
 
 describe("User Routes", () => {
     it('should create a new user', async () => {
-        const uniqueEmail = `test-${Date.now()}@example.com`;
+        const uniqueEmail = `test-${Date.now()}@university.edu`;
         const uniqueUsername = `testuser-${Date.now()}`;
         
         const res = await request(app)
@@ -13,7 +13,7 @@ describe("User Routes", () => {
             username: uniqueUsername,
             f_name: 'Test',
             l_name: 'User',
-            password: 'password123'
+            password: 'TestPass123!'
           });
         
         console.log('Response status:', res.statusCode);

@@ -1,11 +1,45 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { supabase } from "../app";
 import bcrypt from "bcrypt";
+import { validationResult } from "express-validator";
+import { createUserValidator } from "../validators/userValidator";
+
+// Type definitions
+interface UserData {
+  id?: string;
+  email: string;
+  username: string;
+  f_name: string;
+  l_name: string;
+  password_hash?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface UpdateUserData {
+  email?: string;
+  username?: string;
+  f_name?: string;
+  l_name?: string;
+  password_hash?: string;
+}
 
 const router = Router();
 
-// Create User (POST /users)
-router.post("/", async (req, res) => {
+// Validation error handler middleware
+const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ 
+      error: 'Validation failed', 
+      details: errors.array() 
+    });
+  }
+  next();
+};
+
+// Create User (POST /users) - with validation
+router.post("/", createUserValidator, handleValidationErrors, async (req: Request, res: Response) => {
   const { email, username, f_name, l_name, password } = req.body;
 
   if (!email || !username || !f_name || !l_name || !password) {
@@ -37,12 +71,14 @@ router.post("/", async (req, res) => {
 
     // Remove password_hash before sending response
     if (data && data[0]) {
-      delete (data[0] as any).password_hash;
+      const userResponse = data[0] as UserData;
+      delete userResponse.password_hash;
     }
 
     res.status(201).json(data?.[0] || {});
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || "Internal Server Error" });
+  } catch (error) {
+    const err = error as Error;
+    res.status(500).json({ error: err.message || "Internal Server Error" });
   }
 });
 
@@ -52,8 +88,9 @@ router.get("/", async (req, res) => {
     const { data, error } = await supabase.from("users").select("*");
     if (error) throw error;
     res.json(data);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || "Internal Server Error" });
+  } catch (error) {
+    const err = error as Error;
+    res.status(500).json({ error: err.message || "Internal Server Error" });
   }
 });
 
@@ -75,8 +112,9 @@ router.get("/:id", async (req, res) => {
     }
 
     res.json(data);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || "Internal Server Error" });
+  } catch (error) {
+    const err = error as Error;
+    res.status(500).json({ error: err.message || "Internal Server Error" });
   }
 });
 
@@ -85,7 +123,7 @@ router.patch("/:id", async (req, res) => {
   const id = req.params.id;
   const { email, username, f_name, l_name, password } = req.body;
 
-  const updates: any = {};
+  const updates: UpdateUserData = {};
   if (email !== undefined) updates.email = email;
   if (username !== undefined) updates.username = username;
   if (f_name !== undefined) updates.f_name = f_name;
@@ -109,12 +147,14 @@ router.patch("/:id", async (req, res) => {
     }
 
     if (data) {
-      delete (data as any).password_hash;
+      const userResponse = data as UserData;
+      delete userResponse.password_hash;
     }
 
     res.json(data || {});
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || "Internal Server Error" });
+  } catch (error) {
+    const err = error as Error;
+    res.status(500).json({ error: err.message || "Internal Server Error" });
   }
 });
 
@@ -132,8 +172,9 @@ router.delete("/:id", async (req, res) => {
     }
 
     res.json({ message: "User deleted" });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || "Internal Server Error" });
+  } catch (error) {
+    const err = error as Error;
+    res.status(500).json({ error: err.message || "Internal Server Error" });
   }
 });
 
