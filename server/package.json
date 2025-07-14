@@ -24,7 +24,8 @@
     "express-validator": "^7.2.1",
     "helmet": "^8.1.0",
     "morgan": "^1.10.0",
-    "nodemailer": "^7.0.5"
+    "nodemailer": "^7.0.5",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
@@ -38,6 +39,7 @@
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.0.13",
     "@types/supertest": "^6.0.3",
+    "@types/winston": "^2.4.4",
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "@typescript-eslint/parser": "^8.36.0",
     "eslint": "^9.31.0",

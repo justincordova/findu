@@ -28,7 +28,7 @@ app.use(express.json());
 // CORS Configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com']
+    ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com'] // Replace with production domain later e.g.['https://findu.app']
     : ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
@@ -50,7 +50,7 @@ app.use(limiter);
 app.use(injectSupabase);
 
 // Routes
-app.use('/api/v1/users', userRoutes);
+app.use('/api/users', userRoutes);
 
 // Health Check Route
 app.get('/health', (_req: Request, res: Response) => {
@@ -60,6 +60,13 @@ app.get('/health', (_req: Request, res: Response) => {
     environment: process.env.NODE_ENV || 'development'
   });
 });
+
+// Used for testing the errorHandler
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/error-test', (_req: Request, _res: Response, next: NextFunction) => {
+    next(new Error('Test error')); // This will invoke your errorHandler
+  });
+}
 
 app.use(notFoundHandler);  // 404 handler
 app.use(errorHandler);     // global error handler
