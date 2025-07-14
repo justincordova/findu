@@ -9,3 +9,10 @@ export interface User {
     updated_at: string;
   }
   
+  export interface UpdateUserData {
+    email?: string;
+    username?: string;
+    f_name?: string;
+    l_name?: string;
+    password_hash?: string;
+  }
