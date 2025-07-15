@@ -1,0 +1,109 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node.js / JavaScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log
+
+# macOS Finder settings
+._*
+
+# VS Code
+.vscode/
+.history/
+
+# Env files
+.env
+.env.* 
+!.env.example
+
+# OS trash files
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# Compiled files
+dist/
+build/
+tmp/
+temp/
+.cache/
+.next/
+out/
+.expo/
+.expo-shared/
+coverage/
+
+# Testing
+jest-cache/
+jest-output/
+coverage/
+.nyc_output/
+
+# Typescript
+*.tsbuildinfo
+
+# IDEs & Editors
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# System files
+Desktop.ini
+
+# Git
+.git/
+.gitignore~
+
+# Misc
+*.swp
+*.bak
+*.tmp
+*.orig
+*.save
+
+# Byebug (Ruby)
+.byebug_history
+
+# React Native / Expo
+*.keystore
+*.jks
+
+# Firebase
+.firebase/
+
+# Docker
+*.tgz
+.dockerignore
+
+# Python (if used at all)
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# MongoDB dump
+dump/
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
