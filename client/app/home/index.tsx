@@ -1,0 +1,1 @@
+// redirect to discover page unless we want to make a home page
