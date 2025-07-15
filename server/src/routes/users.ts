@@ -10,7 +10,7 @@ import {
   getUserById,
   updateUser,
   deleteUser,
-} from '../controllers/userController';
+} from '../controllers/users';
 import { handleValidationErrors } from '../middleware/handleValidationErrors';
 
 const router = Router();
