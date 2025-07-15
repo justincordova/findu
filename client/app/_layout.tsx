@@ -1,11 +1,6 @@
-import React from 'react';
-import { Slot } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack } from "expo-router";
+import './globals.css'
 
-export default function Layout() {
-  return (
-    <SafeAreaView className="flex-1 bg-white">
-      <Slot />
-    </SafeAreaView>
-  );
+export default function RootLayout() {
+  return <Stack />;
 }
