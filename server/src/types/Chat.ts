@@ -1,4 +1,4 @@
-export interface Message {
+export interface Chat {
     id: string;
     match_id: string;
     sender_id: string;
