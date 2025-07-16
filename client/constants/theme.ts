@@ -1,0 +1,10 @@
+export const GRADIENT = ["#FFB199", "#FF6F91", "#A890FE"] as const;
+export const PRIMARY = "#E63946";
+export const SECONDARY = "#F1FAEE";
+export const ACCENT = "#A8DADC";
+export const DARK = "#1D3557";
+export const MUTED = "#457B9D";
+export const BACKGROUND = "#FFFFFF";
+export const SUCCESS = "#38B000";
+export const WARNING = "#FFBA08";
+export const DANGER = "#D00000";
