@@ -11,7 +11,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 
 // Custom Middleware
-import { injectSupabase } from './middleware/injectSupabase';
+import { injectPrisma } from './middleware/injectPrisma';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -47,7 +47,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Custom Middleware
-app.use(injectSupabase);
+app.use(injectPrisma);
 
 // Routes
 app.use('/api/users', userRoutes);

@@ -25,3 +25,5 @@ coverage/
 
 # ts-node dev temporary files
 *.tsbuildinfo
+
+/src/generated/prisma
