@@ -1,45 +1,147 @@
-/*
-  authController.ts Pseudo-Code Plan
+import { Request, Response } from "express";
+import * as authService from "../services/auth";
+import { signupWithMagicLink } from "../services/auth";
+import prisma from "../lib/prisma";
+import bcrypt from "bcrypt";
+import { logAuditEvent } from "../utils/auditLogger";
 
-  1. Import express types: Request, Response, NextFunction
-  2. Import authService with authentication functions
+export const requestMagicLink = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: "Email is required." });
+  }
+  const { error } = await signupWithMagicLink(email);
+  logAuditEvent({ action: "MAGIC_LINK_REQUEST", details: { email, error } });
+  if (error) {
+    return res.status(400).json({ error });
+  }
+  return res
+    .status(200)
+    .json({ message: "Magic link sent to your .edu email." });
+};
 
-  3. Define controller function for user registration (registerUser):
-     - Extract user input from req.body (email, password, etc.)
-     - Call authService.registerUser with input data
-     - On success, send back created user info (excluding sensitive data)
-     - On failure, catch error and call next(error)
+export const signup = async (req: Request, res: Response) => {
+  // req.user is set by requireAuth middleware
+  const user = (req as any).user;
+  const { username, f_name, l_name, password } = req.body;
+  if (!user || !user.id || !user.email) {
+    logAuditEvent({ action: "SIGNUP_UNAUTHORIZED", details: { user } });
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    // Check if user already exists
+    const existing = await prisma.users.findUnique({
+      where: { email: user.email },
+    });
+    if (existing) {
+      logAuditEvent({
+        action: "SIGNUP_CONFLICT",
+        userId: user.id,
+        details: { email: user.email },
+      });
+      return res.status(409).json({ error: "User already exists" });
+    }
+    const hashed_password = await bcrypt.hash(password, 12);
+    const profile = await prisma.users.create({
+      data: {
+        id: user.id,
+        email: user.email,
+        username,
+        f_name,
+        l_name,
+        hashed_password,
+      },
+    });
+    logAuditEvent({
+      action: "SIGNUP_SUCCESS",
+      userId: user.id,
+      details: { email: user.email },
+    });
+    return res.status(201).json({ message: "Signup complete", profile });
+  } catch (error) {
+    logAuditEvent({
+      action: "SIGNUP_ERROR",
+      userId: user?.id,
+      details: { error },
+    });
+    return res.status(500).json({ error: "Failed to complete signup" });
+  }
+};
 
-  4. Define controller function for user login (loginUser):
-     - Extract email and password from req.body
-     - Call authService.loginUser with email/password
-     - On success, send back access token and user info
-     - On failure, catch error and call next(error)
+export const login = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required." });
+  }
+  try {
+    const user = await prisma.users.findUnique({ where: { email } });
+    if (!user || !user.hashed_password) {
+      logAuditEvent({ action: "LOGIN_FAILURE", details: { email } });
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    const valid = await bcrypt.compare(password, user.hashed_password);
+    if (!valid) {
+      logAuditEvent({
+        action: "LOGIN_FAILURE",
+        userId: user.id,
+        details: { email },
+      });
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    logAuditEvent({
+      action: "LOGIN_SUCCESS",
+      userId: user.id,
+      details: { email },
+    });
+    // Issue your own JWT or session here if needed
+    return res.status(200).json({
+      message: "Login successful",
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        f_name: user.f_name,
+        l_name: user.l_name,
+      },
+    });
+  } catch (error) {
+    logAuditEvent({ action: "LOGIN_ERROR", details: { email, error } });
+    return res.status(500).json({ error: "Failed to login" });
+  }
+};
 
-  5. Define controller function for token verification or session check (verifyToken):
-     - Extract token from headers or cookies
-     - Call authService.verifyToken
-     - Send back decoded token data or error
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: "Email is required." });
+  }
+  const result = await authService.forgotPassword(email);
+  logAuditEvent({
+    action: "FORGOT_PASSWORD_REQUEST",
+    details: { email, result },
+  });
+  return res.status(200).json(result);
+};
 
-  6. Define controller function for password reset request (requestPasswordReset):
-     - Extract email from req.body
-     - Call authService.requestPasswordReset
-     - Send success response (e.g. "Password reset email sent")
-     - Handle errors
+export const resetPassword = async (req: Request, res: Response) => {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword) {
+    return res
+      .status(400)
+      .json({ error: "Token and new password are required." });
+  }
+  const result = await authService.resetPassword(token, newPassword);
+  logAuditEvent({ action: "RESET_PASSWORD", details: { token, result } });
+  return res.status(200).json(result);
+};
 
-  7. Define controller function for resetting password (resetPassword):
-     - Extract reset token and new password from req.body
-     - Call authService.resetPassword
-     - Send success confirmation
-     - Handle errors
-
-  8. Define controller function for logout (logoutUser):
-     - (If refresh tokens) Invalidate token using authService
-     - Send confirmation response
-
-  9. Export all controller functions for use in routing
-
-  10. Optionally, add input validation middleware before these controllers (using validators)
-
-  11. Use try-catch blocks or async error handling middleware to pass errors downstream
-*/
+export const logout = async (req: Request, res: Response) => {
+  // You may want to get userId from req.user if using auth middleware
+  const userId = (req as any).user?.id || req.body.userId;
+  if (!userId) {
+    return res.status(400).json({ error: "User ID is required." });
+  }
+  const result = await authService.logout(userId);
+  logAuditEvent({ action: "LOGOUT", userId });
+  return res.status(200).json(result);
+};

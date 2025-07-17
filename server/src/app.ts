@@ -16,6 +16,7 @@ import { notFoundHandler } from './middleware/notFoundHandler';
 import { errorHandler } from './middleware/errorHandler';
 
 // Route Imports
+import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 
 
@@ -50,6 +51,7 @@ app.use(limiter);
 app.use(injectPrisma);
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 
 // Health Check Route

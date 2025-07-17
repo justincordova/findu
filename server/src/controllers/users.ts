@@ -2,9 +2,9 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import type { User, UpdateUserData } from "../types/User";
 
-// Sanitize user object to exclude password hash
-const sanitizeUser = (user: any): Omit<User, "password_hash"> => {
-  const { password_hash, ...sanitized } = user;
+// Sanitize user object to exclude hashed_password
+const sanitizeUser = (user: any): Omit<User, "hashed_password"> => {
+  const { hashed_password, ...sanitized } = user;
   return sanitized;
 };
 
@@ -29,7 +29,7 @@ const checkUserExists = async (
 
 export const createUser = async (req: Request, res: Response) => {
   const prisma = res.locals.prisma;
-  const { email, username, f_name, l_name, password } = req.body;
+  const { email, username, f_name, l_name, password, role } = req.body;
 
   if (!email || !username || !f_name || !l_name || !password) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -65,7 +65,7 @@ export const createUser = async (req: Request, res: Response) => {
         .json({ error: "Email or username already exists" });
     }
 
-    const password_hash = await bcrypt.hash(password, 12);
+    const hashed_password = await bcrypt.hash(password, 12);
 
     const newUser = await prisma.users.create({
       data: {
@@ -73,7 +73,8 @@ export const createUser = async (req: Request, res: Response) => {
         username: username.toLowerCase().trim(),
         f_name: f_name.trim(),
         l_name: l_name.trim(),
-        password_hash,
+        hashed_password,
+        role: role === "admin" ? "admin" : "user",
       },
     });
 
@@ -96,8 +97,9 @@ export const getAllUsers = async (req: Request, res: Response) => {
         username: true,
         f_name: true,
         l_name: true,
+        role: true,
         created_at: true,
-        updated_at: true,
+        updated_at: true
       },
     });
 
@@ -129,6 +131,7 @@ export const getUserById = async (req: Request, res: Response) => {
         l_name: true,
         created_at: true,
         updated_at: true,
+        role: true,
       },
     });
 
@@ -200,7 +203,7 @@ export const updateUser = async (req: Request, res: Response) => {
         .status(400)
         .json({ error: "Password must be at least 8 characters long" });
     }
-    updates.password_hash = await bcrypt.hash(password, 12);
+    updates.hashed_password = await bcrypt.hash(password, 12);
   }
 
   if (email || username) {
@@ -236,6 +239,7 @@ export const updateUser = async (req: Request, res: Response) => {
         l_name: true,
         created_at: true,
         updated_at: true,
+        role: true,
       },
     });
 
