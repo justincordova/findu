@@ -3,7 +3,7 @@ import {
   createUserValidator,
   idParamValidator,
   updateUserValidator,
-} from '../validators/userValidator';
+} from '../validators/users';
 import {
   createUser,
   getAllUsers,
