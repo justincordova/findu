@@ -8,7 +8,7 @@ export default function EntryScreen() {
   const router = useRouter();
 
   return (
-    <View className="flex-1 bg-secondary px-6">
+    <View className="flex-1 bg-background px-6">
       {/* Top Section (App Name, Subheadings) */}
       <View className="flex-1 justify-center items-center">
         <View className="items-center">
@@ -114,7 +114,7 @@ export default function EntryScreen() {
                 alignItems: "center",
                 paddingVertical: 12,
               }}
-              onPress={() => router.push("/home/(tabs)/discover")}
+              onPress={() => router.push("/auth?mode=login")}
               activeOpacity={0.8}
             >
               <Text className="text-dark text-lg font-semibold">Log In</Text>
@@ -134,7 +134,7 @@ export default function EntryScreen() {
                 alignItems: "center",
                 paddingVertical: 12,
               }}
-              onPress={() => router.push("/home/(tabs)/discover")}
+              onPress={() => router.push("/auth?mode=signup")}
               activeOpacity={0.8}
             >
               <Text className="text-white text-lg font-semibold">Sign Up</Text>
