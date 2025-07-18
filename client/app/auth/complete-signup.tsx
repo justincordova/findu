@@ -9,21 +9,58 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { PRIMARY } from "../../constants/theme";
+import { supabase } from "../../services/supabase";
+import { apiFetch } from "../../services/api";
 
 export default function CompleteSignup() {
   const { email } = useLocalSearchParams();
   const [username, setUsername] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   // Refs for keyboard navigation
-  const fullNameRef = useRef<RNTextInput>(null);
+  const firstNameRef = useRef<RNTextInput>(null);
+  const lastNameRef = useRef<RNTextInput>(null);
   const passwordRef = useRef<RNTextInput>(null);
 
-  const handleSignup = () => {
-    // In a real app, complete signup here
-    router.replace("/auth?mode=login");
+  const handleSignup = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      // 1. Update password in Supabase Auth
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+      });
+      if (updateError) {
+        setError(updateError.message || "Failed to set password in Supabase.");
+        setLoading(false);
+        return;
+      }
+      // 2. Complete signup in your own DB
+      const res = await apiFetch("/api/auth/signup", {
+        method: "POST",
+        body: JSON.stringify({
+          username,
+          f_name: firstName,
+          l_name: lastName,
+          password,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Signup failed.");
+      } else {
+        router.replace("/auth?mode=login");
+      }
+    } catch (err) {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputProps = Platform.select({
@@ -55,21 +92,39 @@ export default function CompleteSignup() {
           allowFontScaling={false}
           returnKeyType="next"
           onSubmitEditing={() =>
-            fullNameRef.current && fullNameRef.current.focus()
+            firstNameRef.current && firstNameRef.current.focus()
           }
           blurOnSubmit={false}
           {...inputProps}
         />
         <Text className="text-lg font-bold mb-2 text-dark w-full">
-          Full Name
+          First Name
         </Text>
         <TextInput
-          ref={fullNameRef}
+          ref={firstNameRef}
           className="border border-gray-300 rounded-lg px-4 py-2 mb-4 bg-white w-full"
-          placeholder="Full Name"
+          placeholder="First Name"
           placeholderTextColor="#999"
-          value={fullName}
-          onChangeText={setFullName}
+          value={firstName}
+          onChangeText={setFirstName}
+          style={{ fontSize: 18, fontFamily: "System", fontWeight: "400" }}
+          returnKeyType="next"
+          onSubmitEditing={() =>
+            lastNameRef.current && lastNameRef.current.focus()
+          }
+          blurOnSubmit={false}
+          {...inputProps}
+        />
+        <Text className="text-lg font-bold mb-2 text-dark w-full">
+          Last Name
+        </Text>
+        <TextInput
+          ref={lastNameRef}
+          className="border border-gray-300 rounded-lg px-4 py-2 mb-4 bg-white w-full"
+          placeholder="Last Name"
+          placeholderTextColor="#999"
+          value={lastName}
+          onChangeText={setLastName}
           style={{ fontSize: 18, fontFamily: "System", fontWeight: "400" }}
           returnKeyType="next"
           onSubmitEditing={() =>
@@ -97,12 +152,16 @@ export default function CompleteSignup() {
           blurOnSubmit={true}
           {...inputProps}
         />
+        {error ? (
+          <Text className="text-red-500 text-center mb-4">{error}</Text>
+        ) : null}
         <TouchableOpacity
           className="bg-primary rounded-full py-3 w-full"
           onPress={handleSignup}
+          disabled={loading}
         >
           <Text className="text-white text-center font-bold text-base">
-            Sign Up
+            {loading ? "Signing Up..." : "Sign Up"}
           </Text>
         </TouchableOpacity>
       </View>

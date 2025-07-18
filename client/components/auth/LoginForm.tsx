@@ -2,15 +2,27 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { PRIMARY } from "../../constants/theme";
+import { supabase } from "../../services/supabase";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleLogin = () => {
-    // TEMP: Navigate to home/tabs
-    router.replace("/home/(tabs)/discover");
+  const handleLogin = async () => {
+    setError("");
+    console.log("Login attempt:", { email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    console.log("Supabase login result:", { data, error });
+    if (error) {
+      setError(error.message || "Login failed");
+    } else {
+      router.replace("/home/(tabs)/discover");
+    }
   };
 
   return (
@@ -34,6 +46,9 @@ export default function LoginForm() {
         onChangeText={setPassword}
         secureTextEntry
       />
+      {error ? (
+        <Text className="text-red-500 text-center mb-4">{error}</Text>
+      ) : null}
       <TouchableOpacity
         className="bg-primary rounded-full py-3"
         onPress={handleLogin}

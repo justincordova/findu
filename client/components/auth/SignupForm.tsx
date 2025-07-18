@@ -5,11 +5,36 @@ import { PRIMARY } from "../../constants/theme";
 
 export default function SignupForm() {
   const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleVerify = () => {
-    if (email) {
-      router.push({ pathname: "/auth/verify-email", params: { email } });
+  const handleVerify = async () => {
+    setError("");
+    if (!/^[\w.+-]+@[\w-]+\.edu$/i.test(email)) {
+      setError("Only .edu emails are allowed.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000"}/api/auth/verify-email`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to send verification email.");
+      } else {
+        router.push({ pathname: "/auth/verify-email", params: { email } });
+      }
+    } catch (err) {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -29,12 +54,16 @@ export default function SignupForm() {
         Only <Text className="text-primary font-semibold">.edu</Text> emails are
         allowed.
       </Text>
+      {error ? (
+        <Text className="text-red-500 text-center mb-4">{error}</Text>
+      ) : null}
       <TouchableOpacity
         className="bg-primary rounded-full py-3"
         onPress={handleVerify}
+        disabled={loading}
       >
         <Text className="text-white text-center font-bold text-base">
-          Verify Email
+          {loading ? "Sending..." : "Verify Email"}
         </Text>
       </TouchableOpacity>
     </View>
