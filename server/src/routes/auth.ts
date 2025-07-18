@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
-  requestMagicLink,
+  requestOtpCode,
+  verifyOtpCodeController,
   signup,
   login,
   forgotPassword,
@@ -17,13 +18,16 @@ import { requireSupabaseAuth } from "../middleware/requireSupabaseAuth";
 
 const router = Router();
 
-// POST /auth/verify - Send magic link to .edu email
+// POST /auth/verify-email - Send OTP code to .edu email
 router.post(
-  "/verify",
+  "/verify-email",
   validateEmailOnly,
   handleValidationErrors,
-  requestMagicLink
+  requestOtpCode
 );
+
+// POST /auth/verify-code - Verify 6-digit OTP code
+router.post("/verify-code", handleValidationErrors, verifyOtpCodeController);
 
 // POST /auth/signup - Complete signup, requires valid session
 router.post(

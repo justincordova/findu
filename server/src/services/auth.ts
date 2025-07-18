@@ -71,8 +71,8 @@ export async function loginUser(
   return { token, user: userWithoutPassword };
 }
 
-// Signup with magic link, only for .edu emails
-export async function signupWithMagicLink(email: string) {
+// Signup with OTP code, only for .edu emails
+export async function signupWithOtpCode(email: string) {
   if (!/^[\w.+-]+@[\w-]+\.edu$/i.test(email)) {
     return { error: "Only .edu emails are allowed." };
   }
@@ -80,10 +80,19 @@ export async function signupWithMagicLink(email: string) {
     email,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: process.env.MAGIC_LINK_REDIRECT_URL,
     },
   });
   return { error };
+}
+
+// Verify 6-digit OTP code and get session
+export async function verifyOtpCode(email: string, code: string) {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token: code,
+    type: "email",
+  });
+  return { data, error };
 }
 
 // Verify Supabase session (for protected routes)

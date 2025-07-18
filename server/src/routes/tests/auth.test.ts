@@ -9,18 +9,20 @@ describe("Auth Routes", () => {
   const l_name = "Cordova";
   let supabaseToken = "FAKE_SUPABASE_JWT"; // Replace with a real token for manual test
 
-  it("should send a magic link to a .edu email for verification", async () => {
-    const res = await request(app).post("/api/auth/verify").send({ email });
+  it("should send a verification code to a .edu email", async () => {
+    const res = await request(app)
+      .post("/api/auth/verify-email")
+      .send({ email });
     expect([200, 201]).toContain(res.statusCode);
     expect(res.body).toHaveProperty(
       "message",
-      "Magic link sent to your .edu email."
+      "Verification code sent to your .edu email."
     );
   });
 
   it("should not allow non-.edu emails for verification", async () => {
     const res = await request(app)
-      .post("/api/auth/verify")
+      .post("/api/auth/verify-email")
       .send({ email: "test@gmail.com" });
 
     expect(res.statusCode).toBe(400);

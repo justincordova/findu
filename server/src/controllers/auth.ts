@@ -1,23 +1,38 @@
 import { Request, Response } from "express";
 import * as authService from "../services/auth";
-import { signupWithMagicLink } from "../services/auth";
+import { signupWithOtpCode, verifyOtpCode } from "../services/auth";
 import prisma from "../lib/prisma";
 import bcrypt from "bcrypt";
 import { logAuditEvent } from "../utils/auditLogger";
 
-export const requestMagicLink = async (req: Request, res: Response) => {
+export const requestOtpCode = async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ error: "Email is required." });
   }
-  const { error } = await signupWithMagicLink(email);
-  logAuditEvent({ action: "MAGIC_LINK_REQUEST", details: { email, error } });
+  const { error } = await signupWithOtpCode(email);
+  logAuditEvent({ action: "OTP_CODE_REQUEST", details: { email, error } });
   if (error) {
     return res.status(400).json({ error });
   }
   return res
     .status(200)
-    .json({ message: "Magic link sent to your .edu email." });
+    .json({ message: "Verification code sent to your .edu email." });
+};
+
+export const verifyOtpCodeController = async (req: Request, res: Response) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    return res.status(400).json({ error: "Email and code are required." });
+  }
+  const { data, error } = await verifyOtpCode(email, code);
+  logAuditEvent({ action: "OTP_CODE_VERIFY", details: { email, error } });
+  if (error) {
+    return res.status(400).json({ error: error.message || error });
+  }
+  return res
+    .status(200)
+    .json({ message: "Email verified", session: data.session });
 };
 
 export const signup = async (req: Request, res: Response) => {
