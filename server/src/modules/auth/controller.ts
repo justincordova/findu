@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import * as authService from "../services/auth";
-import { signupWithOtpCode, verifyOtpCode } from "../services/auth";
-import prisma from "../lib/prisma";
+import * as authService from "@/modules/auth/service";
+import { signupWithOtpCode, verifyOtpCode } from "@/modules/auth/service";
+import prisma from "@/lib/prisma";
 import bcrypt from "bcrypt";
-import { logAuditEvent } from "../utils/auditLogger";
+import { logAuditEvent } from "@/utils/auditLogger";
 
 export const requestOtpCode = async (req: Request, res: Response) => {
   const { email } = req.body;

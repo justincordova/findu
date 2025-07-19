@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { User } from "../types/User";
-import { supabase } from "../lib/supabase";
+import { User } from "@/types/User";
+import { supabase } from "@/lib/supabase";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 

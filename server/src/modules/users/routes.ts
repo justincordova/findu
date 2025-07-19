@@ -3,16 +3,16 @@ import {
   createUserValidator,
   idParamValidator,
   updateUserValidator,
-} from "../validators/users";
+} from "./validator";
 import {
   createUser,
   getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
-} from "../controllers/users";
-import { handleValidationErrors } from "../middleware/handleValidationErrors";
-import { requireSupabaseAuth } from "../middleware/requireSupabaseAuth";
+} from "./controller";
+import { handleValidationErrors } from "@/middleware/error/handleValidationErrors";
+import { requireSupabaseAuth } from "@/middleware/auth/requireSupabaseAuth";
 
 const router = Router();
 
