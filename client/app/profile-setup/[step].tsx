@@ -101,7 +101,7 @@ export default function ProfileSetupStep() {
   const goToNextStep = () => {
     const nextIndex = currentStepIndex + 1;
     if (nextIndex < STEPS.length) {
-      router.push(`/profile-setup/${STEPS[2]}`);
+      router.push(`/profile-setup/${STEPS[nextIndex]}`);
     } else {
       // Profile setup complete
       handleComplete();

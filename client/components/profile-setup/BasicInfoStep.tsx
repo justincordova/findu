@@ -15,7 +15,8 @@ const SCHOOL_YEARS = ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'];
 const GRADUATION_YEARS = ['2025', '2026', '2027', '2028', '2029', '2030'];
 
 export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicInfoStepProps) {
-  const canContinue = data.name && data.age && data.gender && data.school && data.major && data.schoolYear && data.gradYear;
+  // const canContinue = data.name && data.age && data.gender && data.school && data.major && data.schoolYear && data.gradYear;
+  const canContinue = true;
 
   return (
     <View style={styles.container}>
