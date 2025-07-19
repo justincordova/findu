@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet } from 
 import { Ionicons } from '@expo/vector-icons';
 import RangeSlider from 'rn-range-slider';
 import { ProfileSetupData } from '../../app/profile-setup/[step]';
+import { useCallback } from 'react';
 
 interface PreferencesStepProps {
     data: ProfileSetupData;
@@ -10,12 +11,8 @@ interface PreferencesStepProps {
     onBack: () => void;
 }
 
-// pref (Pronouns, Intent, MinAge, MaxAge, GenderPreference, LocationPreference)
-
 export default function PreferencesStep({ data, onUpdate, onNext, onBack }: PreferencesStepProps) {
-  //const canContinue = ;
-
-  const toggleIntent = (intent: string) => {
+  const toggleIntent = useCallback((intent: string) => {
     const currentIntents = data.intent || [];
     let newIntents;
     
@@ -26,12 +23,35 @@ export default function PreferencesStep({ data, onUpdate, onNext, onBack }: Pref
     }
     
     onUpdate({ intent: newIntents });
-  };
+  }, [data.intent, onUpdate]);
 
-  const isIntentSelected = (intent: string) => {
+  const isIntentSelected = useCallback((intent: string) => {
     const currentIntents = data.intent || [];
     return currentIntents.includes(intent);
-  };
+  }, [data.intent]);
+
+  const handleSliderChange = useCallback((low: number, high: number) => {
+    if (data.minAge !== low || data.maxAge !== high) {
+      onUpdate({
+        minAge: low,
+        maxAge: high
+      });
+    }
+  }, [data.minAge, data.maxAge, onUpdate]);
+
+  const handleFirstPronounChange = useCallback((text: string) => {
+    const secondPart = data.pronouns?.split('/')[1] || '';
+    onUpdate({ pronouns: `${text}/${secondPart}` });
+  }, [data.pronouns, onUpdate]);
+
+  const handleSecondPronounChange = useCallback((text: string) => {
+    const firstPart = data.pronouns?.split('/')[0] || '';
+    onUpdate({ pronouns: `${firstPart}/${text}` });
+  }, [data.pronouns, onUpdate]);
+
+  const renderThumb = useCallback(() => <View style={styles.thumb} />, []);
+  const renderRail = useCallback(() => <View style={styles.railBackground} />, []);
+  const renderRailSelected = useCallback(() => <View style={styles.railSelected} />, []);
 
   return (
     <View style={styles.container}>
@@ -51,23 +71,17 @@ export default function PreferencesStep({ data, onUpdate, onNext, onBack }: Pref
           <View style={styles.pronounContainer}>
             <TextInput
               style={styles.pronounInput}
-              placeholder="find"
-              value={data.pronouns.split('/')[0] || ''}
-              onChangeText={(text) => {
-                const secondPart = data.pronouns.split('/')[1] || '';
-                onUpdate({ pronouns: `${text}/${secondPart}` });
-              }}
+              placeholder="they"
+              value={data.pronouns?.split('/')[0] || ''}
+              onChangeText={handleFirstPronounChange}
               maxLength={10}
             />
             <Text style={styles.pronounSlash}>/</Text>
             <TextInput
               style={styles.pronounInput}
-              placeholder="university"
-              value={data.pronouns.split('/')[1] || ''}
-              onChangeText={(text) => {
-                const firstPart = data.pronouns.split('/')[0] || '';
-                onUpdate({ pronouns: `${firstPart}/${text}` });
-              }}
+              placeholder="them"
+              value={data.pronouns?.split('/')[1] || ''}
+              onChangeText={handleSecondPronounChange}
               maxLength={10}
             />
           </View>
@@ -114,15 +128,10 @@ export default function PreferencesStep({ data, onUpdate, onNext, onBack }: Pref
                   step={1}
                   low={data.minAge || 18}
                   high={data.maxAge || 26}
-                  onValueChanged={(low: number, high: number) => {
-                    onUpdate({ 
-                      minAge: low,
-                      maxAge: high
-                    });
-                  }}
-                  renderThumb={() => <View style={styles.thumb} />}
-                  renderRail={() => <View style={styles.railBackground} />}
-                  renderRailSelected={() => <View style={styles.railSelected} />}
+                  onValueChanged={handleSliderChange}
+                  renderThumb={renderThumb}
+                  renderRail={renderRail}
+                  renderRailSelected={renderRailSelected}
                 />
               </View>
               
@@ -133,16 +142,6 @@ export default function PreferencesStep({ data, onUpdate, onNext, onBack }: Pref
           </View>
         </View>
       </ScrollView>
-
-      {/* <TouchableOpacity 
-        onPress={onNext}
-        disabled={!canContinue}
-        style={[styles.button, !canContinue && styles.buttonDisabled]}
-      >
-        <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
-          Continue
-        </Text>
-      </TouchableOpacity> */}
     </View>
   );
 }
@@ -254,7 +253,7 @@ const styles = StyleSheet.create({
     color: '#374151',
     textAlign: 'center',
     fontWeight: '500',
-		justifyContent: 'center',
+    justifyContent: 'center',
   },
   intentTextSelected: {
     color: '#ec4899',
@@ -282,7 +281,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   ageSliderContainer: {
-    marginBottom: 8,
+    marginBottom: 16,
   },
   ageLabel: {
     fontSize: 14,
@@ -300,7 +299,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ec4899',
     textAlign: 'center',
-    marginBottom: 16,
   },
   singleSliderContainer: {
     paddingHorizontal: 8,
@@ -325,24 +323,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9ca3af',
     textAlign: 'center',
-    marginTop: 8,
   },
   rangeSliderContainer: {
     paddingHorizontal: 8,
-    paddingVertical: 16,
   },
   sliderBox: {
     backgroundColor: '#f9fafb',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rangeSlider: {
     width: '100%',
-    height: 60,
+    height: 20,
   },
   thumb: {
     width: 20,
