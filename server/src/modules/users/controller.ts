@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import type { User, UpdateUserData } from "../types/User";
+import type { User, UpdateUserData } from "@/types/User";
 
 // Sanitize user object to exclude hashed_password
 const sanitizeUser = (user: any): Omit<User, "hashed_password"> => {
@@ -99,7 +99,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
         l_name: true,
         role: true,
         created_at: true,
-        updated_at: true
+        updated_at: true,
       },
     });
 

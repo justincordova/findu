@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only --watch .env src/index.ts",
+       "dev": "ts-node-dev --respawn --transpile-only --require tsconfig-paths/register --watch .env src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "migrate": "prisma migrate dev",
@@ -28,6 +28,7 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "nodemailer": "^7.0.5",
+    "tsconfig-paths": "^4.2.0",
     "winston": "^3.17.0"
   },
   "devDependencies": {

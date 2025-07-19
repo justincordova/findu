@@ -7,14 +7,10 @@ import {
   forgotPassword,
   resetPassword,
   logout,
-} from "../controllers/auth";
-import {
-  validateEmailOnly,
-  validateSignup,
-  validateLogin,
-} from "../validators/auth";
-import { handleValidationErrors } from "../middleware/handleValidationErrors";
-import { requireSupabaseAuth } from "../middleware/requireSupabaseAuth";
+} from "./controller";
+import { validateEmailOnly, validateSignup, validateLogin } from "./validator";
+import { handleValidationErrors } from "@/middleware/error/handleValidationErrors";
+import { requireSupabaseAuth } from "@/middleware/auth/requireSupabaseAuth";
 
 const router = Router();
 

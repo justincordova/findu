@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifySession } from "../services/auth";
+import { verifySession } from "@/modules/auth/service";
 
 export async function requireSupabaseAuth(
   req: Request,
