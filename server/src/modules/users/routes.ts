@@ -22,7 +22,7 @@ if (!disableProtection) {
   router.use(requireSupabaseAuth);
 }
 
-// For creating user
+// For creating user (For Testing)
 router.post("/", createUserValidator, handleValidationErrors, createUser);
 
 // For getting all users
