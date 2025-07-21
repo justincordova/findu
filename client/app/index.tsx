@@ -12,18 +12,11 @@ export default function EntryScreen() {
       {/* Top Section (App Name, Subheadings) */}
       <View className="flex-1 justify-center items-center">
         <View className="items-center">
-          <LinearGradient
-            colors={GRADIENT}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ padding: 6, borderRadius: 32, marginBottom: 24 }}
-          >
-            <Image
-              source={require("../assets/logo.png")}
-              style={{ width: 96, height: 96, borderRadius: 24 }}
-              resizeMode="contain"
-            />
-          </LinearGradient>
+          <Image
+            source={require("../assets/images/logo.png")}
+            style={{ width: 96, height: 96, borderRadius: 24 }}
+            resizeMode="contain"
+          />
           <Text className="text-5xl font-bold text-dark mb-2">FindU</Text>
           <Text className="text-xl font-semibold text-dark mb-2 text-center">
             Dating App for Verified College Students Only
