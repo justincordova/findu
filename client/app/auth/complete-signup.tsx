@@ -54,7 +54,7 @@ export default function CompleteSignup() {
       if (!res.ok) {
         setError(data.error || "Signup failed.");
       } else {
-        router.replace("/auth?mode=login");
+        router.replace("/profile-setup/0");      
       }
     } catch (err) {
       setError("Network error. Please try again.");
