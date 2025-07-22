@@ -8,22 +8,15 @@ export default function EntryScreen() {
   const router = useRouter();
 
   return (
-    <View className="flex-1 bg-secondary px-6">
+    <View className="flex-1 bg-background px-6">
       {/* Top Section (App Name, Subheadings) */}
       <View className="flex-1 justify-center items-center">
         <View className="items-center">
-          <LinearGradient
-            colors={GRADIENT}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ padding: 6, borderRadius: 32, marginBottom: 24 }}
-          >
-            <Image
-              source={require("../assets/logo.png")}
-              style={{ width: 96, height: 96, borderRadius: 24 }}
-              resizeMode="contain"
-            />
-          </LinearGradient>
+          <Image
+            source={require("../assets/images/logo.png")}
+            style={{ width: 96, height: 96, borderRadius: 24 }}
+            resizeMode="contain"
+          />
           <Text className="text-5xl font-bold text-dark mb-2">FindU</Text>
           <Text className="text-xl font-semibold text-dark mb-2 text-center">
             Dating App for Verified College Students Only
@@ -114,7 +107,7 @@ export default function EntryScreen() {
                 alignItems: "center",
                 paddingVertical: 12,
               }}
-              onPress={() => router.push("/home/(tabs)/discover")}
+              onPress={() => router.push("/auth?mode=login")}
               activeOpacity={0.8}
             >
               <Text className="text-dark text-lg font-semibold">Log In</Text>
@@ -134,7 +127,7 @@ export default function EntryScreen() {
                 alignItems: "center",
                 paddingVertical: 12,
               }}
-              onPress={() => router.push("/profile-setup/welcome")}
+              onPress={() => router.push("/auth?mode=signup")}
               activeOpacity={0.8}
             >
               <Text className="text-white text-lg font-semibold">Sign Up</Text>

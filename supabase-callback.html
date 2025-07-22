@@ -1,0 +1,30 @@
+<!-- Temporary file to receive session token for signup (npx serv .)-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Supabase Magic Link Callback</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  </head>
+  <body>
+    <h1>Supabase Magic Link Callback</h1>
+    <p>Check the alert or browser console for your access token.</p>
+    <script>
+      const supabaseUrl = "https://gwaxrjeitjtxmlbahkye.supabase.co";
+      const supabaseAnonKey =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3YXhyamVpdGp0eG1sYmFoa3llIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyMTQ1ODYsImV4cCI6MjA2NTc5MDU4Nn0.J9thKe2BG9iemzmYYXgG5YHnrF4PoNeh-9_JnL1IOCU";
+      const supabase = window.supabase.createClient(
+        supabaseUrl,
+        supabaseAnonKey
+      );
+
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          console.log("Session:", session);
+          alert("Access token: " + session.access_token);
+        } else {
+          alert("No session found!");
+        }
+      });
+    </script>
+  </body>
+</html>
