@@ -7,10 +7,8 @@ import { useState, useEffect } from 'react';
 import WelcomeStep from '../../components/profile-setup/WelcomeStep';
 import BasicInfoStep from '../../components/profile-setup/BasicInfoStep';
 import PreferencesStep from '../../components/profile-setup/PreferencesStep';
-// import MoreInfoStep from '../../components/profile-setup/MoreInfoStep';
-// import InterestsStep from '../../components/profile-setup/InterestsStep';
-// import SocialsStep from '../../components/profile-setup/SocialsStep';
-// import ReviewStep from '../../components/profile-setup/ReviewStep';
+import MoreInfoStep from '../../components/profile-setup/MoreInfoStep';
+import ReviewStep from '../../components/profile-setup/ReviewStep';
 
 // basicInfo (Name, Age, Gender, Campus, School, Major, SchoolYear, GradYear)
 // pref (Pronouns, Intent, MinAge, MaxAge, GenderPreference, LocationPreference)
@@ -18,75 +16,53 @@ import PreferencesStep from '../../components/profile-setup/PreferencesStep';
 // interests (Interests, Hobbies, Activities)
 // otherSocials (Instagram, Snapchat, TikTok, Twitter, Facebook)
 // review (Review all information before submission)
-const STEPS = ['welcome', 'basicInfo', 'pref', 'moreInfo', 'interests', 'otherSocials', 'review'];
+const STEPS = ['welcome', 'basicInfo', 'pref', 'moreInfo', 'review'];
 
 export interface ProfileSetupData {
   // Basic Info
   name: string;
   age: number;
-  gender: string;
+  gender: 'Male' | 'Female' | 'Non-binary' | 'Other' | null;
   campus: string;
   school: string;
   major: string;
-  schoolYear: 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate';
-  gradYear: string;
+  schoolYear: 'Freshman' | 'Sophomore' | 'Junior' | 'Senior' | 'Graduate' | null;
+  gradYear: string | null;
   
   // Preferences
   pronouns: string;
   intent: string[];
   minAge: number;
   maxAge: number;
-  sexualOrientation: 'Straight' | 'Gay' | 'Lesbian' |'Bisexual' | 'Questioning' | 'Other';
-  genderPreference: 'Men' | 'Women' | 'Non-binary' | 'All';
-  locationPreference: string;
+  sexualOrientation: 'Straight' | 'Gay' | 'Lesbian' |'Bisexual' | 'Questioning' | 'Other' | null;
+  genderPreference: 'Men' | 'Women' | 'Non-binary' | 'All' | 'Other' | null;
   
   // More Info
   bio: string;
   profilePicture: string;
-  
-  // Interests
-  interests: string[];
-  hobbies: string[];
-  activities: string[];
-  
-  // Other Socials
-  instagram: string;
-  snapchat: string;
-  tiktok: string;
-  twitter: string;
-  facebook: string;
 }
 
 export default function ProfileSetupStep() {
   const { step } = useLocalSearchParams<{ step: string }>();
   const router = useRouter();
-  
+
   const [profileData, setProfileData] = useState<ProfileSetupData>({
     name: '',
     age: 0,
-    gender: '',
+    gender: null,
     campus: '',
     school: '',
     major: '',
-    schoolYear: 'Freshman',
-    gradYear: '',
+    schoolYear: null,
+    gradYear: null,
     pronouns: '',
     intent: [],
     minAge: 18,
     maxAge: 26,
-    sexualOrientation: 'Straight',
-    genderPreference: 'All',
-    locationPreference: '',
+    sexualOrientation: null,
+    genderPreference: null,
     bio: '',
-    profilePicture: '',
-    interests: [],
-    hobbies: [],
-    activities: [],
-    instagram: '',
-    snapchat: '',
-    tiktok: '',
-    twitter: '',
-    facebook: '',
+    profilePicture: ''
   });
 
   const currentStepIndex = STEPS.indexOf(step || 'welcome');
@@ -153,41 +129,24 @@ export default function ProfileSetupStep() {
             onBack={goToPreviousStep}
           />
         );
-    //   case 'moreInfo':
-    //     return (
-    //       <MoreInfoStep
-    //         data={profileData}
-    //         onUpdate={updateProfileData}
-    //         onNext={goToNextStep}
-    //         onBack={goToPreviousStep}
-    //       />
-    //     );
-    //   case 'interests':
-    //     return (
-    //       <InterestsStep
-    //         data={profileData}
-    //         onUpdate={updateProfileData}
-    //         onNext={goToNextStep}
-    //         onBack={goToPreviousStep}
-    //       />
-    //     );
-    //   case 'otherSocials':
-    //     return (
-    //       <SocialsStep
-    //         data={profileData}
-    //         onUpdate={updateProfileData}
-    //         onNext={goToNextStep}
-    //         onBack={goToPreviousStep}
-    //       />
-    //     );
-    //   case 'review':
-    //     return (
-    //       <ReviewStep
-    //         data={profileData}
-    //         onComplete={handleComplete}
-    //         onBack={goToPreviousStep}
-    //       />
-    //     );
+      case 'moreInfo':
+        return (
+          <MoreInfoStep
+            data={profileData}
+            onUpdate={updateProfileData}
+            onNext={goToNextStep}
+            onBack={goToPreviousStep}
+          />
+        );
+      case 'review':
+        return (
+          <ReviewStep
+            data={profileData}
+            onUpdate={updateProfileData}
+            onNext={handleComplete}
+            onBack={goToPreviousStep}
+          />
+        );
       default:
         return null;
     }

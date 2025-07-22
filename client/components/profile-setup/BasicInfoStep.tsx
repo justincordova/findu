@@ -1,7 +1,9 @@
 import { View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import { useState } from 'react';
 import { ProfileSetupData } from '../../app/profile-setup/[step]';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 interface BasicInfoStepProps {
   data: ProfileSetupData;
@@ -10,13 +12,85 @@ interface BasicInfoStepProps {
   onBack: () => void;
 }
 
-const GENDERS = ['Male', 'Female', 'Non-binary', 'Other'];
-const SCHOOL_YEARS = ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'];
-const GRADUATION_YEARS = ['2025', '2026', '2027', '2028', '2029', '2030'];
-
 export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicInfoStepProps) {
-  // const canContinue = data.name && data.age && data.gender && data.school && data.major && data.schoolYear && data.gradYear;
+  // const canContinue = Boolean(
+  //   data.name &&
+  //   data.age &&
+  //   data.gender &&
+  //   data.school &&
+  //   data.major &&
+  //   data.schoolYear &&
+  //   data.gradYear
+  // );
   const canContinue = true;
+  
+  const [genderOpen, setGenderOpen] = useState(false);
+  const [genderValue, setGenderValue] = useState(data.gender ?? null);
+  const [genderItems, setGenderItems] = useState([
+    { label: 'Male', value: 'Male' },
+    { label: 'Female', value: 'Female' },
+    { label: 'Non-binary', value: 'Non-binary' },
+    { label: 'Other', value: 'Other' },
+  ]);
+
+  const handleGenderChange = (value: string | null) => {
+    if (value) {
+      setGenderValue(value as ProfileSetupData['gender']);
+      onUpdate({ gender: value as ProfileSetupData['gender'] });
+    } else {
+      setGenderValue(null);
+      onUpdate({ gender: null });
+    }
+  };
+
+  const [yearOpen, setYearOpen] = useState(false);
+  const [yearValue, setYearValue] = useState(data.schoolYear ?? null);
+  const [yearItems, setYearItems] = useState([
+    { label: 'Freshman', value: 'Freshman' },
+    { label: 'Sophomore', value: 'Sophomore' },
+    { label: 'Junior', value: 'Junior' },
+    { label: 'Senior', value: 'Senior' },
+    { label: 'Graduate', value: 'Graduate' },
+  ]);
+
+  const handleYearChange = (value: string | null) => {
+    if (value) {
+      setYearValue(value as ProfileSetupData['schoolYear']);
+      onUpdate({ schoolYear: value as ProfileSetupData['schoolYear'] });
+    } else {
+      setYearValue(null);
+      onUpdate({ schoolYear: null });
+    }
+  };
+
+  const [gradOpen, setGradOpen] = useState(false);
+  const [gradValue, setGradValue] = useState(data.gradYear ?? null);
+  const getGradYears = () => {
+    const baseStart = 2025;
+    const baseEnd = 2030;
+    const now = new Date();
+    let year = now.getFullYear();
+    if (now.getMonth() > 5) year++;
+    let years = [];
+    for (let y = baseStart; y <= baseEnd; y++) {
+      years.push(String(y));
+    }
+    if (year > baseEnd) {
+      years.push(String(year));
+    }
+    return years.map(y => ({ label: y, value: y }));
+  };
+  const [gradItems, setGradItems] = useState(getGradYears());
+
+  const handleGradChange = (value: string | null) => {
+    if (value) {
+      setGradValue(value as ProfileSetupData['gradYear']);
+      onUpdate({ gradYear: value as ProfileSetupData['gradYear'] });
+    } else {
+      setGradValue(null);
+      onUpdate({ gradYear: null });
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -36,6 +110,7 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
           <TextInput
             style={styles.input}
             placeholder="Enter your full name"
+            placeholderTextColor={styles.placeholderStyle.color}
             value={data.name}
             onChangeText={(text) => onUpdate({ name: text })}
             maxLength={50}
@@ -48,6 +123,7 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
           <TextInput
             style={styles.input}
             placeholder="Enter your age"
+            placeholderTextColor={styles.placeholderStyle.color}
             value={data.age ? data.age.toString() : ''}
             onChangeText={(text) => onUpdate({ age: parseInt(text) || 0 })}
             keyboardType="numeric"
@@ -58,26 +134,34 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
         {/* Gender */}
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Gender *</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={data.gender}
-              onValueChange={(value) => onUpdate({ gender: value })}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select gender" value="" />
-              {GENDERS.map((gender) => (
-                <Picker.Item key={gender} label={gender} value={gender} />
-              ))}
-            </Picker>
-          </View>
+          <DropDownPicker
+            placeholder='Enter your gender'
+            open={genderOpen}
+            value={genderValue}
+            items={genderItems}
+            setOpen={setGenderOpen}
+            setValue={setGenderValue}
+            setItems={setGenderItems}
+            listMode="SCROLLVIEW"
+            onChangeValue={handleGenderChange}
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownContainer}
+            zIndex={2000}
+            placeholderStyle={{
+              color: '#6b7280',
+              fontSize: 16,
+              fontWeight: '400',
+            }}
+          />
         </View>
-
+        
         {/* School */}
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>University/School *</Text>
           <TextInput
             style={styles.input}
             placeholder="Enter your university name"
+            placeholderTextColor={styles.placeholderStyle.color}
             value={data.school}
             onChangeText={(text) => onUpdate({ school: text })}
             maxLength={100}
@@ -89,7 +173,8 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
           <Text style={styles.label}>Campus</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g., Main Campus, North Campus"
+            placeholder="e.g., Main Campus, Boston Campus"
+            placeholderTextColor={styles.placeholderStyle.color}
             value={data.campus}
             onChangeText={(text) => onUpdate({ campus: text })}
             maxLength={100}
@@ -102,6 +187,7 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
           <TextInput
             style={styles.input}
             placeholder="Enter your major"
+            placeholderTextColor={styles.placeholderStyle.color}
             value={data.major}
             onChangeText={(text) => onUpdate({ major: text })}
             maxLength={100}
@@ -111,35 +197,41 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
         {/* School Year */}
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>School Year *</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={data.schoolYear}
-              onValueChange={(value) => onUpdate({ schoolYear: value })}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select year" value="" />
-              {SCHOOL_YEARS.map((year) => (
-                <Picker.Item key={year} label={year} value={year} />
-              ))}
-            </Picker>
-          </View>
+          <DropDownPicker
+            placeholder='Enter your school year'
+            open={yearOpen}
+            value={yearValue}
+            items={yearItems}
+            setOpen={setYearOpen}
+            setValue={setYearValue}
+            setItems={setYearItems}
+            listMode="SCROLLVIEW"
+            onChangeValue={handleYearChange}
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownContainer}
+            zIndex={2000}
+            placeholderStyle={styles.placeholderStyle}
+          />
         </View>
 
-        {/* Graduation Year */}
+        {/* Grad Year */}
         <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Expected Graduation Year *</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={data.gradYear}
-              onValueChange={(value) => onUpdate({ gradYear: value })}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select graduation year" value="" />
-              {GRADUATION_YEARS.map((year) => (
-                <Picker.Item key={year} label={year} value={year} />
-              ))}
-            </Picker>
-          </View>
+          <Text style={styles.label}>Graduation Year *</Text>
+          <DropDownPicker
+            placeholder='Enter your graduation year'
+            open={gradOpen}
+            value={gradValue}
+            items={gradItems}
+            setOpen={setGradOpen}
+            setValue={setGradValue}
+            setItems={setGradItems}
+            listMode="SCROLLVIEW"
+            onChangeValue={handleGradChange}
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownContainer}
+            zIndex={2000}
+            placeholderStyle={styles.placeholderStyle}
+          />
         </View>
       </ScrollView>
 
@@ -233,5 +325,25 @@ const styles = StyleSheet.create({
   },
   buttonTextDisabled: {
     color: '#6b7280',
+  },
+    dropdown: {
+    backgroundColor: '#f9fafb',
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    minHeight: 44,
+    paddingHorizontal: 8,
+    marginBottom: 8,
+    zIndex: 2000,
+  },
+  dropdownContainer: {
+    backgroundColor: '#f9fafb',
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    zIndex: 2000,
+  },
+  placeholderStyle: {
+    color: '#6b7280',
+    fontSize: 16,
+    fontWeight: '400',
   },
 });

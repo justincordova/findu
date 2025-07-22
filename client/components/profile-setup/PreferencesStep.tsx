@@ -1,8 +1,9 @@
 import { View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
 import RangeSlider from 'rn-range-slider';
 import { ProfileSetupData } from '../../app/profile-setup/[step]';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 interface PreferencesStepProps {
     data: ProfileSetupData;
@@ -12,6 +13,7 @@ interface PreferencesStepProps {
 }
 
 export default function PreferencesStep({ data, onUpdate, onNext, onBack }: PreferencesStepProps) {
+  const canContinue = true; 
   const toggleIntent = useCallback((intent: string) => {
     const currentIntents = data.intent || [];
     let newIntents;
@@ -53,6 +55,41 @@ export default function PreferencesStep({ data, onUpdate, onNext, onBack }: Pref
   const renderRail = useCallback(() => <View style={styles.railBackground} />, []);
   const renderRailSelected = useCallback(() => <View style={styles.railSelected} />, []);
 
+  const [orientationOpen, setOrientationOpen] = useState(false);
+  const [orientationValue, setOrientationValue] = useState(data.sexualOrientation);
+  const [orientationItems, setOrientationItems] = useState([
+    { label: 'Straight', value: 'Straight' },
+    { label: 'Gay', value: 'Gay' },
+    { label: 'Lesbian', value: 'Lesbian' },
+    { label: 'Bisexual', value: 'Bisexual' },
+    { label: 'Questioning', value: 'Questioning' },
+    { label: 'Other', value: 'Other' },
+  ]);
+
+  const [genderOpen, setGenderOpen] = useState(false);
+  const [genderValue, setGenderValue] = useState(data.genderPreference);
+  const [genderItems, setGenderItems] = useState([
+    { label: 'Men', value: 'Men' },
+    { label: 'Women', value: 'Women' },
+    { label: 'Non-binary', value: 'Non-binary' },
+    { label: 'All', value: 'All' },
+    { label: 'Other', value: 'Other' },
+
+  ]);
+
+const handleOrientationChange = (value: string | null) => {
+  if (value) {
+    setOrientationValue(value as ProfileSetupData['sexualOrientation']);
+    onUpdate({ sexualOrientation: value as ProfileSetupData['sexualOrientation'] });
+  }
+};
+const handleGenderChange = (value: string | null) => {
+  if (value) {
+    setGenderValue(value as ProfileSetupData['genderPreference']);
+    onUpdate({ genderPreference: value as ProfileSetupData['genderPreference'] });
+  }
+};
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -75,6 +112,7 @@ export default function PreferencesStep({ data, onUpdate, onNext, onBack }: Pref
               value={data.pronouns?.split('/')[0] || ''}
               onChangeText={handleFirstPronounChange}
               maxLength={10}
+              placeholderTextColor={styles.placeholderStyle.color}
             />
             <Text style={styles.pronounSlash}>/</Text>
             <TextInput
@@ -83,6 +121,7 @@ export default function PreferencesStep({ data, onUpdate, onNext, onBack }: Pref
               value={data.pronouns?.split('/')[1] || ''}
               onChangeText={handleSecondPronounChange}
               maxLength={10}
+              placeholderTextColor={styles.placeholderStyle.color}
             />
           </View>
         </View>
@@ -109,6 +148,46 @@ export default function PreferencesStep({ data, onUpdate, onNext, onBack }: Pref
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+
+        {/* Sexual Orientation Dropdown */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>Sexual Orientation</Text>
+          <DropDownPicker
+            placeholder='Enter your sexual orientation'
+            open={orientationOpen}
+            value={orientationValue}
+            items={orientationItems}
+            setOpen={setOrientationOpen}
+            setValue={setOrientationValue}
+            setItems={setOrientationItems}
+            listMode="SCROLLVIEW"
+            onChangeValue={handleOrientationChange}
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownContainer}
+            zIndex={2000}
+            placeholderStyle={styles.placeholderStyle}
+          />
+        </View>
+
+        {/* Gender Preference Dropdown */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>Preferred Gender</Text>
+          <DropDownPicker
+            placeholder='Enter your preferred gender'
+            open={genderOpen}
+            value={genderValue}
+            items={genderItems}
+            setOpen={setGenderOpen}
+            setValue={setGenderValue}
+            setItems={setGenderItems}
+            listMode="SCROLLVIEW"
+            onChangeValue={handleGenderChange}
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownContainer}
+            zIndex={1000}
+            placeholderStyle={styles.placeholderStyle}
+          />
         </View>
 
         {/* Age Range */}
@@ -142,6 +221,15 @@ export default function PreferencesStep({ data, onUpdate, onNext, onBack }: Pref
           </View>
         </View>
       </ScrollView>
+      <TouchableOpacity 
+              onPress={onNext}
+              disabled={!canContinue}
+              style={[styles.button, !canContinue && styles.buttonDisabled]}
+            >
+              <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
+                Continue
+              </Text>
+            </TouchableOpacity>
     </View>
   );
 }
@@ -194,14 +282,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
-  pickerContainer: {
+  dropdown: {
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    borderWidth: 1,
     borderColor: '#e5e7eb',
+    borderRadius: 12,
+    minHeight: 44,
+    paddingHorizontal: 8,
+    marginBottom: 8,
+    zIndex: 2000,
   },
-  picker: {
-    height: 50,
+  dropdownContainer: {
+    backgroundColor: '#f9fafb',
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    zIndex: 2000,
   },
   pronounContainer: {
     flexDirection: 'row',
@@ -273,6 +367,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  placeholderStyle: {
+    color: '#9ca3af',
+    fontWeight: '400',
+    fontSize: 16,
   },
   buttonTextDisabled: {
     color: '#6b7280',
