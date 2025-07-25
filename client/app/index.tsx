@@ -127,7 +127,7 @@ export default function EntryScreen() {
                 alignItems: "center",
                 paddingVertical: 12,
               }}
-              onPress={() => router.push("/auth?mode=signup")}
+              onPress={() => router.push("/home/(tabs)/discover")}
               activeOpacity={0.8}
             >
               <Text className="text-white text-lg font-semibold">Sign Up</Text>
