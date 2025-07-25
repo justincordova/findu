@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
+import { PrismaClient } from "@prisma/client";
 import type { User, UpdateUserData } from "@/types/User";
+
+const prisma = new PrismaClient();
 
 // Sanitize user object to exclude hashed_password
 const sanitizeUser = (user: any): Omit<User, "hashed_password"> => {
@@ -10,7 +13,7 @@ const sanitizeUser = (user: any): Omit<User, "hashed_password"> => {
 
 // Check if a user exists by email or username
 const checkUserExists = async (
-  prisma: any,
+  prisma: PrismaClient,
   email: string,
   username: string,
   excludeId?: string
@@ -20,15 +23,11 @@ const checkUserExists = async (
     ...(excludeId && { id: { not: excludeId } }),
   };
 
-  const existingUser = await prisma.users.findFirst({
-    where: whereCondition,
-  });
-
+  const existingUser = await prisma.users.findFirst({ where: whereCondition });
   return existingUser !== null;
 };
 
-export const createUser = async (req: Request, res: Response) => {
-  const prisma = res.locals.prisma;
+export const createUserController = async (req: Request, res: Response) => {
   const { email, username, f_name, l_name, password, role } = req.body;
 
   if (!email || !username || !f_name || !l_name || !password) {
@@ -86,9 +85,7 @@ export const createUser = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllUsers = async (req: Request, res: Response) => {
-  const prisma = res.locals.prisma;
-
+export const getAllUsersController = async (req: Request, res: Response) => {
   try {
     const users = await prisma.users.findMany({
       select: {
@@ -110,8 +107,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
   }
 };
 
-export const getUserById = async (req: Request, res: Response) => {
-  const prisma = res.locals.prisma;
+export const getUserByIdController = async (req: Request, res: Response) => {
   const id = req.params.id;
 
   const uuidRegex =
@@ -146,8 +142,7 @@ export const getUserById = async (req: Request, res: Response) => {
   }
 };
 
-export const updateUser = async (req: Request, res: Response) => {
-  const prisma = res.locals.prisma;
+export const updateUserController = async (req: Request, res: Response) => {
   const id = req.params.id;
   const { email, username, f_name, l_name, password } = req.body;
 
@@ -189,13 +184,8 @@ export const updateUser = async (req: Request, res: Response) => {
     updates.username = username.toLowerCase().trim();
   }
 
-  if (f_name !== undefined) {
-    updates.f_name = f_name.trim();
-  }
-
-  if (l_name !== undefined) {
-    updates.l_name = l_name.trim();
-  }
+  if (f_name !== undefined) updates.f_name = f_name.trim();
+  if (l_name !== undefined) updates.l_name = l_name.trim();
 
   if (password) {
     if (password.length < 8) {
@@ -253,8 +243,7 @@ export const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
-  const prisma = res.locals.prisma;
+export const deleteUserController = async (req: Request, res: Response) => {
   const id = req.params.id;
 
   const uuidRegex =

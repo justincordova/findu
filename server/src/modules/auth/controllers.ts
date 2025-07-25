@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { logAuditEvent } from "@/utils/auditLogger";
 
-export const requestOtpCode = async (req: Request, res: Response) => {
+export const requestOtpCodeController = async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ error: "Email is required." });
@@ -35,19 +35,20 @@ export const verifyOtpCodeController = async (req: Request, res: Response) => {
     .json({ message: "Email verified", session: data.session });
 };
 
-export const signup = async (req: Request, res: Response) => {
-  // req.user is set by requireAuth middleware
+export const signupController = async (req: Request, res: Response) => {
   const user = (req as any).user;
   const { username, f_name, l_name, password } = req.body;
+
   if (!user || !user.id || !user.email) {
     logAuditEvent({ action: "SIGNUP_UNAUTHORIZED", details: { user } });
     return res.status(401).json({ error: "Unauthorized" });
   }
+
   try {
-    // Check if user already exists
     const existing = await prisma.users.findUnique({
       where: { email: user.email },
     });
+
     if (existing) {
       logAuditEvent({
         action: "SIGNUP_CONFLICT",
@@ -56,6 +57,7 @@ export const signup = async (req: Request, res: Response) => {
       });
       return res.status(409).json({ error: "User already exists" });
     }
+
     const hashed_password = await bcrypt.hash(password, 12);
     const profile = await prisma.users.create({
       data: {
@@ -67,11 +69,13 @@ export const signup = async (req: Request, res: Response) => {
         hashed_password,
       },
     });
+
     logAuditEvent({
       action: "SIGNUP_SUCCESS",
       userId: user.id,
       details: { email: user.email },
     });
+
     return res.status(201).json({ message: "Signup complete", profile });
   } catch (error) {
     logAuditEvent({
@@ -83,17 +87,19 @@ export const signup = async (req: Request, res: Response) => {
   }
 };
 
-export const login = async (req: Request, res: Response) => {
+export const loginController = async (req: Request, res: Response) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required." });
   }
+
   try {
     const user = await prisma.users.findUnique({ where: { email } });
     if (!user || !user.hashed_password) {
       logAuditEvent({ action: "LOGIN_FAILURE", details: { email } });
       return res.status(401).json({ error: "Invalid credentials" });
     }
+
     const valid = await bcrypt.compare(password, user.hashed_password);
     if (!valid) {
       logAuditEvent({
@@ -103,12 +109,13 @@ export const login = async (req: Request, res: Response) => {
       });
       return res.status(401).json({ error: "Invalid credentials" });
     }
+
     logAuditEvent({
       action: "LOGIN_SUCCESS",
       userId: user.id,
       details: { email },
     });
-    // Issue your own JWT or session here if needed
+
     return res.status(200).json({
       message: "Login successful",
       user: {
@@ -125,7 +132,7 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-export const forgotPassword = async (req: Request, res: Response) => {
+export const forgotPasswordController = async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ error: "Email is required." });
@@ -138,7 +145,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
   return res.status(200).json(result);
 };
 
-export const resetPassword = async (req: Request, res: Response) => {
+export const resetPasswordController = async (req: Request, res: Response) => {
   const { token, newPassword } = req.body;
   if (!token || !newPassword) {
     return res
@@ -150,8 +157,7 @@ export const resetPassword = async (req: Request, res: Response) => {
   return res.status(200).json(result);
 };
 
-export const logout = async (req: Request, res: Response) => {
-  // You may want to get userId from req.user if using auth middleware
+export const logoutController = async (req: Request, res: Response) => {
   const userId = (req as any).user?.id || req.body.userId;
   if (!userId) {
     return res.status(400).json({ error: "User ID is required." });

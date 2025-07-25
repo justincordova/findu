@@ -1,49 +1,37 @@
 import { Router } from "express";
 import {
-  requestOtpCode,
+  requestOtpCodeController,
   verifyOtpCodeController,
-  signup,
-  login,
-  forgotPassword,
-  resetPassword,
-  logout,
-} from "./controller";
-import { validateEmailOnly, validateSignup, validateLogin } from "./validator";
+  signupController,
+  loginController,
+  forgotPasswordController,
+  resetPasswordController,
+  logoutController,
+} from "./controllers";
+import { validateEmailOnly, validateSignup, validateLogin } from "./validators";
 import { handleValidationErrors } from "@/middleware/error/handleValidationErrors";
 import { requireSupabaseAuth } from "@/middleware/auth/requireSupabaseAuth";
 
 const router = Router();
 
-// POST /auth/verify-email - Send OTP code to .edu email
+// Auth Routes
 router.post(
-  "/verify-email",
+  "/send-otp",
   validateEmailOnly,
   handleValidationErrors,
-  requestOtpCode
+  requestOtpCodeController
 );
-
-// POST /auth/verify-code - Verify 6-digit OTP code
-router.post("/verify-code", handleValidationErrors, verifyOtpCodeController);
-
-// POST /auth/signup - Complete signup, requires valid session
+router.post("/verify-otp", handleValidationErrors, verifyOtpCodeController);
 router.post(
   "/signup",
   requireSupabaseAuth,
   validateSignup,
   handleValidationErrors,
-  signup
+  signupController
 );
-
-// POST /auth/login - Login with email and password
-router.post("/login", validateLogin, handleValidationErrors, login);
-
-// POST /auth/logout - Logout user
-router.post("/logout", logout);
-
-// POST /auth/forgot-password - Initiate password reset
-router.post("/forgot-password", forgotPassword);
-
-// POST /auth/reset-password - Complete password reset
-router.post("/reset-password", resetPassword);
+router.post("/login", validateLogin, handleValidationErrors, loginController);
+router.post("/logout", logoutController);
+router.post("/forgot-password", forgotPasswordController);
+router.post("/reset-password", resetPasswordController);
 
 export default router;

@@ -11,7 +11,7 @@ describe("Auth Routes", () => {
 
   it("should send a verification code to a .edu email", async () => {
     const res = await request(app)
-      .post("/api/auth/verify-email")
+      .post("/api/auth/send-otp")
       .send({ email });
     expect([200, 201, 400]).toContain(res.statusCode);
     expect(res.body).toHaveProperty(
@@ -22,7 +22,7 @@ describe("Auth Routes", () => {
 
   it("should not allow non-.edu emails for verification", async () => {
     const res = await request(app)
-      .post("/api/auth/verify-email")
+      .post("/api/auth/send-otp")
       .send({ email: "test@gmail.com" });
 
     expect(res.statusCode).toBe(400);
@@ -44,6 +44,20 @@ describe("Auth Routes", () => {
       .send({ email, password });
     // This will only succeed if the signup above succeeded
     expect([200, 401, 500]).toContain(res.statusCode);
+  });
+
+  it("should verify OTP code and get session", async () => {
+    const res = await request(app)
+      .post("/api/auth/verify-otp")
+      .send({ email, code: "123456" }); // Replace with real or mock code as needed
+
+    expect([200, 400]).toContain(res.statusCode);
+    if (res.statusCode === 200) {
+      expect(res.body).toHaveProperty("message", "Email verified");
+      expect(res.body).toHaveProperty("session");
+    } else {
+      expect(res.body).toHaveProperty("error");
+    }
   });
 
   it("should initiate forgot password (send reset email)", async () => {

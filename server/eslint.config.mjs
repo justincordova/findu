@@ -1,11 +1,26 @@
-import js from "@eslint/js";
-import globals from "globals";
-import tseslint from "typescript-eslint";
-import { defineConfig } from "eslint/config";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
+import tsParser from "@typescript-eslint/parser";
 
-
-export default defineConfig([
-  { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], plugins: { js }, extends: ["js/recommended"] },
-  { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], languageOptions: { globals: globals.browser } },
-  tseslint.configs.recommended,
-]);
+export default {
+  parser: tsParser,
+  parserOptions: {
+    ecmaVersion: 2020,
+    sourceType: "module",
+    project: "./tsconfig.json",  // ensure ESLint can read tsconfig for path aliases
+  },
+  plugins: ["@typescript-eslint"],
+  extends: [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+  ],
+  settings: {
+    "import/resolver": {
+      typescript: {
+        alwaysTryTypes: true, // always try to resolve types under <root>@types directory
+      },
+    },
+  },
+  rules: {
+    // your custom rules here
+  },
+};
