@@ -1,7 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
 import { useRouter } from "expo-router";
-import { PRIMARY } from "../../constants/theme";
+import { PRIMARY, DARK, MUTED } from "../../constants/theme";
 
 export default function SignupForm() {
   const [email, setEmail] = useState("");
@@ -17,14 +23,18 @@ export default function SignupForm() {
     }
     setLoading(true);
     try {
-      const res = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000"}/api/auth/verify-email`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        }
-      );
+      const apiUrl = `${
+        process.env.EXPO_PUBLIC_API_URL || "http://192.168.12.185:3000"
+      }/api/auth/send-otp`;
+      console.log("Calling API:", apiUrl);
+      console.log("Request body:", { email });
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Failed to send verification email.");
@@ -39,10 +49,10 @@ export default function SignupForm() {
   };
 
   return (
-    <View className="w-full mt-6">
-      <Text className="text-lg font-bold mb-2 text-dark">Email</Text>
+    <View style={styles.container}>
+      <Text style={styles.label}>Email</Text>
       <TextInput
-        className="border border-gray-300 rounded-lg px-4 py-3 mb-6 bg-white"
+        style={[styles.input, styles.emailInput]}
         placeholder="Enter your email"
         placeholderTextColor="#999"
         value={email}
@@ -50,22 +60,74 @@ export default function SignupForm() {
         keyboardType="email-address"
         autoCapitalize="none"
       />
-      <Text className="text-xs text-muted mb-4">
-        Only <Text className="text-primary font-semibold">.edu</Text> emails are
-        allowed.
+      <Text style={styles.note}>
+        Only <Text style={styles.primaryText}>.edu</Text> emails are allowed.
       </Text>
-      {error ? (
-        <Text className="text-red-500 text-center mb-4">{error}</Text>
-      ) : null}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
       <TouchableOpacity
-        className="bg-primary rounded-full py-3"
+        style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleVerify}
         disabled={loading}
       >
-        <Text className="text-white text-center font-bold text-base">
+        <Text style={styles.buttonText}>
           {loading ? "Sending..." : "Verify Email"}
         </Text>
       </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    width: "100%",
+    marginTop: 24,
+  },
+  label: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 8,
+    color: DARK,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 16,
+    backgroundColor: "white",
+    fontSize: 16,
+  },
+  emailInput: {
+    marginBottom: 24,
+  },
+  note: {
+    fontSize: 12,
+    color: MUTED,
+    marginBottom: 16,
+  },
+  primaryText: {
+    color: PRIMARY,
+    fontWeight: "600",
+  },
+  error: {
+    color: "#EF4444",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  button: {
+    backgroundColor: PRIMARY,
+    borderRadius: 9999,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  buttonText: {
+    color: "white",
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+});
