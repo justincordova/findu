@@ -1,12 +1,11 @@
-// THIS FILE IS NOT NEEDED SINCE WERE USING SUPABASE AUTH WITH MAGIC LINK AND SESSION TOKENS
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import { verifyAccessToken } from "@/modules/auth/service";
 
 export interface AuthRequest extends Request {
   user?: { userId: string; email: string };
 }
 
-export function authenticateJWT(
+export async function authenticateJWT(
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -20,16 +19,12 @@ export function authenticateJWT(
   }
 
   const token = authHeader.split(" ")[1];
+  const decoded = await verifyAccessToken(token);
 
-  try {
-    const secret = process.env.JWT_SECRET || "your-secret";
-    const decoded = jwt.verify(token, secret) as {
-      userId: string;
-      email: string;
-    };
-    req.user = decoded;
-    next();
-  } catch (err) {
+  if (!decoded) {
     return res.status(401).json({ error: "Invalid or expired token" });
   }
+
+  req.user = decoded;
+  next();
 }

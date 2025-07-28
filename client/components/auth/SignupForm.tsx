@@ -24,7 +24,7 @@ export default function SignupForm() {
     setLoading(true);
     try {
       const apiUrl = `${
-        process.env.EXPO_PUBLIC_API_URL || "http://192.168.12.185:3000"
+        process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000"
       }/api/auth/send-otp`;
       console.log("Calling API:", apiUrl);
       console.log("Request body:", { email });

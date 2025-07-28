@@ -8,26 +8,45 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { PRIMARY, DARK } from "../../constants/theme";
-import { supabase } from "../../services/supabase";
+import { useAuthStore } from "../../store/authStore";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const login = useAuthStore((state) => state.login);
 
   const handleLogin = async () => {
     setError("");
-    console.log("Login attempt:", { email, password });
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    console.log("Supabase login result:", { data, error });
-    if (error) {
-      setError(error.message || "Login failed");
-    } else {
-      router.replace("/home/(tabs)/discover");
+    setLoading(true);
+    try {
+      const apiUrl = `${
+        process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000"
+      }/api/auth/login`;
+
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Login failed");
+      } else {
+        // Store both tokens and user data
+        login(data.user, data.accessToken, data.refreshToken);
+        router.replace("/home/(tabs)/discover");
+      }
+    } catch (err) {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,8 +72,14 @@ export default function LoginForm() {
         secureTextEntry
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]}
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? "Logging in..." : "Login"}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -100,5 +125,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
 });

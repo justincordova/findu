@@ -4,6 +4,7 @@ import {
   verifyOtpCodeController,
   signupController,
   loginController,
+  refreshTokenController,
   forgotPasswordController,
   resetPasswordController,
   logoutController,
@@ -30,6 +31,7 @@ router.post(
   signupController
 );
 router.post("/login", validateLogin, handleValidationErrors, loginController);
+router.post("/refresh-token", refreshTokenController);
 router.post("/logout", logoutController);
 router.post("/forgot-password", forgotPasswordController);
 router.post("/reset-password", resetPasswordController);

@@ -26,7 +26,7 @@ export default function VerifyEmail() {
       // Call backend to verify OTP
       const res = await fetch(
         `${
-          process.env.EXPO_PUBLIC_API_URL || "localhost:3000"
+          process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000"
         }/api/auth/verify-otp`,
         {
           method: "POST",

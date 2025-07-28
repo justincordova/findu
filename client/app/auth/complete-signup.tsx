@@ -38,7 +38,7 @@ export default function CompleteSignup() {
       // Call signup API with session token
       const res = await fetch(
         `${
-          process.env.EXPO_PUBLIC_API_URL || "http://192.168.12.185:3000"
+          process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000"
         }/api/auth/signup`,
         {
           method: "POST",

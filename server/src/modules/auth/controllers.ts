@@ -94,41 +94,23 @@ export const loginController = async (req: Request, res: Response) => {
   }
 
   try {
-    const user = await prisma.users.findUnique({ where: { email } });
-    if (!user || !user.hashed_password) {
-      logAuditEvent({ action: "LOGIN_FAILURE", details: { email } });
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    const valid = await bcrypt.compare(password, user.hashed_password);
-    if (!valid) {
-      logAuditEvent({
-        action: "LOGIN_FAILURE",
-        userId: user.id,
-        details: { email },
-      });
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
+    const result = await authService.loginUser(prisma, { email, password });
 
     logAuditEvent({
       action: "LOGIN_SUCCESS",
-      userId: user.id,
+      userId: result.user.id,
       details: { email },
     });
 
     return res.status(200).json({
       message: "Login successful",
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        f_name: user.f_name,
-        l_name: user.l_name,
-      },
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      user: result.user,
     });
   } catch (error) {
-    logAuditEvent({ action: "LOGIN_ERROR", details: { email, error } });
-    return res.status(500).json({ error: "Failed to login" });
+    logAuditEvent({ action: "LOGIN_FAILURE", details: { email, error } });
+    return res.status(401).json({ error: "Invalid credentials" });
   }
 };
 
@@ -165,4 +147,29 @@ export const logoutController = async (req: Request, res: Response) => {
   const result = await authService.logout(userId);
   logAuditEvent({ action: "LOGOUT", userId });
   return res.status(200).json(result);
+};
+
+export const refreshTokenController = async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({ error: "Refresh token is required." });
+  }
+
+  try {
+    const result = await authService.refreshAccessToken(refreshToken);
+
+    logAuditEvent({
+      action: "TOKEN_REFRESH_SUCCESS",
+      details: { refreshToken: refreshToken.substring(0, 10) + "..." },
+    });
+
+    return res.status(200).json({
+      message: "Token refreshed successfully",
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
+  } catch (error) {
+    logAuditEvent({ action: "TOKEN_REFRESH_FAILURE", details: { error } });
+    return res.status(401).json({ error: "Invalid or expired refresh token" });
+  }
 };
