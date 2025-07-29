@@ -1,4 +1,5 @@
-import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
+import React from "react";
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 
 const user = {
@@ -18,76 +19,191 @@ export default function ProfileScreen() {
   const router = useRouter();
   return (
     <ScrollView
-      className="flex-1 bg-background"
-      contentContainerStyle={{ alignItems: "center", padding: 24, justifyContent: "flex-end", minHeight: "100%" }}
+      style={styles.scrollView}
+      contentContainerStyle={styles.contentContainer}
     >
-      <View className="items-center w-full mt-24">
+      <View style={styles.profileContainer}>
         <Image
           source={{ uri: user.profilePicture }}
-          className="w-32 h-32 rounded-full mb-4 border-4 border-primary"
+          style={styles.profilePicture}
         />
-        <Text className="text-3xl font-bold text-dark mb-1">{user.name}</Text>
-        <Text className="text-pink-600 font-semibold mb-2">{user.pronouns}</Text>
-        <Text className="text-lg text-center text-dark mb-4">{user.bio}</Text>
-        <View className="flex-row flex-wrap justify-center gap-2 mb-4">
+        <Text style={styles.name}>{user.name}</Text>
+        <Text style={styles.pronouns}>{user.pronouns}</Text>
+        <Text style={styles.bio}>{user.bio}</Text>
+
+        <View style={styles.intentContainer}>
           {user.intent.map((i) => (
-            <View key={i} className="bg-pink-100 border border-pink-400 rounded-full px-4 py-1 mr-2 mb-2">
-              <Text className="text-pink-600 text-sm font-medium">{i}</Text>
+            <View key={i} style={styles.intentBadge}>
+              <Text style={styles.intentText}>{i}</Text>
             </View>
           ))}
         </View>
-        <View className="w-full bg-white rounded-2xl shadow px-6 py-4 mb-6">
-          <Text className="text-lg font-bold text-dark mb-2">Details</Text>
-          <View className="flex-row justify-between mb-1">
-            <Text className="text-muted font-medium">School</Text>
-            <Text className="text-dark">{user.school}</Text>
+
+        <View style={styles.detailsBox}>
+          <Text style={styles.detailsTitle}>Details</Text>
+
+          <View style={styles.detailsRow}>
+            <Text style={styles.detailsLabel}>School</Text>
+            <Text style={styles.detailsValue}>{user.school}</Text>
           </View>
-          <View className="flex-row justify-between mb-1">
-            <Text className="text-muted font-medium">Major</Text>
-            <Text className="text-dark">{user.major}</Text>
+          <View style={styles.detailsRow}>
+            <Text style={styles.detailsLabel}>Major</Text>
+            <Text style={styles.detailsValue}>{user.major}</Text>
           </View>
-          <View className="flex-row justify-between mb-1">
-            <Text className="text-muted font-medium">Grad Year</Text>
-            <Text className="text-dark">{user.gradYear}</Text>
+          <View style={styles.detailsRow}>
+            <Text style={styles.detailsLabel}>Grad Year</Text>
+            <Text style={styles.detailsValue}>{user.gradYear}</Text>
           </View>
-          <View className="flex-row justify-between mb-1">
-            <Text className="text-muted font-medium">Age</Text>
-            <Text className="text-dark">{user.age}</Text>
+          <View style={styles.detailsRow}>
+            <Text style={styles.detailsLabel}>Age</Text>
+            <Text style={styles.detailsValue}>{user.age}</Text>
           </View>
         </View>
+
         <TouchableOpacity
-          className="bg-primary rounded-full py-3 w-full mb-2"
+          style={styles.editButton}
           onPress={() => router.push("/profile-setup/1")}
         >
-          <Text className="text-white text-center font-bold text-base">Edit Profile</Text>
+          <Text style={styles.editButtonText}>Edit Profile</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
-          className="bg-gray-200 rounded-full py-3 w-full"
+          style={styles.logoutButton}
           onPress={() => router.push("../index.tsx")}
         >
-          <Text className="text-dark text-center font-bold text-base">Log Out</Text>
+          <Text style={styles.logoutButtonText}>Log Out</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
 
+const PRIMARY_COLOR = "#ec4899";
+const BACKGROUND_COLOR = "#fff";
+const BACKGROUND_SCROLL = "#f0f0f0";
+const DARK_COLOR = "#222";
+const MUTED_COLOR = "#888";
+const PINK_LIGHT = "#fce4ec";
+const PINK_BORDER = "#f48fb1";
+
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: BACKGROUND,
+    backgroundColor: BACKGROUND_SCROLL,
   },
-  title: {
-    fontSize: 30,
+  contentContainer: {
+    alignItems: "center",
+    padding: 24,
+    justifyContent: "flex-end",
+    minHeight: "100%",
+  },
+  profileContainer: {
+    alignItems: "center",
+    width: "100%",
+    marginTop: 96,
+  },
+  profilePicture: {
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    marginBottom: 16,
+    borderWidth: 4,
+    borderColor: PRIMARY_COLOR,
+  },
+  name: {
+    fontSize: 24,
     fontWeight: "bold",
-    color: DARK,
+    color: DARK_COLOR,
+    marginBottom: 4,
+  },
+  pronouns: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: PRIMARY_COLOR,
     marginBottom: 8,
   },
-  subtitle: {
-    color: MUTED,
+  bio: {
     fontSize: 18,
     textAlign: "center",
+    color: DARK_COLOR,
+    marginBottom: 16,
+  },
+  intentContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 16,
+  },
+  intentBadge: {
+    backgroundColor: PINK_LIGHT,
+    borderColor: PINK_BORDER,
+    borderWidth: 1,
+    borderRadius: 9999,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  intentText: {
+    color: PRIMARY_COLOR,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  detailsBox: {
+    width: "100%",
+    backgroundColor: BACKGROUND_COLOR,
+    borderRadius: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    marginBottom: 24,
+  },
+  detailsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: DARK_COLOR,
+    marginBottom: 8,
+  },
+  detailsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  detailsLabel: {
+    color: MUTED_COLOR,
+    fontWeight: "500",
+  },
+  detailsValue: {
+    color: DARK_COLOR,
+  },
+  editButton: {
+    backgroundColor: PRIMARY_COLOR,
+    borderRadius: 9999,
+    paddingVertical: 12,
+    width: "100%",
+    marginBottom: 8,
+  },
+  editButtonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  logoutButton: {
+    backgroundColor: "#e5e7eb",
+    borderRadius: 9999,
+    paddingVertical: 12,
+    width: "100%",
+  },
+  logoutButtonText: {
+    color: DARK_COLOR,
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
