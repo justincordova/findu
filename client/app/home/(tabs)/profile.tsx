@@ -1,27 +1,11 @@
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-} from "react-native";
+import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuthStore } from "../../../store/authStore";
-import {
-  BACKGROUND,
-  DARK,
-  MUTED,
-  PRIMARY,
-  SECONDARY,
-} from "../../../constants/theme";
 
 const user = {
   name: "Zachary Labit",
   email: "labit.z@northeastern.edu",
   bio: "CS major, coffee enthusiast, and aspiring entrepreneur. Looking to meet new people!",
-  profilePicture:
-    "https://ui-avatars.com/api/?name=Zachary+Labit&background=ec4899&color=fff&size=256",
+  profilePicture: "https://ui-avatars.com/api/?name=Zachary+Labit&background=ec4899&color=fff&size=256",
   school: "Northeastern University",
   major: "Computer Science",
   gradYear: "2026",
@@ -30,76 +14,60 @@ const user = {
   age: 21,
 };
 
-const ProfileHeader = () => (
-  <View style={styles.headerContainer}>
-    <Image source={{ uri: user.profilePicture }} style={styles.profileImage} />
-    <Text style={styles.name}>{user.name}</Text>
-    <Text style={styles.pronouns}>{user.pronouns}</Text>
-    <Text style={styles.bio}>{user.bio}</Text>
-  </View>
-);
-
-const IntentTags = () => (
-  <View style={styles.intentContainer}>
-    {user.intent.map((intent) => (
-      <View key={intent} style={styles.intentTag}>
-        <Text style={styles.intentText}>{intent}</Text>
-      </View>
-    ))}
-  </View>
-);
-
-const DetailsCard = () => (
-  <View style={styles.detailsCard}>
-    <Text style={styles.detailsTitle}>Details</Text>
-    <DetailRow label="School" value={user.school} />
-    <DetailRow label="Major" value={user.major} />
-    <DetailRow label="Grad Year" value={user.gradYear} />
-    <DetailRow label="Age" value={user.age.toString()} />
-  </View>
-);
-
-const DetailRow = ({ label, value }: { label: string; value: string }) => (
-  <View style={styles.detailRow}>
-    <Text style={styles.detailLabel}>{label}</Text>
-    <Text style={styles.detailValue}>{value}</Text>
-  </View>
-);
-
-const ActionButtons = () => {
-  const router = useRouter();
-  const { logout } = useAuthStore();
-
-  const handleLogout = () => {
-    logout();
-    router.replace("/");
-  };
-
-  return (
-    <View style={styles.buttonContainer}>
-      <TouchableOpacity
-        style={styles.editButton}
-        onPress={() => router.push("/profile-setup/1")}
-      >
-        <Text style={styles.editButtonText}>Edit Profile</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Log Out</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
-
 export default function ProfileScreen() {
+  const router = useRouter();
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      className="flex-1 bg-background"
+      contentContainerStyle={{ alignItems: "center", padding: 24, justifyContent: "flex-end", minHeight: "100%" }}
     >
-      <ProfileHeader />
-      <IntentTags />
-      <DetailsCard />
-      <ActionButtons />
+      <View className="items-center w-full mt-24">
+        <Image
+          source={{ uri: user.profilePicture }}
+          className="w-32 h-32 rounded-full mb-4 border-4 border-primary"
+        />
+        <Text className="text-3xl font-bold text-dark mb-1">{user.name}</Text>
+        <Text className="text-pink-600 font-semibold mb-2">{user.pronouns}</Text>
+        <Text className="text-lg text-center text-dark mb-4">{user.bio}</Text>
+        <View className="flex-row flex-wrap justify-center gap-2 mb-4">
+          {user.intent.map((i) => (
+            <View key={i} className="bg-pink-100 border border-pink-400 rounded-full px-4 py-1 mr-2 mb-2">
+              <Text className="text-pink-600 text-sm font-medium">{i}</Text>
+            </View>
+          ))}
+        </View>
+        <View className="w-full bg-white rounded-2xl shadow px-6 py-4 mb-6">
+          <Text className="text-lg font-bold text-dark mb-2">Details</Text>
+          <View className="flex-row justify-between mb-1">
+            <Text className="text-muted font-medium">School</Text>
+            <Text className="text-dark">{user.school}</Text>
+          </View>
+          <View className="flex-row justify-between mb-1">
+            <Text className="text-muted font-medium">Major</Text>
+            <Text className="text-dark">{user.major}</Text>
+          </View>
+          <View className="flex-row justify-between mb-1">
+            <Text className="text-muted font-medium">Grad Year</Text>
+            <Text className="text-dark">{user.gradYear}</Text>
+          </View>
+          <View className="flex-row justify-between mb-1">
+            <Text className="text-muted font-medium">Age</Text>
+            <Text className="text-dark">{user.age}</Text>
+          </View>
+        </View>
+        <TouchableOpacity
+          className="bg-primary rounded-full py-3 w-full mb-2"
+          onPress={() => router.push("/profile-setup/1")}
+        >
+          <Text className="text-white text-center font-bold text-base">Edit Profile</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className="bg-gray-200 rounded-full py-3 w-full"
+          onPress={() => router.push("../index.tsx")}
+        >
+          <Text className="text-dark text-center font-bold text-base">Log Out</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -107,125 +75,19 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: BACKGROUND,
   },
-  contentContainer: {
-    alignItems: "center",
-    padding: 24,
-    justifyContent: "flex-end",
-    minHeight: "100%",
-  },
-  headerContainer: {
-    alignItems: "center",
-    width: "100%",
-    marginTop: 96,
-  },
-  profileImage: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    marginBottom: 16,
-    borderWidth: 4,
-    borderColor: PRIMARY,
-  },
-  name: {
+  title: {
     fontSize: 30,
     fontWeight: "bold",
     color: DARK,
-    marginBottom: 4,
-  },
-  pronouns: {
-    color: PRIMARY,
-    fontWeight: "600",
     marginBottom: 8,
   },
-  bio: {
-    fontSize: 18,
-    textAlign: "center",
-    color: DARK,
-    marginBottom: 16,
-  },
-  intentContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 8,
-    marginBottom: 16,
-  },
-  intentTag: {
-    backgroundColor: SECONDARY,
-    borderWidth: 1,
-    borderColor: PRIMARY,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  intentText: {
-    color: PRIMARY,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  detailsCard: {
-    width: "100%",
-    backgroundColor: "white",
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-    padding: 24,
-    marginBottom: 24,
-  },
-  detailsTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: DARK,
-    marginBottom: 8,
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  detailLabel: {
+  subtitle: {
     color: MUTED,
-    fontWeight: "500",
-  },
-  detailValue: {
-    color: DARK,
-  },
-  buttonContainer: {
-    width: "100%",
-  },
-  editButton: {
-    backgroundColor: PRIMARY,
-    borderRadius: 25,
-    paddingVertical: 12,
-    width: "100%",
-    marginBottom: 8,
-  },
-  editButtonText: {
-    color: "white",
+    fontSize: 18,
     textAlign: "center",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  logoutButton: {
-    backgroundColor: "#e5e7eb",
-    borderRadius: 25,
-    paddingVertical: 12,
-    width: "100%",
-  },
-  logoutButtonText: {
-    color: DARK,
-    textAlign: "center",
-    fontWeight: "bold",
-    fontSize: 16,
   },
 });
