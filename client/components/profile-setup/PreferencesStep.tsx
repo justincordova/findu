@@ -1,102 +1,141 @@
-import { View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet } from 'react-native';
-import DropDownPicker from 'react-native-dropdown-picker';
-import { Ionicons } from '@expo/vector-icons';
-import RangeSlider from 'rn-range-slider';
-import { ProfileSetupData } from '../../app/profile-setup/[step]';
-import { useCallback, useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
+import DropDownPicker from "react-native-dropdown-picker";
+import { Ionicons } from "@expo/vector-icons";
+import RangeSlider from "rn-range-slider";
+import { ProfileSetupData } from "../../app/profile-setup/[step]";
+import { useCallback, useState } from "react";
+import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
 
 interface PreferencesStepProps {
-    data: ProfileSetupData;
-    onUpdate: (data: Partial<ProfileSetupData>) => void;
-    onNext: () => void;
-    onBack: () => void;
+  data: ProfileSetupData;
+  onUpdate: (data: Partial<ProfileSetupData>) => void;
+  onNext: () => void;
+  onBack: () => void;
 }
 
-export default function PreferencesStep({ data, onUpdate, onNext, onBack }: PreferencesStepProps) {
-  const canContinue = true; 
-  const toggleIntent = useCallback((intent: string) => {
-    const currentIntents = data.intent || [];
-    let newIntents;
-    
-    if (currentIntents.includes(intent)) {
-      newIntents = currentIntents.filter(i => i !== intent);
-    } else {
-      newIntents = [...currentIntents, intent];
-    }
-    
-    onUpdate({ intent: newIntents });
-  }, [data.intent, onUpdate]);
+export default function PreferencesStep({
+  data,
+  onUpdate,
+  onNext,
+  onBack,
+}: PreferencesStepProps) {
+  const canContinue = true;
+  const toggleIntent = useCallback(
+    (intent: string) => {
+      const currentIntents = data.intent || [];
+      let newIntents;
 
-  const isIntentSelected = useCallback((intent: string) => {
-    const currentIntents = data.intent || [];
-    return currentIntents.includes(intent);
-  }, [data.intent]);
+      if (currentIntents.includes(intent)) {
+        newIntents = currentIntents.filter((i) => i !== intent);
+      } else {
+        newIntents = [...currentIntents, intent];
+      }
 
-  const handleSliderChange = useCallback((low: number, high: number) => {
-    if (data.minAge !== low || data.maxAge !== high) {
-      onUpdate({
-        minAge: low,
-        maxAge: high
-      });
-    }
-  }, [data.minAge, data.maxAge, onUpdate]);
+      onUpdate({ intent: newIntents });
+    },
+    [data.intent, onUpdate]
+  );
 
-  const handleFirstPronounChange = useCallback((text: string) => {
-    const secondPart = data.pronouns?.split('/')[1] || '';
-    onUpdate({ pronouns: `${text}/${secondPart}` });
-  }, [data.pronouns, onUpdate]);
+  const isIntentSelected = useCallback(
+    (intent: string) => {
+      const currentIntents = data.intent || [];
+      return currentIntents.includes(intent);
+    },
+    [data.intent]
+  );
 
-  const handleSecondPronounChange = useCallback((text: string) => {
-    const firstPart = data.pronouns?.split('/')[0] || '';
-    onUpdate({ pronouns: `${firstPart}/${text}` });
-  }, [data.pronouns, onUpdate]);
+  const handleSliderChange = useCallback(
+    (low: number, high: number) => {
+      if (data.minAge !== low || data.maxAge !== high) {
+        onUpdate({
+          minAge: low,
+          maxAge: high,
+        });
+      }
+    },
+    [data.minAge, data.maxAge, onUpdate]
+  );
+
+  const handleFirstPronounChange = useCallback(
+    (text: string) => {
+      const secondPart = data.pronouns?.split("/")[1] || "";
+      onUpdate({ pronouns: `${text}/${secondPart}` });
+    },
+    [data.pronouns, onUpdate]
+  );
+
+  const handleSecondPronounChange = useCallback(
+    (text: string) => {
+      const firstPart = data.pronouns?.split("/")[0] || "";
+      onUpdate({ pronouns: `${firstPart}/${text}` });
+    },
+    [data.pronouns, onUpdate]
+  );
 
   const renderThumb = useCallback(() => <View style={styles.thumb} />, []);
-  const renderRail = useCallback(() => <View style={styles.railBackground} />, []);
-  const renderRailSelected = useCallback(() => <View style={styles.railSelected} />, []);
+  const renderRail = useCallback(
+    () => <View style={styles.railBackground} />,
+    []
+  );
+  const renderRailSelected = useCallback(
+    () => <View style={styles.railSelected} />,
+    []
+  );
 
   const [orientationOpen, setOrientationOpen] = useState(false);
-  const [orientationValue, setOrientationValue] = useState(data.sexualOrientation);
+  const [orientationValue, setOrientationValue] = useState(
+    data.sexualOrientation
+  );
   const [orientationItems, setOrientationItems] = useState([
-    { label: 'Straight', value: 'Straight' },
-    { label: 'Gay', value: 'Gay' },
-    { label: 'Lesbian', value: 'Lesbian' },
-    { label: 'Bisexual', value: 'Bisexual' },
-    { label: 'Questioning', value: 'Questioning' },
-    { label: 'Other', value: 'Other' },
+    { label: "Straight", value: "Straight" },
+    { label: "Gay", value: "Gay" },
+    { label: "Lesbian", value: "Lesbian" },
+    { label: "Bisexual", value: "Bisexual" },
+    { label: "Questioning", value: "Questioning" },
+    { label: "Other", value: "Other" },
   ]);
 
   const [genderOpen, setGenderOpen] = useState(false);
   const [genderValue, setGenderValue] = useState(data.genderPreference);
   const [genderItems, setGenderItems] = useState([
-    { label: 'Men', value: 'Men' },
-    { label: 'Women', value: 'Women' },
-    { label: 'Non-binary', value: 'Non-binary' },
-    { label: 'All', value: 'All' },
-    { label: 'Other', value: 'Other' },
-
+    { label: "Men", value: "Men" },
+    { label: "Women", value: "Women" },
+    { label: "Non-binary", value: "Non-binary" },
+    { label: "All", value: "All" },
+    { label: "Other", value: "Other" },
   ]);
 
-const handleOrientationChange = (value: string | null) => {
-  if (value) {
-    setOrientationValue(value as ProfileSetupData['sexualOrientation']);
-    onUpdate({ sexualOrientation: value as ProfileSetupData['sexualOrientation'] });
-  }
-};
-const handleGenderChange = (value: string | null) => {
-  if (value) {
-    setGenderValue(value as ProfileSetupData['genderPreference']);
-    onUpdate({ genderPreference: value as ProfileSetupData['genderPreference'] });
-  }
-};
+  const handleOrientationChange = (value: string | null) => {
+    if (value) {
+      setOrientationValue(value as ProfileSetupData["sexualOrientation"]);
+      onUpdate({
+        sexualOrientation: value as ProfileSetupData["sexualOrientation"],
+      });
+    }
+  };
+  const handleGenderChange = (value: string | null) => {
+    if (value) {
+      setGenderValue(value as ProfileSetupData["genderPreference"]);
+      onUpdate({
+        genderPreference: value as ProfileSetupData["genderPreference"],
+      });
+    }
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#374151" />
+          <Ionicons name="arrow-back" size={24} color={DARK} />
         </TouchableOpacity>
-        
+
         <Text style={styles.title}>More Information</Text>
         <Text style={styles.subtitle}>Tell us more</Text>
       </View>
@@ -109,19 +148,19 @@ const handleGenderChange = (value: string | null) => {
             <TextInput
               style={styles.pronounInput}
               placeholder="they"
-              value={data.pronouns?.split('/')[0] || ''}
+              value={data.pronouns?.split("/")[0] || ""}
               onChangeText={handleFirstPronounChange}
               maxLength={10}
-              placeholderTextColor={styles.placeholderStyle.color}
+              placeholderTextColor={MUTED}
             />
             <Text style={styles.pronounSlash}>/</Text>
             <TextInput
               style={styles.pronounInput}
               placeholder="them"
-              value={data.pronouns?.split('/')[1] || ''}
+              value={data.pronouns?.split("/")[1] || ""}
               onChangeText={handleSecondPronounChange}
               maxLength={10}
-              placeholderTextColor={styles.placeholderStyle.color}
+              placeholderTextColor={MUTED}
             />
           </View>
         </View>
@@ -130,23 +169,27 @@ const handleGenderChange = (value: string | null) => {
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Looking for</Text>
           <View style={styles.intentContainer}>
-            {['True Love', 'Club Partner', 'Study Buddy', 'Not Sure'].map((intent) => (
-              <TouchableOpacity
-                key={intent}
-                onPress={() => toggleIntent(intent)}
-                style={[
-                  styles.intentBox,
-                  isIntentSelected(intent) && styles.intentBoxSelected
-                ]}
-              >
-                <Text style={[
-                  styles.intentText,
-                  isIntentSelected(intent) && styles.intentTextSelected
-                ]}>
-                  {intent}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {["True Love", "Club Partner", "Study Buddy", "Not Sure"].map(
+              (intent) => (
+                <TouchableOpacity
+                  key={intent}
+                  onPress={() => toggleIntent(intent)}
+                  style={[
+                    styles.intentBox,
+                    isIntentSelected(intent) && styles.intentBoxSelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.intentText,
+                      isIntentSelected(intent) && styles.intentTextSelected,
+                    ]}
+                  >
+                    {intent}
+                  </Text>
+                </TouchableOpacity>
+              )
+            )}
           </View>
         </View>
 
@@ -154,7 +197,7 @@ const handleGenderChange = (value: string | null) => {
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Sexual Orientation</Text>
           <DropDownPicker
-            placeholder='Enter your sexual orientation'
+            placeholder="Enter your sexual orientation"
             open={orientationOpen}
             value={orientationValue}
             items={orientationItems}
@@ -174,7 +217,7 @@ const handleGenderChange = (value: string | null) => {
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Preferred Gender</Text>
           <DropDownPicker
-            placeholder='Enter your preferred gender'
+            placeholder="Enter your preferred gender"
             open={genderOpen}
             value={genderValue}
             items={genderItems}
@@ -197,7 +240,7 @@ const handleGenderChange = (value: string | null) => {
             <Text style={styles.ageRangeDisplay}>
               {data.minAge || 18} - {data.maxAge || 26} years old
             </Text>
-            
+
             <View style={styles.rangeSliderContainer}>
               <View style={styles.sliderBox}>
                 <RangeSlider
@@ -213,7 +256,7 @@ const handleGenderChange = (value: string | null) => {
                   renderRailSelected={renderRailSelected}
                 />
               </View>
-              
+
               <Text style={styles.sliderDescription}>
                 Drag the handles to set your preferred age range
               </Text>
@@ -221,15 +264,17 @@ const handleGenderChange = (value: string | null) => {
           </View>
         </View>
       </ScrollView>
-      <TouchableOpacity 
-              onPress={onNext}
-              disabled={!canContinue}
-              style={[styles.button, !canContinue && styles.buttonDisabled]}
-            >
-              <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
-                Continue
-              </Text>
-            </TouchableOpacity>
+      <TouchableOpacity
+        onPress={onNext}
+        disabled={!canContinue}
+        style={[styles.button, !canContinue && styles.buttonDisabled]}
+      >
+        <Text
+          style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}
+        >
+          Continue
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -248,15 +293,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontWeight: "bold",
+    color: DARK,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
+    color: MUTED,
+    textAlign: "center",
   },
   form: {
     flex: 1,
@@ -267,24 +312,24 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
+    fontWeight: "500",
+    color: DARK,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   input: {
-    width: '100%',
+    width: "100%",
     padding: 16,
-    backgroundColor: '#f9fafb',
+    backgroundColor: BACKGROUND,
     borderRadius: 12,
     fontSize: 16,
-    color: '#111827',
+    color: DARK,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
   },
   dropdown: {
-    backgroundColor: '#f9fafb',
-    borderColor: '#e5e7eb',
+    backgroundColor: BACKGROUND,
+    borderColor: "#e5e7eb",
     borderRadius: 12,
     minHeight: 44,
     paddingHorizontal: 8,
@@ -292,89 +337,89 @@ const styles = StyleSheet.create({
     zIndex: 2000,
   },
   dropdownContainer: {
-    backgroundColor: '#f9fafb',
-    borderColor: '#e5e7eb',
+    backgroundColor: BACKGROUND,
+    borderColor: "#e5e7eb",
     borderRadius: 12,
     zIndex: 2000,
   },
   pronounContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   pronounInput: {
     minWidth: 80,
     maxWidth: 240,
     padding: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: BACKGROUND,
     borderRadius: 8,
     fontSize: 16,
-    color: '#111827',
+    color: DARK,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    textAlign: 'center',
+    borderColor: "#e5e7eb",
+    textAlign: "center",
   },
   pronounSlash: {
     fontSize: 18,
-    color: '#6b7280',
+    color: MUTED,
     marginHorizontal: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   intentContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
-    justifyContent: 'space-between',
+    justifyContent: "center",
   },
   intentBox: {
     flex: 1,
-    minWidth: '22%',
+    minWidth: "22%",
     height: 48,
     paddingHorizontal: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: BACKGROUND,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
   },
   intentBoxSelected: {
-    backgroundColor: '#fce7f3',
-    borderColor: '#ec4899',
+    backgroundColor: PRIMARY,
+    borderColor: PRIMARY,
   },
   intentText: {
     fontSize: 12,
-    color: '#374151',
-    textAlign: 'center',
-    fontWeight: '500',
-    justifyContent: 'center',
+    color: DARK,
+    textAlign: "center",
+    fontWeight: "500",
+    justifyContent: "center",
   },
   intentTextSelected: {
-    color: '#ec4899',
-    fontWeight: '600',
+    color: "white",
+    fontWeight: "600",
   },
   button: {
-    width: '100%',
-    backgroundColor: '#ec4899',
+    width: "100%",
+    backgroundColor: PRIMARY,
     paddingVertical: 16,
     borderRadius: 12,
   },
   buttonDisabled: {
-    backgroundColor: '#d1d5db',
+    backgroundColor: "#d1d5db",
   },
   buttonText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   placeholderStyle: {
-    color: '#9ca3af',
-    fontWeight: '400',
+    color: MUTED,
+    fontWeight: "400",
     fontSize: 16,
   },
   buttonTextDisabled: {
-    color: '#6b7280',
+    color: MUTED,
   },
   ageRangeContainer: {
     gap: 16,
@@ -384,35 +429,35 @@ const styles = StyleSheet.create({
   },
   ageLabel: {
     fontSize: 14,
-    color: '#374151',
+    color: DARK,
     marginBottom: 8,
-    textAlign: 'center',
-    fontWeight: '500',
+    textAlign: "center",
+    fontWeight: "500",
   },
   slider: {
-    width: '100%',
+    width: "100%",
     height: 40,
   },
   ageRangeDisplay: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#ec4899',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: PRIMARY,
+    textAlign: "center",
   },
   singleSliderContainer: {
     paddingHorizontal: 8,
   },
   sliderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   sliderLabel: {
     fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '500',
+    color: MUTED,
+    fontWeight: "500",
     minWidth: 24,
-    textAlign: 'center',
+    textAlign: "center",
   },
   sliderWrapper: {
     flex: 1,
@@ -420,35 +465,35 @@ const styles = StyleSheet.create({
   },
   sliderDescription: {
     fontSize: 12,
-    color: '#9ca3af',
-    textAlign: 'center',
+    color: MUTED,
+    textAlign: "center",
   },
   rangeSliderContainer: {
     paddingHorizontal: 8,
   },
   sliderBox: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: BACKGROUND,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
     paddingVertical: 8,
     paddingHorizontal: 8,
     marginBottom: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   rangeSlider: {
-    width: '100%',
+    width: "100%",
     height: 20,
   },
   thumb: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#ec4899',
+    backgroundColor: PRIMARY,
     borderWidth: 2,
-    borderColor: '#ffffff',
-    shadowColor: '#000000',
+    borderColor: "#ffffff",
+    shadowColor: "#000000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -460,17 +505,17 @@ const styles = StyleSheet.create({
   rail: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: "#e5e7eb",
   },
   railBackground: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#e5e7eb',
-    width: '100%',
+    backgroundColor: "#e5e7eb",
+    width: "100%",
   },
   railSelected: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#ec4899',
+    backgroundColor: PRIMARY,
   },
 });

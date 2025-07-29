@@ -11,6 +11,7 @@ import { Picker } from "@react-native-picker/picker";
 import { useState } from "react";
 import { ProfileSetupData } from "../../app/profile-setup/[step]";
 import DropDownPicker from "react-native-dropdown-picker";
+import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
 
 interface BasicInfoStepProps {
   data: ProfileSetupData;
@@ -108,7 +109,7 @@ export default function BasicInfoStep({
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#374151" />
+          <Ionicons name="arrow-back" size={24} color={DARK} />
         </TouchableOpacity>
 
         <Text style={styles.title}>Basic Information</Text>
@@ -122,7 +123,7 @@ export default function BasicInfoStep({
           <TextInput
             style={styles.input}
             placeholder="Enter your full name"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={MUTED}
             value={data.name}
             onChangeText={(text) => onUpdate({ name: text })}
             maxLength={50}
@@ -135,7 +136,7 @@ export default function BasicInfoStep({
           <TextInput
             style={styles.input}
             placeholder="Enter your age"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={MUTED}
             value={data.age ? data.age.toString() : ""}
             onChangeText={(text) => onUpdate({ age: parseInt(text) || 0 })}
             keyboardType="numeric"
@@ -160,7 +161,7 @@ export default function BasicInfoStep({
             dropDownContainerStyle={styles.dropdownContainer}
             zIndex={2000}
             placeholderStyle={{
-              color: "#6b7280",
+              color: MUTED,
               fontSize: 16,
               fontWeight: "400",
             }}
@@ -173,7 +174,7 @@ export default function BasicInfoStep({
           <TextInput
             style={styles.input}
             placeholder="Enter your university name"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={MUTED}
             value={data.school}
             onChangeText={(text) => onUpdate({ school: text })}
             maxLength={100}
@@ -186,7 +187,7 @@ export default function BasicInfoStep({
           <TextInput
             style={styles.input}
             placeholder="e.g., Main Campus, Boston Campus"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={MUTED}
             value={data.campus}
             onChangeText={(text) => onUpdate({ campus: text })}
             maxLength={100}
@@ -199,7 +200,7 @@ export default function BasicInfoStep({
           <TextInput
             style={styles.input}
             placeholder="Enter your major"
-            placeholderTextColor="#6b7280"
+            placeholderTextColor={MUTED}
             value={data.major}
             onChangeText={(text) => onUpdate({ major: text })}
             maxLength={100}
@@ -277,13 +278,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#111827",
+    color: DARK,
     marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#6b7280",
+    color: MUTED,
     textAlign: "center",
   },
   form: {
@@ -296,22 +297,22 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#111827",
+    color: DARK,
     marginBottom: 8,
     textAlign: "center",
   },
   input: {
     width: "100%",
     padding: 16,
-    backgroundColor: "#f9fafb",
+    backgroundColor: BACKGROUND,
     borderRadius: 12,
     fontSize: 16,
-    color: "#111827",
+    color: DARK,
     borderWidth: 1,
     borderColor: "#e5e7eb",
   },
   pickerContainer: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: BACKGROUND,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e5e7eb",
@@ -321,7 +322,7 @@ const styles = StyleSheet.create({
   },
   button: {
     width: "100%",
-    backgroundColor: "#ec4899",
+    backgroundColor: PRIMARY,
     paddingVertical: 16,
     borderRadius: 12,
   },
@@ -335,10 +336,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   buttonTextDisabled: {
-    color: "#6b7280",
+    color: MUTED,
   },
   dropdown: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: BACKGROUND,
     borderColor: "#e5e7eb",
     borderRadius: 12,
     minHeight: 44,
@@ -347,13 +348,13 @@ const styles = StyleSheet.create({
     zIndex: 2000,
   },
   dropdownContainer: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: BACKGROUND,
     borderColor: "#e5e7eb",
     borderRadius: 12,
     zIndex: 2000,
   },
   placeholderStyle: {
-    color: "#6b7280",
+    color: MUTED,
     fontSize: 16,
     fontWeight: "400",
   },

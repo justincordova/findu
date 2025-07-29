@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { BACKGROUND, DARK, MUTED, PRIMARY } from "../../constants/theme";
 
 // Step components
 import WelcomeStep from "../../components/profile-setup/WelcomeStep";
@@ -204,7 +205,7 @@ export default function ProfileSetupStep() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: BACKGROUND,
   },
   content: {
     flex: 1,
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: MUTED,
   },
   progressBar: {
     height: 8,
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: 8,
-    backgroundColor: "#EC4899",
+    backgroundColor: PRIMARY,
     borderRadius: 9999,
   },
   stepContent: {
