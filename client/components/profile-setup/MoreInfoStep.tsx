@@ -1,21 +1,35 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
-import { ProfileSetupData } from '../../app/profile-setup/[step]';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Image,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
+import { ProfileSetupData } from "../../app/profile-setup/[step]";
+import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
 
 interface MoreInfoStepProps {
-    data: ProfileSetupData;
-    onUpdate: (data: Partial<ProfileSetupData>) => void;
-    onNext: () => void;
-    onBack: () => void;
+  data: ProfileSetupData;
+  onUpdate: (data: Partial<ProfileSetupData>) => void;
+  onNext: () => void;
+  onBack: () => void;
 }
 
-export default function MoreInfoStep({ data, onUpdate, onNext, onBack }: MoreInfoStepProps) {
+export default function MoreInfoStep({
+  data,
+  onUpdate,
+  onNext,
+  onBack,
+}: MoreInfoStepProps) {
   const canContinue = true;
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
+      mediaTypes: "images",
       allowsEditing: true,
       quality: 1,
     });
@@ -31,7 +45,7 @@ export default function MoreInfoStep({ data, onUpdate, onNext, onBack }: MoreInf
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#374151" />
         </TouchableOpacity>
-        
+
         <Text style={styles.title}>More Information</Text>
         <Text style={styles.subtitle}>Tell us more</Text>
       </View>
@@ -61,20 +75,28 @@ export default function MoreInfoStep({ data, onUpdate, onNext, onBack }: MoreInf
           {data.profilePicture ? (
             <Image
               source={{ uri: data.profilePicture }}
-              style={{ width: 120, height: 120, borderRadius: 60, marginTop: 12, alignSelf: 'center' }}
+              style={{
+                width: 120,
+                height: 120,
+                borderRadius: 60,
+                marginTop: 12,
+                alignSelf: "center",
+              }}
             />
           ) : null}
         </View>
       </ScrollView>
-      <TouchableOpacity 
-              onPress={onNext}
-              disabled={!canContinue}
-              style={[styles.button, !canContinue && styles.buttonDisabled]}
-            >
-              <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
-                Continue
-              </Text>
-            </TouchableOpacity>
+      <TouchableOpacity
+        onPress={onNext}
+        disabled={!canContinue}
+        style={[styles.button, !canContinue && styles.buttonDisabled]}
+      >
+        <Text
+          style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}
+        >
+          Continue
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -93,17 +115,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontWeight: "bold",
+    color: DARK,
     marginBottom: 8,
-    textAlign: 'center',
-
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-
+    color: MUTED,
+    textAlign: "center",
   },
   form: {
     flex: 1,
@@ -114,54 +134,53 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
+    fontWeight: "500",
+    color: DARK,
     marginBottom: 8,
-    textAlign: 'center',
-
+    textAlign: "center",
   },
   input: {
-    width: '100%',
+    width: "100%",
     padding: 16,
-    backgroundColor: '#f9fafb',
+    backgroundColor: BACKGROUND,
     borderRadius: 12,
     maxHeight: 200,
     fontSize: 16,
-    color: '#111827',
+    color: DARK,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
   },
   pickerContainer: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: BACKGROUND,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
   },
   picker: {
     height: 50,
   },
   button: {
-    width: '100%',
-    backgroundColor: '#ec4899',
+    width: "100%",
+    backgroundColor: PRIMARY,
     paddingVertical: 16,
     borderRadius: 12,
   },
   buttonDisabled: {
-    backgroundColor: '#d1d5db',
+    backgroundColor: "#d1d5db",
   },
   buttonText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   // Shared placeholder style for dropdowns and text inputs
   placeholderStyle: {
-    color: '#9ca3af',
-    fontWeight: '400',
+    color: MUTED,
+    fontWeight: "400",
     fontSize: 16,
   },
   buttonTextDisabled: {
-    color: '#6b7280',
+    color: MUTED,
   },
 });
