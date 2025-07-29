@@ -1,12 +1,31 @@
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { BACKGROUND, DARK, MUTED } from "../../../constants/theme";
 
 export default function DiscoverScreen() {
   return (
-    <View className="flex-1 justify-center items-center bg-background">
-      <Text className="text-3xl font-bold text-dark mb-2">Discover</Text>
-      <Text className="text-muted text-lg text-center">
-        Find new people and make connections!
-      </Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Discover</Text>
+      <Text style={styles.subtitle}>Find new people and make connections!</Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: BACKGROUND,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: "bold",
+    color: DARK,
+    marginBottom: 8,
+  },
+  subtitle: {
+    color: MUTED,
+    fontSize: 18,
+    textAlign: "center",
+  },
+});

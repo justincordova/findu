@@ -1,7 +1,6 @@
 import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 
-// Dummy user data for now; replace with real data fetching later
 const user = {
   name: "Zachary Labit",
   email: "labit.z@northeastern.edu",
@@ -72,3 +71,23 @@ export default function ProfileScreen() {
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: BACKGROUND,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: "bold",
+    color: DARK,
+    marginBottom: 8,
+  },
+  subtitle: {
+    color: MUTED,
+    fontSize: 18,
+    textAlign: "center",
+  },
+});

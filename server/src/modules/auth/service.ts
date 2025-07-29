@@ -4,6 +4,7 @@ import { User } from "@/types/User";
 import { supabase } from "@/lib/supabase";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
+const REFRESH_SECRET = process.env.REFRESH_SECRET || "your_refresh_secret";
 
 export async function signupUser(
   prisma: any,
@@ -53,7 +54,11 @@ export async function signupUser(
 export async function loginUser(
   prisma: any,
   { email, password }: { email: string; password: string }
-): Promise<{ token: string; user: Omit<User, "hashed_password"> }> {
+): Promise<{
+  accessToken: string;
+  refreshToken: string;
+  user: Omit<User, "hashed_password">;
+}> {
   const user = await prisma.users.findUnique({ where: { email } });
   if (!user) throw new Error("Invalid email or password");
 
@@ -63,12 +68,66 @@ export async function loginUser(
   );
   if (!validPassword) throw new Error("Invalid email or password");
 
-  const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
-    expiresIn: "1h",
-  });
+  // Generate access token (short-lived: 1 hour)
+  const accessToken = jwt.sign(
+    { userId: user.id, email: user.email },
+    JWT_SECRET,
+    { expiresIn: "1h" }
+  );
+
+  // Generate refresh token (long-lived: 1 year)
+  const refreshToken = jwt.sign(
+    { userId: user.id, email: user.email },
+    REFRESH_SECRET,
+    { expiresIn: "1y" }
+  );
 
   const { hashed_password: _, ...userWithoutPassword } = user;
-  return { token, user: userWithoutPassword };
+  return { accessToken, refreshToken, user: userWithoutPassword };
+}
+
+// Refresh access token using refresh token
+export async function refreshAccessToken(
+  refreshToken: string
+): Promise<{ accessToken: string; refreshToken: string }> {
+  try {
+    // Verify refresh token
+    const decoded = jwt.verify(refreshToken, REFRESH_SECRET) as {
+      userId: string;
+      email: string;
+    };
+
+    // Generate new access token
+    const accessToken = jwt.sign(
+      { userId: decoded.userId, email: decoded.email },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    // Generate new refresh token (extend the session)
+    const newRefreshToken = jwt.sign(
+      { userId: decoded.userId, email: decoded.email },
+      REFRESH_SECRET,
+      { expiresIn: "1y" }
+    );
+
+    return { accessToken, refreshToken: newRefreshToken };
+  } catch (error) {
+    throw new Error("Invalid or expired refresh token");
+  }
+}
+
+// Verify access token
+export async function verifyAccessToken(accessToken: string) {
+  try {
+    const decoded = jwt.verify(accessToken, JWT_SECRET) as {
+      userId: string;
+      email: string;
+    };
+    return decoded;
+  } catch (error) {
+    return null;
+  }
 }
 
 // Signup with OTP code, only for .edu emails

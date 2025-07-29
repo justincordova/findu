@@ -1,11 +1,17 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Dimensions,
+  StyleSheet,
+} from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
 } from "react-native-reanimated";
-import { PRIMARY } from "../../constants/theme";
+import { PRIMARY, BACKGROUND } from "../../constants/theme";
 import LoginForm from "../../components/auth/LoginForm";
 import SignupForm from "../../components/auth/SignupForm";
 import { useLocalSearchParams } from "expo-router";
@@ -37,82 +43,42 @@ export default function AuthIndex() {
   }));
 
   return (
-    <View className="flex-1 items-center justify-center bg-background px-6">
+    <View style={styles.container}>
       {/* Animated Toggle */}
-      <View
-        style={{
-          width: TOGGLE_WIDTH,
-          height: TOGGLE_HEIGHT,
-          borderRadius: TOGGLE_RADIUS,
-          backgroundColor: "#F0F0F0",
-          flexDirection: "row",
-          alignItems: "center",
-          marginBottom: 32,
-          position: "relative",
-        }}
-      >
-        <Animated.View
-          style={[
-            {
-              position: "absolute",
-              left: 0,
-              top: 0,
-              width: PILL_WIDTH,
-              height: TOGGLE_HEIGHT,
-              backgroundColor: "white",
-              borderRadius: TOGGLE_RADIUS,
-              zIndex: 1,
-            },
-            pillStyle,
-          ]}
-        />
+      <View style={styles.toggleContainer}>
+        <Animated.View style={[styles.pill, pillStyle]} />
         <TouchableOpacity
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2,
-          }}
+          style={styles.toggleButton}
           activeOpacity={1}
           onPress={() => setMode("login")}
         >
           <Text
-            className={`font-bold text-base ${mode === "login" ? "text-primary" : "text-gray-500"}`}
+            style={[
+              styles.toggleText,
+              mode === "login" ? styles.activeText : styles.inactiveText,
+            ]}
           >
             Login
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2,
-          }}
+          style={styles.toggleButton}
           activeOpacity={1}
           onPress={() => setMode("signup")}
         >
           <Text
-            className={`font-bold text-base ${mode === "signup" ? "text-primary" : "text-gray-500"}`}
+            style={[
+              styles.toggleText,
+              mode === "signup" ? styles.activeText : styles.inactiveText,
+            ]}
           >
             Sign Up
           </Text>
         </TouchableOpacity>
       </View>
       {/* Form Box with fixed minHeight */}
-      <View
-        className="w-full items-center"
-        style={{ minHeight: FORM_BOX_MIN_HEIGHT, maxWidth: FORM_BOX_WIDTH }}
-      >
-        <View
-          className="w-full rounded-2xl shadow-lg px-6 py-8"
-          style={{
-            minHeight: FORM_BOX_MIN_HEIGHT,
-            maxWidth: FORM_BOX_WIDTH,
-            elevation: 6,
-            backgroundColor: "rgba(255,255,255,0.85)",
-          }}
-        >
+      <View style={styles.formWrapper}>
+        <View style={styles.formBox}>
           <Animated.View
             style={{
               opacity: mode === "login" ? 1 : 0,
@@ -138,3 +104,69 @@ export default function AuthIndex() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: BACKGROUND,
+    paddingHorizontal: 24,
+  },
+  toggleContainer: {
+    width: TOGGLE_WIDTH,
+    height: TOGGLE_HEIGHT,
+    borderRadius: TOGGLE_RADIUS,
+    backgroundColor: "#F0F0F0",
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 32,
+    position: "relative",
+  },
+  pill: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: PILL_WIDTH,
+    height: TOGGLE_HEIGHT,
+    backgroundColor: "white",
+    borderRadius: TOGGLE_RADIUS,
+    zIndex: 1,
+  },
+  toggleButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 2,
+  },
+  toggleText: {
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  activeText: {
+    color: PRIMARY,
+  },
+  inactiveText: {
+    color: "#6B7280",
+  },
+  formWrapper: {
+    width: "100%",
+    alignItems: "center",
+    minHeight: FORM_BOX_MIN_HEIGHT,
+    maxWidth: FORM_BOX_WIDTH,
+  },
+  formBox: {
+    width: "100%",
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    minHeight: FORM_BOX_MIN_HEIGHT,
+    maxWidth: FORM_BOX_WIDTH,
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    backgroundColor: "rgba(255,255,255,0.85)",
+  },
+});

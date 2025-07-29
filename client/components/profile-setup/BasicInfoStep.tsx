@@ -1,9 +1,16 @@
-import { View, Text, TouchableOpacity, TextInput, ScrollView, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
-import { useState } from 'react';
-import { ProfileSetupData } from '../../app/profile-setup/[step]';
-import DropDownPicker from 'react-native-dropdown-picker';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
+import { useState } from "react";
+import { ProfileSetupData } from "../../app/profile-setup/[step]";
+import DropDownPicker from "react-native-dropdown-picker";
 
 interface BasicInfoStepProps {
   data: ProfileSetupData;
@@ -12,7 +19,12 @@ interface BasicInfoStepProps {
   onBack: () => void;
 }
 
-export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicInfoStepProps) {
+export default function BasicInfoStep({
+  data,
+  onUpdate,
+  onNext,
+  onBack,
+}: BasicInfoStepProps) {
   // const canContinue = Boolean(
   //   data.name &&
   //   data.age &&
@@ -23,20 +35,20 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
   //   data.gradYear
   // );
   const canContinue = true;
-  
+
   const [genderOpen, setGenderOpen] = useState(false);
   const [genderValue, setGenderValue] = useState(data.gender ?? null);
   const [genderItems, setGenderItems] = useState([
-    { label: 'Male', value: 'Male' },
-    { label: 'Female', value: 'Female' },
-    { label: 'Non-binary', value: 'Non-binary' },
-    { label: 'Other', value: 'Other' },
+    { label: "Male", value: "Male" },
+    { label: "Female", value: "Female" },
+    { label: "Non-binary", value: "Non-binary" },
+    { label: "Other", value: "Other" },
   ]);
 
   const handleGenderChange = (value: string | null) => {
     if (value) {
-      setGenderValue(value as ProfileSetupData['gender']);
-      onUpdate({ gender: value as ProfileSetupData['gender'] });
+      setGenderValue(value as ProfileSetupData["gender"]);
+      onUpdate({ gender: value as ProfileSetupData["gender"] });
     } else {
       setGenderValue(null);
       onUpdate({ gender: null });
@@ -46,17 +58,17 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
   const [yearOpen, setYearOpen] = useState(false);
   const [yearValue, setYearValue] = useState(data.schoolYear ?? null);
   const [yearItems, setYearItems] = useState([
-    { label: 'Freshman', value: 'Freshman' },
-    { label: 'Sophomore', value: 'Sophomore' },
-    { label: 'Junior', value: 'Junior' },
-    { label: 'Senior', value: 'Senior' },
-    { label: 'Graduate', value: 'Graduate' },
+    { label: "Freshman", value: "Freshman" },
+    { label: "Sophomore", value: "Sophomore" },
+    { label: "Junior", value: "Junior" },
+    { label: "Senior", value: "Senior" },
+    { label: "Graduate", value: "Graduate" },
   ]);
 
   const handleYearChange = (value: string | null) => {
     if (value) {
-      setYearValue(value as ProfileSetupData['schoolYear']);
-      onUpdate({ schoolYear: value as ProfileSetupData['schoolYear'] });
+      setYearValue(value as ProfileSetupData["schoolYear"]);
+      onUpdate({ schoolYear: value as ProfileSetupData["schoolYear"] });
     } else {
       setYearValue(null);
       onUpdate({ schoolYear: null });
@@ -78,14 +90,14 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
     if (year > baseEnd) {
       years.push(String(year));
     }
-    return years.map(y => ({ label: y, value: y }));
+    return years.map((y) => ({ label: y, value: y }));
   };
   const [gradItems, setGradItems] = useState(getGradYears());
 
   const handleGradChange = (value: string | null) => {
     if (value) {
-      setGradValue(value as ProfileSetupData['gradYear']);
-      onUpdate({ gradYear: value as ProfileSetupData['gradYear'] });
+      setGradValue(value as ProfileSetupData["gradYear"]);
+      onUpdate({ gradYear: value as ProfileSetupData["gradYear"] });
     } else {
       setGradValue(null);
       onUpdate({ gradYear: null });
@@ -98,7 +110,7 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#374151" />
         </TouchableOpacity>
-        
+
         <Text style={styles.title}>Basic Information</Text>
         <Text style={styles.subtitle}>Tell us about yourself</Text>
       </View>
@@ -110,7 +122,7 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
           <TextInput
             style={styles.input}
             placeholder="Enter your full name"
-            placeholderTextColor={styles.placeholderStyle.color}
+            placeholderTextColor="#6b7280"
             value={data.name}
             onChangeText={(text) => onUpdate({ name: text })}
             maxLength={50}
@@ -123,8 +135,8 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
           <TextInput
             style={styles.input}
             placeholder="Enter your age"
-            placeholderTextColor={styles.placeholderStyle.color}
-            value={data.age ? data.age.toString() : ''}
+            placeholderTextColor="#6b7280"
+            value={data.age ? data.age.toString() : ""}
             onChangeText={(text) => onUpdate({ age: parseInt(text) || 0 })}
             keyboardType="numeric"
             maxLength={2}
@@ -135,7 +147,7 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Gender *</Text>
           <DropDownPicker
-            placeholder='Enter your gender'
+            placeholder="Enter your gender"
             open={genderOpen}
             value={genderValue}
             items={genderItems}
@@ -148,20 +160,20 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
             dropDownContainerStyle={styles.dropdownContainer}
             zIndex={2000}
             placeholderStyle={{
-              color: '#6b7280',
+              color: "#6b7280",
               fontSize: 16,
-              fontWeight: '400',
+              fontWeight: "400",
             }}
           />
         </View>
-        
+
         {/* School */}
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>University/School *</Text>
           <TextInput
             style={styles.input}
             placeholder="Enter your university name"
-            placeholderTextColor={styles.placeholderStyle.color}
+            placeholderTextColor="#6b7280"
             value={data.school}
             onChangeText={(text) => onUpdate({ school: text })}
             maxLength={100}
@@ -174,7 +186,7 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
           <TextInput
             style={styles.input}
             placeholder="e.g., Main Campus, Boston Campus"
-            placeholderTextColor={styles.placeholderStyle.color}
+            placeholderTextColor="#6b7280"
             value={data.campus}
             onChangeText={(text) => onUpdate({ campus: text })}
             maxLength={100}
@@ -187,7 +199,7 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
           <TextInput
             style={styles.input}
             placeholder="Enter your major"
-            placeholderTextColor={styles.placeholderStyle.color}
+            placeholderTextColor="#6b7280"
             value={data.major}
             onChangeText={(text) => onUpdate({ major: text })}
             maxLength={100}
@@ -198,7 +210,7 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>School Year *</Text>
           <DropDownPicker
-            placeholder='Enter your school year'
+            placeholder="Enter your school year"
             open={yearOpen}
             value={yearValue}
             items={yearItems}
@@ -218,7 +230,7 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Graduation Year *</Text>
           <DropDownPicker
-            placeholder='Enter your graduation year'
+            placeholder="Enter your graduation year"
             open={gradOpen}
             value={gradValue}
             items={gradItems}
@@ -235,12 +247,14 @@ export default function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicI
         </View>
       </ScrollView>
 
-      <TouchableOpacity 
+      <TouchableOpacity
         onPress={onNext}
         disabled={!canContinue}
         style={[styles.button, !canContinue && styles.buttonDisabled]}
       >
-        <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
+        <Text
+          style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}
+        >
           Continue
         </Text>
       </TouchableOpacity>
@@ -262,17 +276,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontWeight: "bold",
+    color: "#111827",
     marginBottom: 8,
-    textAlign: 'center',
-
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
-
+    color: "#6b7280",
+    textAlign: "center",
   },
   form: {
     flex: 1,
@@ -283,52 +295,51 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
+    fontWeight: "500",
+    color: "#111827",
     marginBottom: 8,
-    textAlign: 'center',
-
+    textAlign: "center",
   },
   input: {
-    width: '100%',
+    width: "100%",
     padding: 16,
-    backgroundColor: '#f9fafb',
+    backgroundColor: "#f9fafb",
     borderRadius: 12,
     fontSize: 16,
-    color: '#111827',
+    color: "#111827",
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
   },
   pickerContainer: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: "#f9fafb",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: "#e5e7eb",
   },
   picker: {
     height: 50,
   },
   button: {
-    width: '100%',
-    backgroundColor: '#ec4899',
+    width: "100%",
+    backgroundColor: "#ec4899",
     paddingVertical: 16,
     borderRadius: 12,
   },
   buttonDisabled: {
-    backgroundColor: '#d1d5db',
+    backgroundColor: "#d1d5db",
   },
   buttonText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   buttonTextDisabled: {
-    color: '#6b7280',
+    color: "#6b7280",
   },
-    dropdown: {
-    backgroundColor: '#f9fafb',
-    borderColor: '#e5e7eb',
+  dropdown: {
+    backgroundColor: "#f9fafb",
+    borderColor: "#e5e7eb",
     borderRadius: 12,
     minHeight: 44,
     paddingHorizontal: 8,
@@ -336,14 +347,14 @@ const styles = StyleSheet.create({
     zIndex: 2000,
   },
   dropdownContainer: {
-    backgroundColor: '#f9fafb',
-    borderColor: '#e5e7eb',
+    backgroundColor: "#f9fafb",
+    borderColor: "#e5e7eb",
     borderRadius: 12,
     zIndex: 2000,
   },
   placeholderStyle: {
-    color: '#6b7280',
+    color: "#6b7280",
     fontSize: 16,
-    fontWeight: '400',
+    fontWeight: "400",
   },
 });

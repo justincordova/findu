@@ -11,7 +11,6 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 
 // Custom Middleware
-import { injectPrisma } from "@/middleware/db/injectPrisma";
 import { notFoundHandler } from "@/middleware/error/notFoundHandler";
 import { errorHandler } from "@/middleware/error/errorHandler";
 
@@ -26,16 +25,7 @@ app.use(express.json());
 
 // Third-party Middleware
 // CORS Configuration
-const corsOptions = {
-  origin:
-    process.env.NODE_ENV === "production"
-      ? process.env.ALLOWED_ORIGINS?.split(",") || ["https://yourdomain.com"] // Replace with production domain later e.g.['https://findu.app']
-      : ["http://localhost:3000", "http://localhost:3001"],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(helmet());
 app.use(compression());
 app.use(morgan("dev"));
@@ -46,9 +36,6 @@ const limiter = rateLimit({
   max: 100, // limit each IP to 100 requests per window
 });
 app.use(limiter);
-
-// Custom Middleware
-app.use(injectPrisma);
 
 // Routes
 app.use("/api/auth", authRoutes);

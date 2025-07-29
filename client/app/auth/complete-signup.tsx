@@ -4,25 +4,23 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Platform,
   TextInput as RNTextInput,
+  StyleSheet,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { PRIMARY } from "../../constants/theme";
-import { supabase } from "../../services/supabase";
-import { apiFetch } from "../../services/api";
+import { PRIMARY, BACKGROUND, DARK, MUTED } from "../../constants/theme";
 
 export default function CompleteSignup() {
-  const { email } = useLocalSearchParams();
+  const router = useRouter();
+  const { email, supabaseToken } = useLocalSearchParams();
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
-  // Refs for keyboard navigation
+  const usernameRef = useRef<RNTextInput>(null);
   const firstNameRef = useRef<RNTextInput>(null);
   const lastNameRef = useRef<RNTextInput>(null);
   const passwordRef = useRef<RNTextInput>(null);
@@ -31,136 +29,115 @@ export default function CompleteSignup() {
     setError("");
     setLoading(true);
     try {
-      // 1. Update password in Supabase Auth
-      const { error: updateError } = await supabase.auth.updateUser({
-        password,
-      });
-      if (updateError) {
-        setError(updateError.message || "Failed to set password in Supabase.");
+      if (!supabaseToken) {
+        setError("Missing authentication token.");
         setLoading(false);
         return;
       }
-      // 2. Complete signup in your own DB
-      const res = await apiFetch("/api/auth/signup", {
-        method: "POST",
-        body: JSON.stringify({
-          username,
-          f_name: firstName,
-          l_name: lastName,
-          password,
-        }),
-      });
+
+      // Call signup API with session token
+      const res = await fetch(
+        `${
+          process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000"
+        }/api/auth/signup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${supabaseToken}`,
+          },
+          body: JSON.stringify({
+            username,
+            f_name: firstName,
+            l_name: lastName,
+            password,
+          }),
+        }
+      );
+
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Signup failed.");
       } else {
-        router.replace("/profile-setup/0");      
+        router.replace("/profile-setup/welcome");
       }
     } catch (err) {
+      console.error("Signup error:", err);
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const inputProps = Platform.select({
-    android: { textAlignVertical: "center" as "center" | undefined },
-    ios: {},
-    default: {},
-  });
-
   return (
-    <View className="flex-1 items-center justify-center bg-background px-6">
-      <View className="w-full max-w-md bg-white rounded-2xl shadow-lg px-6 py-8 items-center">
-        <Text className="text-2xl font-bold text-dark mb-2">
-          Complete Signup
+    <View style={styles.container}>
+      <View style={styles.card}>
+        <Text style={styles.title}>Complete Signup</Text>
+        <Text style={styles.subtitle}>
+          For <Text style={styles.primaryText}>{email}</Text>
         </Text>
-        <Text className="text-base text-muted mb-6 text-center">
-          For <Text className="text-primary font-semibold">{email}</Text>
-        </Text>
-        <Text className="text-lg font-bold mb-2 text-dark w-full">
-          Username
-        </Text>
+        <Text style={styles.label}>Username</Text>
         <TextInput
-          className="border border-gray-300 rounded-lg px-4 py-2 mb-4 bg-white w-full"
+          style={styles.input}
           placeholder="Username"
           placeholderTextColor="#999"
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
-          style={{ fontSize: 18, fontFamily: "System", fontWeight: "400" }}
-          allowFontScaling={false}
-          returnKeyType="next"
-          onSubmitEditing={() =>
-            firstNameRef.current && firstNameRef.current.focus()
-          }
-          blurOnSubmit={false}
-          {...inputProps}
         />
-        <Text className="text-lg font-bold mb-2 text-dark w-full">
-          First Name
-        </Text>
+        <Text style={styles.label}>First Name</Text>
         <TextInput
           ref={firstNameRef}
-          className="border border-gray-300 rounded-lg px-4 py-2 mb-4 bg-white w-full"
+          style={styles.input}
           placeholder="First Name"
           placeholderTextColor="#999"
           value={firstName}
           onChangeText={setFirstName}
-          style={{ fontSize: 18, fontFamily: "System", fontWeight: "400" }}
+          autoCapitalize="none"
           returnKeyType="next"
           onSubmitEditing={() =>
             lastNameRef.current && lastNameRef.current.focus()
           }
           blurOnSubmit={false}
-          {...inputProps}
         />
-        <Text className="text-lg font-bold mb-2 text-dark w-full">
-          Last Name
-        </Text>
+        <Text style={styles.label}>Last Name</Text>
         <TextInput
           ref={lastNameRef}
-          className="border border-gray-300 rounded-lg px-4 py-2 mb-4 bg-white w-full"
+          style={styles.input}
           placeholder="Last Name"
           placeholderTextColor="#999"
           value={lastName}
           onChangeText={setLastName}
-          style={{ fontSize: 18, fontFamily: "System", fontWeight: "400" }}
+          autoCapitalize="none"
           returnKeyType="next"
           onSubmitEditing={() =>
             passwordRef.current && passwordRef.current.focus()
           }
           blurOnSubmit={false}
-          {...inputProps}
         />
-        <Text className="text-lg font-bold mb-2 text-dark w-full">
-          Password
-        </Text>
+        <Text style={styles.label}>Password</Text>
         <TextInput
           ref={passwordRef}
-          className="border border-gray-300 rounded-lg px-4 py-2 mb-6 bg-white w-full"
+          style={[styles.input, styles.passwordInput]}
           placeholder="Password"
           placeholderTextColor="#999"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          style={{ fontSize: 18, fontFamily: "System", fontWeight: "400" }}
+          autoCapitalize="none"
           returnKeyType="done"
           onSubmitEditing={() =>
             passwordRef.current && passwordRef.current.blur()
           }
           blurOnSubmit={true}
-          {...inputProps}
         />
-        {error ? (
-          <Text className="text-red-500 text-center mb-4">{error}</Text>
-        ) : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
         <TouchableOpacity
-          className="bg-primary rounded-full py-3 w-full"
+          style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleSignup}
           disabled={loading}
         >
-          <Text className="text-white text-center font-bold text-base">
+          <Text style={styles.buttonText}>
             {loading ? "Signing Up..." : "Sign Up"}
           </Text>
         </TouchableOpacity>
@@ -168,3 +145,86 @@ export default function CompleteSignup() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: BACKGROUND,
+    paddingHorizontal: 24,
+  },
+  card: {
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: "white",
+    borderRadius: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: DARK,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: MUTED,
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  primaryText: {
+    color: PRIMARY,
+    fontWeight: "600",
+  },
+  label: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 8,
+    color: DARK,
+    alignSelf: "flex-start",
+    width: "100%",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 16,
+    backgroundColor: "white",
+    width: "100%",
+    fontSize: 16,
+  },
+  passwordInput: {
+    marginBottom: 24,
+  },
+  error: {
+    color: "#EF4444",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  button: {
+    backgroundColor: PRIMARY,
+    borderRadius: 9999,
+    paddingVertical: 12,
+    width: "100%",
+    alignItems: "center",
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  buttonText: {
+    color: "white",
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+});

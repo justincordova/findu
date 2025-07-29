@@ -3,44 +3,51 @@ import {
   createUserValidator,
   idParamValidator,
   updateUserValidator,
-} from "./validator";
+} from "./validators";
 import {
-  createUser,
-  getAllUsers,
-  getUserById,
-  updateUser,
-  deleteUser,
-} from "./controller";
+  createUserController,
+  getAllUsersController,
+  getUserByIdController,
+  updateUserController,
+  deleteUserController,
+} from "./controllers";
 import { handleValidationErrors } from "@/middleware/error/handleValidationErrors";
-import { requireSupabaseAuth } from "@/middleware/auth/requireSupabaseAuth";
+import { authenticateJWT } from "@/middleware/auth/jwtAuth";
 
 const router = Router();
 
+// Route Proteciton (use for all other routes, except auth)
 const disableProtection = process.env.DISABLE_USER_ROUTE_PROTECTION === "true";
-
 if (!disableProtection) {
-  router.use(requireSupabaseAuth);
+  router.use(authenticateJWT);
 }
 
-// For creating user (For Testing)
-router.post("/", createUserValidator, handleValidationErrors, createUser);
-
-// For getting all users
-router.get("/", getAllUsers);
-
-// For getting a user by id
-router.get("/:id", idParamValidator, handleValidationErrors, getUserById);
-
-// For updating user
+// User Routes
+router.post(
+  "/",
+  createUserValidator,
+  handleValidationErrors,
+  createUserController
+);
+router.get("/", getAllUsersController);
+router.get(
+  "/:id",
+  idParamValidator,
+  handleValidationErrors,
+  getUserByIdController
+);
 router.patch(
   "/:id",
   idParamValidator,
   updateUserValidator,
   handleValidationErrors,
-  updateUser
+  updateUserController
 );
-
-// For deleting user
-router.delete("/:id", idParamValidator, handleValidationErrors, deleteUser);
+router.delete(
+  "/:id",
+  idParamValidator,
+  handleValidationErrors,
+  deleteUserController
+);
 
 export default router;
