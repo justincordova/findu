@@ -1,6 +1,6 @@
-import React from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { BACKGROUND } from "../../../constants/theme";
 import ProfileHeader from "../../../components/profile/ProfileHeader";
 import IntentTags from "../../../components/profile/IntentTags";
@@ -33,32 +33,39 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-    >
-      <ProfileHeader
-        name={user.name}
-        pronouns={user.pronouns}
-        bio={user.bio}
-        profilePicture={user.profilePicture}
-      />
-      <IntentTags intents={user.intent} />
-      <ProfileDetails
-        school={user.school}
-        major={user.major}
-        gradYear={user.gradYear}
-        age={user.age}
-      />
-      <ProfileActions
-        onEditProfile={handleEditProfile}
-        onLogOut={handleLogOut}
-      />
-    </ScrollView>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <ProfileHeader
+          name={user.name}
+          pronouns={user.pronouns}
+          bio={user.bio}
+          profilePicture={user.profilePicture}
+        />
+        <IntentTags intents={user.intent} />
+        <ProfileDetails
+          school={user.school}
+          major={user.major}
+          gradYear={user.gradYear}
+          age={user.age}
+        />
+        <ProfileActions
+          onEditProfile={handleEditProfile}
+          onLogOut={handleLogOut}
+        />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: BACKGROUND,
+  },
   container: {
     flex: 1,
     backgroundColor: BACKGROUND,
@@ -66,7 +73,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     alignItems: "center",
     padding: 24,
-    justifyContent: "flex-end",
-    minHeight: "100%",
+    paddingBottom: 100, // Add extra padding to account for tab bar
   },
 });

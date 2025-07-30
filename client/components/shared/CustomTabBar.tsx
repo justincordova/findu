@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import { useEffect } from "react";
 import {
   View,
   Text,
@@ -12,21 +12,26 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { PRIMARY } from "../../constants/theme";
+import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
 const { width } = Dimensions.get("window");
-const TAB_BAR_MARGIN = 20;
-const TAB_BAR_HEIGHT = 56;
-const TAB_BAR_RADIUS = 28;
+const TAB_BAR_MARGIN = 16;
+const TAB_BAR_HEIGHT = 44;
+const TAB_BAR_RADIUS = 22;
 const TAB_COUNT = 4; // Update if you have more/less tabs
 const TAB_BAR_WIDTH = width - TAB_BAR_MARGIN * 2;
 const TAB_WIDTH = TAB_BAR_WIDTH / TAB_COUNT;
 
-export default function CustomTabBar({ state, descriptors, navigation }) {
+export default function CustomTabBar({
+  state,
+  descriptors,
+  navigation,
+}: BottomTabBarProps) {
   const translateX = useSharedValue(state.index * TAB_WIDTH);
 
-  React.useEffect(() => {
+  useEffect(() => {
     translateX.value = withTiming(state.index * TAB_WIDTH, { duration: 250 });
-  }, [state.index]);
+  }, [state.index, translateX]);
 
   return (
     <View style={styles.container}>
@@ -39,14 +44,14 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
             })),
           ]}
         />
-        {state.routes.map((route, idx) => {
+        {state.routes.map((route, idx: number) => {
           const { options } = descriptors[route.key];
           const label =
             options.tabBarLabel !== undefined
               ? options.tabBarLabel
               : options.title !== undefined
-                ? options.title
-                : route.name;
+              ? options.title
+              : route.name;
           const isFocused = state.index === idx;
 
           const onPress = () => {
@@ -66,7 +71,6 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
               accessibilityLabel={options.tabBarAccessibilityLabel}
-              testID={options.tabBarTestID}
               onPress={onPress}
               style={styles.tab}
               activeOpacity={1}
@@ -76,7 +80,7 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
                   ? options.tabBarIcon({
                       focused: isFocused,
                       color: isFocused ? PRIMARY : "gray",
-                      size: 24,
+                      size: 18,
                     })
                   : null}
                 <Text
@@ -85,7 +89,7 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
                     { color: isFocused ? PRIMARY : "gray" },
                   ]}
                 >
-                  {label}
+                  {typeof label === "string" ? label : ""}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -101,7 +105,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: TAB_BAR_MARGIN,
     right: TAB_BAR_MARGIN,
-    bottom: 20,
+    bottom: 32,
     height: TAB_BAR_HEIGHT,
     borderRadius: TAB_BAR_RADIUS,
     backgroundColor: "transparent",
@@ -139,7 +143,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontWeight: "600",
-    fontSize: 14,
-    marginLeft: 6,
+    fontSize: 11,
+    marginTop: 2,
   },
 });

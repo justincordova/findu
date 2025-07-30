@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { DARK, MUTED, BACKGROUND } from "../../constants/theme";
 

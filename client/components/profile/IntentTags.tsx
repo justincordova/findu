@@ -1,6 +1,5 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { PRIMARY, SECONDARY } from "../../constants/theme";
+import { PRIMARY, BACKGROUND } from "../../constants/theme";
 
 interface IntentTagsProps {
   intents: string[];
@@ -27,7 +26,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tag: {
-    backgroundColor: SECONDARY,
+    backgroundColor: BACKGROUND,
     borderWidth: 1,
     borderColor: PRIMARY,
     borderRadius: 20,

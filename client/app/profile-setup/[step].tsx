@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { BACKGROUND, DARK, MUTED, PRIMARY } from "../../constants/theme";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { PRIMARY, DARK, BACKGROUND } from "../../constants/theme";
 
 // Step components
 import WelcomeStep from "../../components/profile-setup/WelcomeStep";
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 14,
-    color: MUTED,
+    color: DARK,
   },
   progressBar: {
     height: 8,

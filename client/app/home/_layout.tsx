@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { Compass, Users, MessageCircle, User } from "lucide-react-native";
 import { PRIMARY } from "../../constants/theme";
+import CustomTabBar from "../../components/shared/CustomTabBar";
 
 export default function TabLayout() {
   return (
@@ -9,6 +10,7 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: PRIMARY,
       }}
+      tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen
         name="(tabs)/discover"

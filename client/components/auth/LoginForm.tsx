@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { PRIMARY, DARK } from "../../constants/theme";
+import { PRIMARY, DARK, BACKGROUND } from "../../constants/theme";
 import { useAuthStore } from "../../store/authStore";
 
 export default function LoginForm() {
