@@ -8,4 +8,3 @@ export * from "./auth/jwtAuth";
 export * from "./error/errorHandler";
 export * from "./error/notFoundHandler";
 export * from "./error/handleValidationErrors";
-export * from "./db/injectPrisma";

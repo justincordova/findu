@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { User } from "@/types/User";
 import { supabase } from "@/lib/supabase";
+import logger from "@/config/logger";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 const REFRESH_SECRET = process.env.REFRESH_SECRET || "your_refresh_secret";
@@ -158,7 +159,7 @@ export async function verifyOtpCode(email: string, code: string) {
 export async function verifySession(accessToken: string) {
   const { data, error } = await supabase.auth.getUser(accessToken);
   if (error) {
-    console.log("Supabase session error:", error);
+    logger.warn("SUPABASE_SESSION_ERROR", { error });
     return null;
   }
   return data.user;

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import logger from '@/config/logger';
 
 export const errorHandler = (
   err: Error,
@@ -6,7 +7,7 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ) => {
-  console.error('Error occurred:', {
+  logger.error('Unhandled error occurred', {
     error: err.message,
     stack: err.stack,
     url: req.url,

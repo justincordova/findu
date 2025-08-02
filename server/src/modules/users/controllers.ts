@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { PrismaClient } from "@prisma/client";
 import type { User, UpdateUserData } from "@/types/User";
+import logger from "@/config/logger";
 
 const prisma = new PrismaClient();
 
@@ -78,9 +79,18 @@ export const createUserController = async (req: Request, res: Response) => {
     });
 
     const userResponse = sanitizeUser(newUser);
+
+    logger.info("USER_CREATED", {
+      userId: userResponse.id,
+      email: userResponse.email,
+      username: userResponse.username,
+    });
+
     return res.status(201).json(userResponse);
   } catch (error) {
-    console.error("Create user error:", error);
+    logger.error("USER_CREATION_FAILED", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -102,7 +112,9 @@ export const getAllUsersController = async (req: Request, res: Response) => {
 
     res.json(users);
   } catch (error) {
-    console.error("Get all users error:", error);
+    logger.error("GET_ALL_USERS_FAILED", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -135,9 +147,17 @@ export const getUserByIdController = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    logger.info("USER_VIEWED", {
+      userId: user.id,
+      viewedBy: "system",
+    });
+
     res.json(user);
   } catch (error) {
-    console.error("Get user by ID error:", error);
+    logger.error("GET_USER_BY_ID_FAILED", {
+      userId: id,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -212,7 +232,10 @@ export const updateUserController = async (req: Request, res: Response) => {
           .json({ error: "Email or username already exists" });
       }
     } catch (error) {
-      console.error("Duplicate check error:", error);
+      logger.error("DUPLICATE_CHECK_FAILED", {
+        userId: id,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
       return res.status(500).json({ error: "Internal Server Error" });
     }
   }
@@ -233,9 +256,18 @@ export const updateUserController = async (req: Request, res: Response) => {
       },
     });
 
+    logger.info("USER_UPDATED", {
+      userId: updatedUser.id,
+      updatedBy: "system",
+      fieldsUpdated: Object.keys(updates),
+    });
+
     res.json(updatedUser);
   } catch (error: any) {
-    console.error("Update user error:", error);
+    logger.error("UPDATE_USER_FAILED", {
+      userId: id,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     if (error.code === "P2025") {
       return res.status(404).json({ error: "User not found" });
     }
@@ -264,9 +296,17 @@ export const deleteUserController = async (req: Request, res: Response) => {
 
     await prisma.users.delete({ where: { id } });
 
+    logger.info("USER_DELETED", {
+      userId: id,
+      deletedBy: "system",
+    });
+
     res.json({ message: "User deleted successfully" });
   } catch (error: any) {
-    console.error("Delete user error:", error);
+    logger.error("DELETE_USER_FAILED", {
+      userId: id,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     if (error.code === "P2025") {
       return res.status(404).json({ error: "User not found" });
     }

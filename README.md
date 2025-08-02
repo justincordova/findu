@@ -1,96 +1,147 @@
-# FindU
+# FindU - College Dating App MVP
 
-**Dating App for Verified College Students Only**
+## **Project Overview**
 
-*Discover real connections on your campus.*
+**FindU** is a mobile-first dating app exclusively for college students. Designed for authenticity and safety, it connects users based on their campus, interests, and goals—without the noise of generic dating apps.
 
----
-
-## Core Idea
+### **Core Mission**
 
 > Create a **trusted, community-driven dating platform** for college students, verified through their `.edu` email, where they can meet peers from their campus or nearby universities with meaningful intent.
 
 ---
 
-## User Flow
+## **Tech Stack**
 
-1. **Download & Onboard**  
-   - Download from App Store or Play Store  
-   - Intro tutorial on privacy, purpose, and safety  
-   - Signup with `.edu` email verification  
-
-2. **Profile Setup**  
-   - Add photos, bio, major, graduation year  
-   - Choose interests and intent (dating, friendship, etc.)  
-   - Optionally link Instagram or Spotify  
-
-3. **Discovery**  
-   - Browse verified students from your campus or nearby schools  
-   - Swipe or double-tap to like  
-   - View compatibility score based on shared interests & goals  
-
-4. **Match & Chat**  
-   - Mutual likes create a match  
-   - In-app chat opens  
-   - Icebreaker prompts help start conversations  
-
-5. **Safety Features**  
-   - Report/block users  
-   - Option to blur photos for privacy  
-   - Time-limited campus-only visibility  
-
-6. **Optional Upgrades**  
-   - See who liked you  
-   - Boost profile visibility  
-   - Send SuperLikes or Icebreakers  
+| Layer                | Technology            | Purpose                          |
+| -------------------- | --------------------- | -------------------------------- |
+| **Frontend**         | React Native + Expo   | Cross-platform mobile app        |
+| **State Management** | Zustand               | Lightweight state management     |
+| **Backend**          | Node.js + Express     | API server                       |
+| **Authentication**   | Supabase Auth         | Email verification & magic links |
+| **Database**         | Supabase (PostgreSQL) | Primary data storage             |
+| **Payments**         | Stripe                | Subscriptions, boosts, tips      |
+| **File Storage**     | Supabase Storage      | Profile pictures, chat images    |
+| **Hosting**          | Render                | Backend deployment               |
 
 ---
 
-## Features
+## **Features**
 
-- **Verified Students Only** via `.edu` emails  
-- **Campus-Based Matching**  
-- **Private & Secure Profiles**  
-- **Smart Matching Algorithm**  
-- **Icebreakers & Safe Chat**  
-- **Built-in Reporting & Moderation**  
-- **No Bots, Creeps, or Catfishing**  
-- **Intent-Based Filtering** (Dating, Friendship, Study Buddy)  
+- **Authentication System**
+  - Email/password and magic link login
+  - `.edu` email verification
+  - User registration and profile setup
+- **Profile Management**
+  - Multi-step onboarding (photos, bio, interests)
+  - Campus and school selection
+  - Intent-based filtering (dating, friendship, etc.)
+- **Discovery System**
+  - Swipe-based matching interface
+  - Campus-based user filtering
+  - Interest-based compatibility scoring
+- **Matching & Messaging**
+  - Mutual like detection
+  - In-app chat functionality
+  - Message history and read status
+- **Safety Features**
+  - User blocking system
+  - Report functionality
+  - Privacy controls
+- **Premium Features**
+  - Subscription tiers (Bachelors, Masters, PhD)
+  - Boost functionality
+  - SuperLikes and Icebreakers
+- **Payment Integration**
+  - Stripe subscription management
+  - One-time purchases (boosts, tips)
+- **Enhanced Safety**
+  - Photo verification
+  - Campus-only visibility periods
+  - Advanced moderation tools
+- **Social Features**
+  - Instagram/Spotify integration
+  - Group events and meetups
+  - Campus-specific activities
+- **Analytics & Insights**
+  - User behavior analytics
+  - Match success tracking
+  - Campus engagement metrics
+
+---
+
+## **Database Schema**
+
+### **Key Relationships**
+
+- Users can have one profile
+- Users can like multiple other users
+- Matches are created when likes are mutual
+- Chats are linked to matches
+- Blocks prevent interactions between users
 
 ---
 
-## Monetization Overview
+## **User Journey**
 
-| Revenue Source           | How it Works                              | Powered By    |
-|--------------------------|------------------------------------------|---------------|
-| Campus Boosts            | Users pay to boost visibility to nearby users | Stripe        |
-| SuperLikes / Icebreakers | One-time purchases to stand out          | Stripe        |
-| Premium Subscription     | See who liked you, unlimited swipes, rewind | Stripe Billing |
-| Tips / Donations         | Users can support the project             | Stripe        |
+### **1. Onboarding**
+
+```
+Download App → Email Verification → Profile Setup → Campus Selection → Ready to Discover
+```
+
+### **2. Discovery**
+
+```
+Browse Profiles → Swipe Right/Left → View Compatibility → Send Like → Wait for Match
+```
+
+### **3. Matching**
+
+```
+Mutual Like → Match Notification → Open Chat → Start Conversation → Meet in Person
+```
+
+### **4. Safety & Moderation**
+
+```
+Report User → Admin Review → Action Taken → Community Guidelines Enforced
+```
+
+---
+
+## **Monetization Strategy**
+
+| Revenue Stream            | Description                                      | Status         |
+| ------------------------- | ------------------------------------------------ | -------------- |
+| **Premium Subscriptions** | Bachelors ($4.99), Masters ($9.99), PhD ($14.99) | 🚧 In Progress |
+| **Campus Boosts**         | Pay to increase visibility to nearby users       | 📋 Planned     |
+| **SuperLikes**            | Stand out with premium like feature              | 📋 Planned     |
+| **Tips/Donations**        | Support the platform development                 | 📋 Planned     |
 
 ---
 
-## Target Audience
+## **Key Differentiators**
 
-- **College Students (18–25 years old)**  
-- Seeking relationships, friendship, networking  
-- Campus-limited discovery for safety & authenticity  
-- Priority on large universities & community colleges with active social life  
+1. **Campus-Exclusive** - Only verified college students
+2. **Safety-First** - Built-in moderation and reporting
+3. **Intent-Based** - Clear relationship goals and expectations
+4. **Community-Driven** - Campus-specific features and events
+5. **No Bots/Catfishing** - Email verification and photo requirements
+
+---
 
 ---
 
-## Tech Stack
+## **Getting Started**
 
-| Layer           | Tool / Tech              | Notes                             |
-|-----------------|--------------------------|----------------------------------|
-| **Frontend**    | React Native + Expo      | Cross-platform native apps       |
-| **Styling**     | Tailwind CSS             | Via Tailwind for React Native    |
-| **State Mgmt**  | ZuStand                  | Lightweight and scalable         |
-| **Backend**     | Fastify                  | Handles auth, payments, moderation|
-| **Auth**        | Magic Link / OTP via Supabase | Custom login/signup (MFA-ready)  |
-| **Database**    | Supabase (PostgreSQL)    | Schema with RLS for security     |
-| **Payments**    | Stripe Billing & Checkout| Subscriptions, boosts, tips      |
-| **Storage**     | Supabase Storage (optional) | Profile pics, chat images       |
-| **Hosting**     | Vercel + Render                   | Backend dashboard, landing site  |
+See [SETUP.md](./SETUP.md) for detailed setup instructions.
 
 ---
+
+---
+
+## **Contact & Support**
+
+- **Project Status**: Active Development
+- **Platform**: iOS & Android
+- **Target Audience**: College students (18-25)

@@ -3,7 +3,7 @@ import * as authService from "@/modules/auth/service";
 import { signupWithOtpCode, verifyOtpCode } from "@/modules/auth/service";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcrypt";
-import { logAuditEvent } from "@/utils/auditLogger";
+import logger from "@/config/logger";
 
 export const requestOtpCodeController = async (req: Request, res: Response) => {
   const { email } = req.body;
@@ -11,7 +11,7 @@ export const requestOtpCodeController = async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Email is required." });
   }
   const { error } = await signupWithOtpCode(email);
-  logAuditEvent({ action: "OTP_CODE_REQUEST", details: { email, error } });
+  logger.info("OTP_CODE_REQUEST", { email, error });
   if (error) {
     return res.status(400).json({ error });
   }
@@ -26,7 +26,7 @@ export const verifyOtpCodeController = async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Email and code are required." });
   }
   const { data, error } = await verifyOtpCode(email, code);
-  logAuditEvent({ action: "OTP_CODE_VERIFY", details: { email, error } });
+  logger.info("OTP_CODE_VERIFY", { email, error });
   if (error) {
     return res.status(400).json({ error: error.message || error });
   }
@@ -40,7 +40,7 @@ export const signupController = async (req: Request, res: Response) => {
   const { username, f_name, l_name, password } = req.body;
 
   if (!user || !user.id || !user.email) {
-    logAuditEvent({ action: "SIGNUP_UNAUTHORIZED", details: { user } });
+    logger.warn("SIGNUP_UNAUTHORIZED", { user });
     return res.status(401).json({ error: "Unauthorized" });
   }
 
@@ -50,10 +50,9 @@ export const signupController = async (req: Request, res: Response) => {
     });
 
     if (existing) {
-      logAuditEvent({
-        action: "SIGNUP_CONFLICT",
+      logger.warn("SIGNUP_CONFLICT", {
         userId: user.id,
-        details: { email: user.email },
+        email: user.email,
       });
       return res.status(409).json({ error: "User already exists" });
     }
@@ -70,18 +69,16 @@ export const signupController = async (req: Request, res: Response) => {
       },
     });
 
-    logAuditEvent({
-      action: "SIGNUP_SUCCESS",
+    logger.info("SIGNUP_SUCCESS", {
       userId: user.id,
-      details: { email: user.email },
+      email: user.email,
     });
 
     return res.status(201).json({ message: "Signup complete", profile });
   } catch (error) {
-    logAuditEvent({
-      action: "SIGNUP_ERROR",
+    logger.error("SIGNUP_ERROR", {
       userId: user?.id,
-      details: { error },
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     return res.status(500).json({ error: "Failed to complete signup" });
   }
@@ -96,10 +93,9 @@ export const loginController = async (req: Request, res: Response) => {
   try {
     const result = await authService.loginUser(prisma, { email, password });
 
-    logAuditEvent({
-      action: "LOGIN_SUCCESS",
+    logger.info("LOGIN_SUCCESS", {
       userId: result.user.id,
-      details: { email },
+      email,
     });
 
     return res.status(200).json({
@@ -109,7 +105,7 @@ export const loginController = async (req: Request, res: Response) => {
       user: result.user,
     });
   } catch (error) {
-    logAuditEvent({ action: "LOGIN_FAILURE", details: { email, error } });
+    logger.warn("LOGIN_FAILURE", { email, error });
     return res.status(401).json({ error: "Invalid credentials" });
   }
 };
@@ -120,10 +116,7 @@ export const forgotPasswordController = async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Email is required." });
   }
   const result = await authService.forgotPassword(email);
-  logAuditEvent({
-    action: "FORGOT_PASSWORD_REQUEST",
-    details: { email, result },
-  });
+  logger.info("FORGOT_PASSWORD_REQUEST", { email, result });
   return res.status(200).json(result);
 };
 
@@ -135,7 +128,7 @@ export const resetPasswordController = async (req: Request, res: Response) => {
       .json({ error: "Token and new password are required." });
   }
   const result = await authService.resetPassword(token, newPassword);
-  logAuditEvent({ action: "RESET_PASSWORD", details: { token, result } });
+  logger.info("RESET_PASSWORD", { token, result });
   return res.status(200).json(result);
 };
 
@@ -145,7 +138,7 @@ export const logoutController = async (req: Request, res: Response) => {
     return res.status(400).json({ error: "User ID is required." });
   }
   const result = await authService.logout(userId);
-  logAuditEvent({ action: "LOGOUT", userId });
+  logger.info("LOGOUT", { userId });
   return res.status(200).json(result);
 };
 
@@ -158,9 +151,8 @@ export const refreshTokenController = async (req: Request, res: Response) => {
   try {
     const result = await authService.refreshAccessToken(refreshToken);
 
-    logAuditEvent({
-      action: "TOKEN_REFRESH_SUCCESS",
-      details: { refreshToken: refreshToken.substring(0, 10) + "..." },
+    logger.info("TOKEN_REFRESH_SUCCESS", {
+      refreshToken: refreshToken.substring(0, 10) + "...",
     });
 
     return res.status(200).json({
@@ -169,7 +161,7 @@ export const refreshTokenController = async (req: Request, res: Response) => {
       refreshToken: result.refreshToken,
     });
   } catch (error) {
-    logAuditEvent({ action: "TOKEN_REFRESH_FAILURE", details: { error } });
+    logger.warn("TOKEN_REFRESH_FAILURE", { error });
     return res.status(401).json({ error: "Invalid or expired refresh token" });
   }
 };
