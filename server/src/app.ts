@@ -3,12 +3,15 @@ import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 dotenv.config();
 
-// Middleware & Security (add more config later)
+// Middleware & Security (add more config later in middleware folder)
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
+
+// Swagger Documentation
+import swaggerUi from "swagger-ui-express";
 
 // Custom Middleware
 import { notFoundHandler } from "@/middleware/error/notFoundHandler";
@@ -24,7 +27,6 @@ const app = express();
 app.use(express.json());
 
 // Third-party Middleware
-// CORS Configuration
 app.use(cors());
 app.use(helmet());
 app.use(compression());
@@ -40,6 +42,9 @@ app.use(limiter);
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+
+// Swagger UI Route - Simple setup for testing routes
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup({}));
 
 // Health Check Route
 app.get("/health", (_req: Request, res: Response) => {
