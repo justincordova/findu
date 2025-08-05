@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifySession } from "@/modules/auth/service";
+import { verifySession } from "@/modules/auth/services";
 import logger from "@/config/logger";
 
 export interface AuthRequest extends Request {

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import * as authService from "@/modules/auth/service";
-import { signupWithOtpCode, verifyOtpCode } from "@/modules/auth/service";
+import * as authService from "@/modules/auth/services";
+import { signupWithOtpCode, verifyOtpCode } from "@/modules/auth/services";
 import { supabase } from "@/lib/supabase";
 import logger from "@/config/logger";
 
