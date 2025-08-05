@@ -7,10 +7,39 @@ export async function signupWithOtpCode(email: string) {
     return { error: "Only .edu emails are allowed." };
   }
 
+  // Check if user already exists by trying to get user by email
+  try {
+    // Get all users and check if email exists
+    const { data: existingUsers, error: getUserError } =
+      await supabase.auth.admin.listUsers();
+
+    if (getUserError) {
+      logger.error("CHECK_EXISTING_USER_ERROR", { email, error: getUserError });
+      return { error: "Failed to check existing user" };
+    }
+
+    // Check if user with this email already exists
+    const userExists = existingUsers.users.some((user) => user.email === email);
+
+    if (userExists) {
+      return {
+        error:
+          "An account with this email already exists. Please login instead.",
+      };
+    }
+  } catch (error) {
+    logger.error("CHECK_EXISTING_USER_ERROR", { email, error });
+    return { error: "Failed to check existing user" };
+  }
+
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       shouldCreateUser: true,
+      // Short duration for email verification
+      emailRedirectTo: `${
+        process.env.FRONTEND_URL || "http://localhost:8081"
+      }/auth/verify-email`,
     },
   });
 
@@ -38,34 +67,12 @@ export async function verifySession(accessToken: string) {
   return data.user;
 }
 
-// Get user profile from Supabase Auth
-export async function getUserProfile(userId: string) {
-  const { data, error } = await supabase.auth.admin.getUserById(userId);
-  if (error) {
-    logger.warn("GET_USER_PROFILE_ERROR", { userId, error });
-    return null;
-  }
-  return data.user;
-}
-
-// Update user metadata in Supabase Auth
-export async function updateUserMetadata(userId: string, metadata: any) {
-  const { data, error } = await supabase.auth.admin.updateUserById(userId, {
-    user_metadata: metadata,
-  });
-
-  if (error) {
-    logger.warn("UPDATE_USER_METADATA_ERROR", { userId, error });
-    return { error };
-  }
-
-  return { data };
-}
-
 // Forgot password: send reset email via Supabase
 export async function forgotPassword(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.FRONTEND_URL}/auth/reset-password`,
+    redirectTo: `${
+      process.env.FRONTEND_URL || "http://localhost:8081"
+    }/auth/reset-password`,
   });
 
   if (error) {
@@ -78,16 +85,32 @@ export async function forgotPassword(email: string) {
 
 // Reset password: verify token and update password via Supabase
 export async function resetPassword(token: string, newPassword: string) {
-  const { error } = await supabase.auth.updateUser({
-    password: newPassword,
-  });
+  try {
+    // First verify the token by attempting to get user
+    const {
+      data: { user },
+      error: verifyError,
+    } = await supabase.auth.getUser(token);
 
-  if (error) {
+    if (verifyError || !user) {
+      return { error: "Invalid or expired reset token" };
+    }
+
+    // Update the user's password
+    const { error } = await supabase.auth.admin.updateUserById(user.id, {
+      password: newPassword,
+    });
+
+    if (error) {
+      logger.warn("RESET_PASSWORD_ERROR", { error });
+      return { error: error.message };
+    }
+
+    return { message: "Password has been reset successfully." };
+  } catch (error) {
     logger.warn("RESET_PASSWORD_ERROR", { error });
-    return { error: error.message };
+    return { error: "Failed to reset password" };
   }
-
-  return { message: "Password has been reset successfully." };
 }
 
 // Logout: sign out from Supabase
@@ -102,7 +125,7 @@ export async function logout(accessToken: string) {
   return { message: "Logged out successfully." };
 }
 
-// Refresh access token via Supabase
+// Refresh access token via Supabase (for long-term sessions)
 export async function refreshAccessToken(refreshToken: string) {
   const { data, error } = await supabase.auth.refreshSession({
     refresh_token: refreshToken,
@@ -117,35 +140,4 @@ export async function refreshAccessToken(refreshToken: string) {
     accessToken: data.session?.access_token,
     refreshToken: data.session?.refresh_token,
   };
-}
-
-// Create user profile in our database after Supabase Auth signup
-export async function createUserProfile(
-  userId: string,
-  profileData: {
-    username: string;
-    f_name?: string;
-    l_name?: string;
-    school: string;
-    campus?: string;
-    bio?: string;
-    age?: number;
-    birthdate?: Date;
-    gender?: string;
-    pronouns?: string;
-    major?: string;
-    grad_year?: number;
-    interests?: string[];
-    intent?: string;
-    looking_for_gender?: string[];
-    min_age?: number;
-    max_age?: number;
-    spotify_url?: string;
-    instagram_url?: string;
-  }
-) {
-  // This will be handled by your Prisma client
-  // You'll need to import and use your Prisma client here
-  // For now, returning a placeholder
-  return { userId, profileData };
 }

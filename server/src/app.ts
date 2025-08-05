@@ -14,7 +14,6 @@ import logger from "@/config/logger";
 
 // Route Imports
 import authRoutes from "@/modules/auth/routes";
-// import userRoutes from "@/modules/users/routes"; // Temporarily disabled during Supabase Auth migration
 
 const app = express();
 
@@ -43,7 +42,6 @@ app.use(limiter);
 
 // Routes
 app.use("/api/auth", authRoutes);
-// app.use("/api/users", userRoutes); // Temporarily disabled during Supabase Auth migration
 
 // Swagger UI Route - Simple setup for testing routes
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup({}));

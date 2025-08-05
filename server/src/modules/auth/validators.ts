@@ -9,12 +9,8 @@ export const validateEmailOnly = [
     .withMessage("Email must be a .edu address"),
 ];
 
-// For /auth/signup (basic user info + password)
+// For /auth/signup (password only)
 export const validateSignup = [
-  body("f_name").notEmpty().withMessage("First name is required"),
-
-  body("l_name").notEmpty().withMessage("Last name is required"),
-
   body("password")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters")

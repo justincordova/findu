@@ -19,5 +19,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // Set longer session duration for login (1 year)
+    flowType: "pkce",
+    // This will be handled by Supabase's default session management
+    // which provides refresh tokens that can last up to 1 year
   },
 });

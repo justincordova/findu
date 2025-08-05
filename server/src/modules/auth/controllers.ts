@@ -1,11 +1,6 @@
 import { Request, Response } from "express";
 import * as authService from "@/modules/auth/service";
-import {
-  signupWithOtpCode,
-  verifyOtpCode,
-  createUserProfile,
-} from "@/modules/auth/service";
-import prisma from "@/lib/prisma";
+import { signupWithOtpCode, verifyOtpCode } from "@/modules/auth/service";
 import { supabase } from "@/lib/supabase";
 import logger from "@/config/logger";
 
@@ -32,29 +27,39 @@ export const verifyOtpCodeController = async (req: Request, res: Response) => {
   const { data, error } = await verifyOtpCode(email, code);
   logger.info("OTP_CODE_VERIFY", { email, error });
   if (error) {
-    return res.status(400).json({ error: error.message || error });
+    return res.status(400).json({
+      error:
+        typeof error === "string"
+          ? error
+          : error.message || "Verification failed",
+    });
   }
   return res
     .status(200)
-    .json({ message: "Email verified", session: data.session });
+    .json({ message: "Email verified", session: data?.session });
 };
 
 export const signupController = async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const { f_name, l_name, password } = req.body;
+  const { password } = req.body;
 
   if (!user || !user.id || !user.email) {
     logger.warn("SIGNUP_UNAUTHORIZED", { user });
     return res.status(401).json({ error: "Unauthorized" });
   }
 
+  if (!password) {
+    return res.status(400).json({ error: "Password is required" });
+  }
+
+  if (!supabase) {
+    return res.status(500).json({ error: "Supabase client not configured" });
+  }
+
   try {
-    // Update Supabase user metadata with basic info
+    // Update Supabase user password
     const { data, error } = await supabase.auth.admin.updateUserById(user.id, {
-      user_metadata: {
-        f_name,
-        l_name,
-      },
+      password: password,
     });
 
     if (error) {
@@ -62,7 +67,7 @@ export const signupController = async (req: Request, res: Response) => {
         userId: user.id,
         error: error.message,
       });
-      return res.status(500).json({ error: "Failed to update user info" });
+      return res.status(500).json({ error: "Failed to update user password" });
     }
 
     logger.info("SIGNUP_SUCCESS", {
@@ -70,9 +75,9 @@ export const signupController = async (req: Request, res: Response) => {
       email: user.email,
     });
 
-    return res.status(201).json({ 
-      message: "Signup complete", 
-      user: data.user 
+    return res.status(201).json({
+      message: "Signup complete",
+      user: data?.user,
     });
   } catch (error) {
     logger.error("SIGNUP_ERROR", {
@@ -89,6 +94,10 @@ export const loginController = async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Email and password are required." });
   }
 
+  if (!supabase) {
+    return res.status(500).json({ error: "Supabase client not configured" });
+  }
+
   try {
     // Use Supabase Auth for login
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -102,14 +111,14 @@ export const loginController = async (req: Request, res: Response) => {
     }
 
     logger.info("LOGIN_SUCCESS", {
-      userId: data.user?.id,
+      userId: data?.user?.id,
       email,
     });
 
     return res.status(200).json({
       message: "Login successful",
-      session: data.session,
-      user: data.user,
+      session: data?.session,
+      user: data?.user,
     });
   } catch (error) {
     logger.warn("LOGIN_ERROR", { email, error });

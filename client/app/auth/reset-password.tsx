@@ -10,50 +10,64 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { PRIMARY, BACKGROUND, DARK, MUTED } from "../../constants/theme";
 
-export default function CompleteSignup() {
+export default function ResetPassword() {
   const router = useRouter();
-  const { email, supabaseToken } = useLocalSearchParams();
+  const { token } = useLocalSearchParams();
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const passwordRef = useRef<RNTextInput>(null);
+  const confirmPasswordRef = useRef<RNTextInput>(null);
 
-  const handleSignup = async () => {
+  const handleResetPassword = async () => {
     setError("");
-    setLoading(true);
-    try {
-      if (!supabaseToken) {
-        setError("Missing authentication token.");
-        setLoading(false);
-        return;
-      }
+    setSuccess("");
 
-      // Call signup API with session token
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const tokenStr = typeof token === "string" ? token : token?.[0] || "";
+
       const res = await fetch(
         `${
           process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000"
-        }/api/auth/signup`,
+        }/api/auth/reset-password`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${supabaseToken}`,
           },
           body: JSON.stringify({
-            password,
+            token: tokenStr,
+            newPassword: password,
           }),
         }
       );
 
       const data = await res.json();
+
       if (!res.ok) {
-        setError(data.error || "Signup failed.");
+        setError(data.error || "Failed to reset password");
       } else {
-        router.replace("/profile-setup/welcome");
+        setSuccess("Password reset successfully! You can now login.");
+        setTimeout(() => {
+          router.replace("/auth");
+        }, 2000);
       }
-    } catch (err) {
-      console.error("Signup error:", err);
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
@@ -63,39 +77,49 @@ export default function CompleteSignup() {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>Signup</Text>
-        <Text style={styles.subtitle}>
-          For <Text style={styles.primaryText}>{email}</Text>
-        </Text>
-        <Text style={styles.label}>Password</Text>
+        <Text style={styles.title}>Reset Password</Text>
+        <Text style={styles.subtitle}>Enter your new password below.</Text>
+
+        <Text style={styles.label}>New Password</Text>
         <TextInput
           ref={passwordRef}
           style={styles.input}
-          placeholder="Create a password"
+          placeholder="Enter new password"
           placeholderTextColor="#999"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           autoCapitalize="none"
-          returnKeyType="done"
-          onSubmitEditing={handleSignup}
+          returnKeyType="next"
+          onSubmitEditing={() =>
+            confirmPasswordRef.current && confirmPasswordRef.current.focus()
+          }
         />
-        {error ? (
-          <Text style={styles.error}>
-            {typeof error === "string"
-              ? error
-              : (error as any)?.message
-              ? (error as any).message
-              : JSON.stringify(error)}
-          </Text>
-        ) : null}
+
+        <Text style={styles.label}>Confirm Password</Text>
+        <TextInput
+          ref={confirmPasswordRef}
+          style={styles.input}
+          placeholder="Confirm new password"
+          placeholderTextColor="#999"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          returnKeyType="done"
+          onSubmitEditing={handleResetPassword}
+        />
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {success ? <Text style={styles.success}>{success}</Text> : null}
+
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleSignup}
+          onPress={handleResetPassword}
           disabled={loading}
         >
           <Text style={styles.buttonText}>
-            {loading ? "Creating Account..." : "Signup"}
+            {loading ? "Resetting..." : "Reset Password"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -137,10 +161,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: "center",
   },
-  primaryText: {
-    color: PRIMARY,
-    fontWeight: "600",
-  },
   label: {
     fontSize: 18,
     fontWeight: "bold",
@@ -160,18 +180,20 @@ const styles = StyleSheet.create({
     width: "100%",
     fontSize: 16,
   },
-  passwordInput: {
-    marginBottom: 24,
-  },
   error: {
     color: "#EF4444",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  success: {
+    color: "#10B981",
     textAlign: "center",
     marginBottom: 16,
   },
   button: {
     backgroundColor: PRIMARY,
     borderRadius: 9999,
-    paddingVertical: 12,
+    paddingVertical: 14,
     width: "100%",
     alignItems: "center",
   },
