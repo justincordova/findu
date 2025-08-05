@@ -13,14 +13,12 @@ import { PRIMARY, BACKGROUND, DARK, MUTED } from "../../constants/theme";
 export default function CompleteSignup() {
   const router = useRouter();
   const { email, supabaseToken } = useLocalSearchParams();
-  const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const usernameRef = useRef<RNTextInput>(null);
   const firstNameRef = useRef<RNTextInput>(null);
   const lastNameRef = useRef<RNTextInput>(null);
   const passwordRef = useRef<RNTextInput>(null);
@@ -47,7 +45,6 @@ export default function CompleteSignup() {
             Authorization: `Bearer ${supabaseToken}`,
           },
           body: JSON.stringify({
-            username,
             f_name: firstName,
             l_name: lastName,
             password,
@@ -76,15 +73,6 @@ export default function CompleteSignup() {
         <Text style={styles.subtitle}>
           For <Text style={styles.primaryText}>{email}</Text>
         </Text>
-        <Text style={styles.label}>Username</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          placeholderTextColor="#999"
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-        />
         <Text style={styles.label}>First Name</Text>
         <TextInput
           ref={firstNameRef}
@@ -98,7 +86,6 @@ export default function CompleteSignup() {
           onSubmitEditing={() =>
             lastNameRef.current && lastNameRef.current.focus()
           }
-          blurOnSubmit={false}
         />
         <Text style={styles.label}>Last Name</Text>
         <TextInput
@@ -113,12 +100,11 @@ export default function CompleteSignup() {
           onSubmitEditing={() =>
             passwordRef.current && passwordRef.current.focus()
           }
-          blurOnSubmit={false}
         />
         <Text style={styles.label}>Password</Text>
         <TextInput
           ref={passwordRef}
-          style={[styles.input, styles.passwordInput]}
+          style={styles.input}
           placeholder="Password"
           placeholderTextColor="#999"
           value={password}
@@ -126,19 +112,24 @@ export default function CompleteSignup() {
           secureTextEntry
           autoCapitalize="none"
           returnKeyType="done"
-          onSubmitEditing={() =>
-            passwordRef.current && passwordRef.current.blur()
-          }
-          blurOnSubmit={true}
+          onSubmitEditing={handleSignup}
         />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? (
+          <Text style={styles.error}>
+            {typeof error === "string"
+              ? error
+              : (error as any)?.message
+              ? (error as any).message
+              : JSON.stringify(error)}
+          </Text>
+        ) : null}
         <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleSignup}
           disabled={loading}
         >
           <Text style={styles.buttonText}>
-            {loading ? "Signing Up..." : "Sign Up"}
+            {loading ? "Creating Account..." : "Complete Signup"}
           </Text>
         </TouchableOpacity>
       </View>

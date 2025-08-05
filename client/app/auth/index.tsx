@@ -1,11 +1,5 @@
-import { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Dimensions,
-  StyleSheet,
-} from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,7 +10,6 @@ import LoginForm from "../../components/auth/LoginForm";
 import SignupForm from "../../components/auth/SignupForm";
 import { useLocalSearchParams } from "expo-router";
 
-const { width } = Dimensions.get("window");
 const TOGGLE_WIDTH = 320;
 const TOGGLE_HEIGHT = 48;
 const TOGGLE_RADIUS = 24;
@@ -32,11 +25,11 @@ export default function AuthIndex() {
     initialMode === "login" ? 0 : PILL_WIDTH
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     pillTranslate.value = withTiming(mode === "login" ? 0 : PILL_WIDTH, {
       duration: 250,
     });
-  }, [mode]);
+  }, [mode, pillTranslate]);
 
   const pillStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: pillTranslate.value }],

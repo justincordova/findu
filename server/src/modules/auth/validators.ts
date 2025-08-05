@@ -9,10 +9,8 @@ export const validateEmailOnly = [
     .withMessage("Email must be a .edu address"),
 ];
 
-// For /auth/signup (profile info + password)
+// For /auth/signup (basic user info + password)
 export const validateSignup = [
-  body("username").notEmpty().withMessage("Username is required"),
-
   body("f_name").notEmpty().withMessage("First name is required"),
 
   body("l_name").notEmpty().withMessage("Last name is required"),

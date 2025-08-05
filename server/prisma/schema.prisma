@@ -9,12 +9,10 @@ datasource db {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model blocks {
-  id                             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  blocker_id                     String?   @db.Uuid
-  blocked_id                     String?   @db.Uuid
-  created_at                     DateTime? @default(now()) @db.Timestamptz(6)
-  users_blocks_blocked_idTousers users?    @relation("blocks_blocked_idTousers", fields: [blocked_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users_blocks_blocker_idTousers users?    @relation("blocks_blocker_idTousers", fields: [blocker_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  blocker_id String    @db.Uuid
+  blocked_id String    @db.Uuid
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
 
   @@unique([blocker_id, blocked_id])
   @@index([blocked_id], map: "idx_blocks_blocked")
@@ -23,49 +21,45 @@ model blocks {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model likes {
-  id                           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  from_user                    String?   @db.Uuid
-  to_user                      String?   @db.Uuid
-  created_at                   DateTime? @default(now()) @db.Timestamptz(6)
-  is_superlike                 Boolean?  @default(false)
-  users_likes_from_userTousers users?    @relation("likes_from_userTousers", fields: [from_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users_likes_to_userTousers   users?    @relation("likes_to_userTousers", fields: [to_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  from_user    String    @db.Uuid
+  to_user      String    @db.Uuid
+  is_superlike Boolean?  @default(false)
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
 
+  @@unique([from_user, to_user])
   @@index([from_user], map: "idx_likes_from_user")
   @@index([to_user], map: "idx_likes_to_user")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model matches {
-  id                         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user1                      String    @db.Uuid
-  user2                      String    @db.Uuid
-  matched_at                 DateTime? @default(now()) @db.Timestamptz(6)
-  created_at                 DateTime? @default(now()) @db.Timestamptz(6)
-  user_min                   String?   @default(dbgenerated("\nCASE\n    WHEN (user1 < user2) THEN user1\n    ELSE user2\nEND")) @db.Uuid
-  user_max                   String?   @default(dbgenerated("\nCASE\n    WHEN (user1 > user2) THEN user1\n    ELSE user2\nEND")) @db.Uuid
-  chats                      chats[]
-  users_matches_user1Tousers users     @relation("matches_user1Tousers", fields: [user1], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users_matches_user2Tousers users     @relation("matches_user2Tousers", fields: [user2], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user1      String    @db.Uuid
+  user2      String    @db.Uuid
+  matched_at DateTime? @default(now()) @db.Timestamptz(6)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  user_min   String?   @default(dbgenerated("\nCASE\n    WHEN (user1 < user2) THEN user1\n    ELSE user2\nEND")) @db.Uuid
+  user_max   String?   @default(dbgenerated("\nCASE\n    WHEN (user1 > user2) THEN user1\n    ELSE user2\nEND")) @db.Uuid
+  chats      chats[]
 
   @@unique([user_min, user_max])
 }
 
 model subscriptions {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String?   @db.Uuid
+  user_id    String    @db.Uuid
   plan_name  String
   start_date DateTime? @default(now()) @db.Timestamptz(6)
   end_date   DateTime? @db.Timestamptz(6)
   is_active  Boolean?  @default(true)
   created_at DateTime? @default(now()) @db.Timestamptz(6)
   updated_at DateTime? @default(now()) @db.Timestamptz(6)
-  users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model user_profiles {
-  user_id            String    @id @db.Uuid
+model profiles {
+  user_id            String    @id(map: "user_profiles_pkey") @db.Uuid
   avatar_url         String?
   campus             String?
   school             String
@@ -85,60 +79,36 @@ model user_profiles {
   instagram_url      String?
   created_at         DateTime? @default(now()) @db.Timestamptz(6)
   updated_at         DateTime? @default(now()) @db.Timestamptz(6)
-  users              users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model users {
-  id                              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email                           String          @unique
-  username                        String          @unique
-  f_name                          String?
-  l_name                          String?
-  hashed_password                 String
-  role                            String          @default("user")
-  created_at                      DateTime?       @default(now()) @db.Timestamptz(6)
-  updated_at                      DateTime?       @default(now()) @db.Timestamptz(6)
-  blocks_blocks_blocked_idTousers blocks[]        @relation("blocks_blocked_idTousers")
-  blocks_blocks_blocker_idTousers blocks[]        @relation("blocks_blocker_idTousers")
-  chats                           chats[]
-  donations                       donations[]
-  likes_likes_from_userTousers    likes[]         @relation("likes_from_userTousers")
-  likes_likes_to_userTousers      likes[]         @relation("likes_to_userTousers")
-  matches_matches_user1Tousers    matches[]       @relation("matches_user1Tousers")
-  matches_matches_user2Tousers    matches[]       @relation("matches_user2Tousers")
-  subscriptions                   subscriptions[]
-  user_profiles                   user_profiles?
+  username           String?   @unique(map: "user_profiles_username_key")
 }
 
 model campuses {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  unitid     BigInt?   @unique
   name       String    @unique
   city       String?
   state      String?
-  country    String?
+  predeg     Int?
   created_at DateTime? @default(now()) @db.Timestamptz(6)
   updated_at DateTime? @default(now()) @db.Timestamptz(6)
 }
 
 model donations {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String?   @db.Uuid
+  user_id    String    @db.Uuid
   amount     Decimal?  @db.Decimal
   created_at DateTime? @default(now()) @db.Timestamptz(6)
-  users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model chats {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   match_id   String?   @db.Uuid
-  sender_id  String?   @db.Uuid
+  sender_id  String    @db.Uuid
   message    String
   is_read    Boolean?  @default(false)
   sent_at    DateTime? @default(now()) @db.Timestamptz(6)
   created_at DateTime? @default(now()) @db.Timestamptz(6)
   matches    matches?  @relation(fields: [match_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users      users?    @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([match_id], map: "idx_chats_match")
   @@index([sender_id], map: "idx_chats_sender")

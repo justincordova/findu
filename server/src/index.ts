@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import app from "@/app";
 import { PORT } from "@/config/env";
 import { Server } from "http";

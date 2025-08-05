@@ -1,8 +1,12 @@
 import { Request, Response } from "express";
 import * as authService from "@/modules/auth/service";
-import { signupWithOtpCode, verifyOtpCode } from "@/modules/auth/service";
+import {
+  signupWithOtpCode,
+  verifyOtpCode,
+  createUserProfile,
+} from "@/modules/auth/service";
 import prisma from "@/lib/prisma";
-import bcrypt from "bcrypt";
+import { supabase } from "@/lib/supabase";
 import logger from "@/config/logger";
 
 export const requestOtpCodeController = async (req: Request, res: Response) => {
@@ -37,7 +41,7 @@ export const verifyOtpCodeController = async (req: Request, res: Response) => {
 
 export const signupController = async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const { username, f_name, l_name, password } = req.body;
+  const { f_name, l_name, password } = req.body;
 
   if (!user || !user.id || !user.email) {
     logger.warn("SIGNUP_UNAUTHORIZED", { user });
@@ -45,36 +49,31 @@ export const signupController = async (req: Request, res: Response) => {
   }
 
   try {
-    const existing = await prisma.users.findUnique({
-      where: { email: user.email },
-    });
-
-    if (existing) {
-      logger.warn("SIGNUP_CONFLICT", {
-        userId: user.id,
-        email: user.email,
-      });
-      return res.status(409).json({ error: "User already exists" });
-    }
-
-    const hashed_password = await bcrypt.hash(password, 12);
-    const profile = await prisma.users.create({
-      data: {
-        id: user.id,
-        email: user.email,
-        username,
+    // Update Supabase user metadata with basic info
+    const { data, error } = await supabase.auth.admin.updateUserById(user.id, {
+      user_metadata: {
         f_name,
         l_name,
-        hashed_password,
       },
     });
+
+    if (error) {
+      logger.error("SUPABASE_UPDATE_USER_ERROR", {
+        userId: user.id,
+        error: error.message,
+      });
+      return res.status(500).json({ error: "Failed to update user info" });
+    }
 
     logger.info("SIGNUP_SUCCESS", {
       userId: user.id,
       email: user.email,
     });
 
-    return res.status(201).json({ message: "Signup complete", profile });
+    return res.status(201).json({ 
+      message: "Signup complete", 
+      user: data.user 
+    });
   } catch (error) {
     logger.error("SIGNUP_ERROR", {
       userId: user?.id,
@@ -91,22 +90,30 @@ export const loginController = async (req: Request, res: Response) => {
   }
 
   try {
-    const result = await authService.loginUser(prisma, { email, password });
+    // Use Supabase Auth for login
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      logger.warn("LOGIN_FAILURE", { email, error });
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
 
     logger.info("LOGIN_SUCCESS", {
-      userId: result.user.id,
+      userId: data.user?.id,
       email,
     });
 
     return res.status(200).json({
       message: "Login successful",
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-      user: result.user,
+      session: data.session,
+      user: data.user,
     });
   } catch (error) {
-    logger.warn("LOGIN_FAILURE", { email, error });
-    return res.status(401).json({ error: "Invalid credentials" });
+    logger.warn("LOGIN_ERROR", { email, error });
+    return res.status(500).json({ error: "Login failed" });
   }
 };
 
@@ -133,12 +140,12 @@ export const resetPasswordController = async (req: Request, res: Response) => {
 };
 
 export const logoutController = async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id || req.body.userId;
-  if (!userId) {
-    return res.status(400).json({ error: "User ID is required." });
+  const accessToken = req.headers.authorization?.replace("Bearer ", "");
+  if (!accessToken) {
+    return res.status(400).json({ error: "Access token is required." });
   }
-  const result = await authService.logout(userId);
-  logger.info("LOGOUT", { userId });
+  const result = await authService.logout(accessToken);
+  logger.info("LOGOUT", { accessToken: accessToken.substring(0, 10) + "..." });
   return res.status(200).json(result);
 };
 
