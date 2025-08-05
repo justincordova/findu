@@ -1,38 +1,42 @@
 import { create } from "zustand";
-import { User } from "../types/User";
+import { User, Session } from "@supabase/supabase-js";
+import { authService } from "../services/authService";
 
 interface AuthState {
   user: User | null;
+  session: Session | null;
   isLoggedIn: boolean;
-  accessToken: string | null;
-  refreshToken: string | null;
-  login: (user: User, accessToken: string, refreshToken: string) => void;
-  refreshTokens: (accessToken: string, refreshToken: string) => void;
+  login: (user: User, session: Session) => void;
+  updateSession: (session: Session | null) => void;
   logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
+  session: null,
   isLoggedIn: false,
-  accessToken: null,
-  refreshToken: null,
-  login: (user, accessToken, refreshToken) =>
+  login: (user, session) => {
+    authService.setSession(session);
     set({
       user,
+      session,
       isLoggedIn: true,
-      accessToken,
-      refreshToken,
-    }),
-  refreshTokens: (accessToken, refreshToken) =>
+    });
+  },
+  updateSession: (session) => {
+    authService.setSession(session);
     set({
-      accessToken,
-      refreshToken,
-    }),
-  logout: () =>
+      session,
+      user: session?.user || null,
+      isLoggedIn: !!session,
+    });
+  },
+  logout: async () => {
+    await authService.signOut();
     set({
       user: null,
+      session: null,
       isLoggedIn: false,
-      accessToken: null,
-      refreshToken: null,
-    }),
+    });
+  },
 }));

@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
 import * as authService from "@/modules/auth/service";
 import { signupWithOtpCode, verifyOtpCode } from "@/modules/auth/service";
-import prisma from "@/lib/prisma";
-import bcrypt from "bcrypt";
+import { supabase } from "@/lib/supabase";
 import logger from "@/config/logger";
 
 export const requestOtpCodeController = async (req: Request, res: Response) => {
@@ -28,53 +27,58 @@ export const verifyOtpCodeController = async (req: Request, res: Response) => {
   const { data, error } = await verifyOtpCode(email, code);
   logger.info("OTP_CODE_VERIFY", { email, error });
   if (error) {
-    return res.status(400).json({ error: error.message || error });
+    return res.status(400).json({
+      error:
+        typeof error === "string"
+          ? error
+          : error.message || "Verification failed",
+    });
   }
   return res
     .status(200)
-    .json({ message: "Email verified", session: data.session });
+    .json({ message: "Email verified", session: data?.session });
 };
 
 export const signupController = async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const { username, f_name, l_name, password } = req.body;
+  const { password } = req.body;
 
   if (!user || !user.id || !user.email) {
     logger.warn("SIGNUP_UNAUTHORIZED", { user });
     return res.status(401).json({ error: "Unauthorized" });
   }
 
+  if (!password) {
+    return res.status(400).json({ error: "Password is required" });
+  }
+
+  if (!supabase) {
+    return res.status(500).json({ error: "Supabase client not configured" });
+  }
+
   try {
-    const existing = await prisma.users.findUnique({
-      where: { email: user.email },
+    // Update Supabase user password
+    const { data, error } = await supabase.auth.admin.updateUserById(user.id, {
+      password: password,
     });
 
-    if (existing) {
-      logger.warn("SIGNUP_CONFLICT", {
+    if (error) {
+      logger.error("SUPABASE_UPDATE_USER_ERROR", {
         userId: user.id,
-        email: user.email,
+        error: error.message,
       });
-      return res.status(409).json({ error: "User already exists" });
+      return res.status(500).json({ error: "Failed to update user password" });
     }
-
-    const hashed_password = await bcrypt.hash(password, 12);
-    const profile = await prisma.users.create({
-      data: {
-        id: user.id,
-        email: user.email,
-        username,
-        f_name,
-        l_name,
-        hashed_password,
-      },
-    });
 
     logger.info("SIGNUP_SUCCESS", {
       userId: user.id,
       email: user.email,
     });
 
-    return res.status(201).json({ message: "Signup complete", profile });
+    return res.status(201).json({
+      message: "Signup complete",
+      user: data?.user,
+    });
   } catch (error) {
     logger.error("SIGNUP_ERROR", {
       userId: user?.id,
@@ -90,23 +94,35 @@ export const loginController = async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Email and password are required." });
   }
 
+  if (!supabase) {
+    return res.status(500).json({ error: "Supabase client not configured" });
+  }
+
   try {
-    const result = await authService.loginUser(prisma, { email, password });
+    // Use Supabase Auth for login
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      logger.warn("LOGIN_FAILURE", { email, error });
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
 
     logger.info("LOGIN_SUCCESS", {
-      userId: result.user.id,
+      userId: data?.user?.id,
       email,
     });
 
     return res.status(200).json({
       message: "Login successful",
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-      user: result.user,
+      session: data?.session,
+      user: data?.user,
     });
   } catch (error) {
-    logger.warn("LOGIN_FAILURE", { email, error });
-    return res.status(401).json({ error: "Invalid credentials" });
+    logger.warn("LOGIN_ERROR", { email, error });
+    return res.status(500).json({ error: "Login failed" });
   }
 };
 
@@ -133,12 +149,12 @@ export const resetPasswordController = async (req: Request, res: Response) => {
 };
 
 export const logoutController = async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id || req.body.userId;
-  if (!userId) {
-    return res.status(400).json({ error: "User ID is required." });
+  const accessToken = req.headers.authorization?.replace("Bearer ", "");
+  if (!accessToken) {
+    return res.status(400).json({ error: "Access token is required." });
   }
-  const result = await authService.logout(userId);
-  logger.info("LOGOUT", { userId });
+  const result = await authService.logout(accessToken);
+  logger.info("LOGOUT", { accessToken: accessToken.substring(0, 10) + "..." });
   return res.status(200).json(result);
 };
 

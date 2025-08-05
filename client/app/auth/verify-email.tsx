@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { PRIMARY, BACKGROUND, DARK, MUTED } from "../../constants/theme";
-import { supabase } from "../../services/supabase";
 
 export default function VerifyEmail() {
   const { email } = useLocalSearchParams();

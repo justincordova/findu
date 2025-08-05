@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { PRIMARY, DARK, BACKGROUND } from "../../constants/theme";
+import { PRIMARY, DARK } from "../../constants/theme";
 import { useAuthStore } from "../../store/authStore";
 
 export default function LoginForm() {
@@ -39,11 +39,11 @@ export default function LoginForm() {
       if (!res.ok) {
         setError(data.error || "Login failed");
       } else {
-        // Store both tokens and user data
-        login(data.user, data.accessToken, data.refreshToken);
+        // Store session data
+        login(data.user, data.session);
         router.replace("/home/(tabs)/discover");
       }
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
@@ -80,6 +80,13 @@ export default function LoginForm() {
         <Text style={styles.buttonText}>
           {loading ? "Logging in..." : "Login"}
         </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.forgotPassword}
+        onPress={() => router.push("/auth/forgot-password")}
+      >
+        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
       </TouchableOpacity>
     </View>
   );
@@ -128,5 +135,23 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.7,
+  },
+  forgotPassword: {
+    alignSelf: "center",
+    marginTop: 16,
+  },
+  forgotPasswordText: {
+    color: PRIMARY,
+    textDecorationLine: "underline",
+    fontSize: 14,
+  },
+  note: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  primaryText: {
+    color: PRIMARY,
   },
 });

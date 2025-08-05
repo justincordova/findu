@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyAccessToken } from "@/modules/auth/service";
+import { verifySession } from "@/modules/auth/service";
 import logger from "@/config/logger";
 
 export interface AuthRequest extends Request {
-  user?: { userId: string; email: string };
+  user?: any; // Supabase user object
 }
 
 export async function authenticateJWT(
@@ -25,9 +25,9 @@ export async function authenticateJWT(
   }
 
   const token = authHeader.split(" ")[1];
-  const decoded = await verifyAccessToken(token);
+  const user = await verifySession(token);
 
-  if (!decoded) {
+  if (!user) {
     logger.warn("JWT_AUTH_FAILED", {
       reason: "invalid_or_expired_token",
       ip: req.ip,
@@ -36,6 +36,6 @@ export async function authenticateJWT(
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 
-  req.user = decoded;
+  req.user = user;
   next();
 }
