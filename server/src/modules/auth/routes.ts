@@ -30,7 +30,6 @@ router.post(
   handleValidationErrors,
   signupController
 );
-// Removed /create-profile route
 router.post("/login", validateLogin, handleValidationErrors, loginController);
 router.post("/refresh-token", refreshTokenController);
 router.post("/logout", logoutController);
