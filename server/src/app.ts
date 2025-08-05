@@ -60,7 +60,7 @@ if (process.env.NODE_ENV !== "production") {
   app.get(
     "/error-test",
     (_req: Request, _res: Response, next: NextFunction) => {
-      next(new Error("Test error")); // This will invoke your errorHandler
+      next(new Error("Test error"));
     }
   );
 }
