@@ -340,25 +340,13 @@ model blocks {
   blocker_id                     String?   @db.Uuid
   blocked_id                     String?   @db.Uuid
   created_at                     DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at                     DateTime? @default(now()) @db.Timestamptz(6)
   users_blocks_blocked_idTousers users?    @relation("blocks_blocked_idTousers", fields: [blocked_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users_blocks_blocker_idTousers users?    @relation("blocks_blocker_idTousers", fields: [blocker_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([blocker_id, blocked_id])
   @@index([blocked_id], map: "idx_blocks_blocked")
   @@index([blocker_id], map: "idx_blocks_blocker")
-  @@schema("public")
-}
-
-model campuses {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  unitid     BigInt?   @unique
-  name       String    @unique
-  city       String?
-  state      String?
-  predeg     Int?
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
-
   @@schema("public")
 }
 
@@ -370,6 +358,7 @@ model chats {
   is_read    Boolean?  @default(false)
   sent_at    DateTime? @default(now()) @db.Timestamptz(6)
   created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
   matches    matches?  @relation(fields: [match_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users      users?    @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -384,6 +373,7 @@ model donations {
   user_id    String?   @db.Uuid
   amount     Decimal?  @db.Decimal
   created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
   users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@schema("public")
@@ -395,6 +385,7 @@ model likes {
   to_user                      String?   @db.Uuid
   is_superlike                 Boolean?  @default(false)
   created_at                   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at                   DateTime? @default(now()) @db.Timestamptz(6)
   users_likes_from_userTousers users?    @relation("likes_from_userTousers", fields: [from_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users_likes_to_userTousers   users?    @relation("likes_to_userTousers", fields: [to_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -410,6 +401,7 @@ model matches {
   user2                      String    @db.Uuid
   matched_at                 DateTime? @default(now()) @db.Timestamptz(6)
   created_at                 DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime? @default(now()) @db.Timestamptz(6)
   user_min                   String?   @default(dbgenerated("\nCASE\n    WHEN (user1 < user2) THEN user1\n    ELSE user2\nEND")) @db.Uuid
   user_max                   String?   @default(dbgenerated("\nCASE\n    WHEN (user1 > user2) THEN user1\n    ELSE user2\nEND")) @db.Uuid
   chats                      chats[]
@@ -421,16 +413,14 @@ model matches {
 }
 
 model profiles {
-  user_id            String    @id @db.Uuid
-  username           String?   @unique
+  user_id            String           @id @db.Uuid
   f_name             String?
   l_name             String?
   avatar_url         String?
-  campus             String?
-  school             String
+  university         String
   bio                String?
   age                Int?
-  birthdate          DateTime? @db.Date
+  birthdate          DateTime?        @db.Date
   gender             String?
   pronouns           String?
   major              String?
@@ -442,10 +432,12 @@ model profiles {
   max_age            Int?
   spotify_url        String?
   instagram_url      String?
-  created_at         DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime? @default(now()) @db.Timestamptz(6)
-  users              users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  profile_photos     profile_photos[]
+  users              users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([university], map: "idx_profiles_university")
   @@schema("public")
 }
 
@@ -460,6 +452,31 @@ model subscriptions {
   updated_at DateTime? @default(now()) @db.Timestamptz(6)
   users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@schema("public")
+}
+
+model profile_photos {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String?   @db.Uuid
+  photo_url  String
+  sort_order Int?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  profiles   profiles? @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, sort_order], map: "unique_photo_order_per_user")
+  @@schema("public")
+}
+
+model universities {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  unitid     BigInt?   @unique
+  name       String
+  city       String?
+  state      String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([name, city, state], map: "unique_university_location")
   @@schema("public")
 }
 
