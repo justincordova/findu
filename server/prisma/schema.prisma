@@ -1,5 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
   previewFeatures = ["multiSchema"]
 }
 
@@ -470,13 +471,13 @@ model profile_photos {
 model universities {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   unitid     BigInt?   @unique
-  name       String
+  name       String    @unique
   city       String?
   state      String?
   created_at DateTime? @default(now()) @db.Timestamptz(6)
   updated_at DateTime? @default(now()) @db.Timestamptz(6)
 
-  @@unique([name, city, state], map: "unique_university_location")
+  @@unique([name, city, state], map: "universities_name_city_state_unique")
   @@schema("public")
 }
 
