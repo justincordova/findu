@@ -1,183 +1,219 @@
 import { Request, Response } from "express";
-import * as authService from "@/modules/auth/services";
-import { signupWithOtpCode, verifyOtpCode } from "@/modules/auth/services";
-import { supabase } from "@/lib/supabase";
+import { validationResult } from "express-validator";
+import {
+  createPendingSignup,
+  verifySignupToken,
+  authenticateUser,
+  requestPasswordReset as requestReset,
+  resetPasswordWithToken,
+  logoutUser,
+  getCurrentUserData,
+} from "./services";
 import logger from "@/config/logger";
 
-export const requestOtpCodeController = async (req: Request, res: Response) => {
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ error: "Email is required." });
-  }
-  const { error } = await signupWithOtpCode(email);
-  logger.info("OTP_CODE_REQUEST", { email, error });
-  if (error) {
-    return res.status(400).json({ error });
-  }
-  return res
-    .status(200)
-    .json({ message: "Verification code sent to your .edu email." });
-};
-
-export const verifyOtpCodeController = async (req: Request, res: Response) => {
-  const { email, code } = req.body;
-  if (!email || !code) {
-    return res.status(400).json({ error: "Email and code are required." });
-  }
-  const { data, error } = await verifyOtpCode(email, code);
-  logger.info("OTP_CODE_VERIFY", { email, error });
-  if (error) {
-    return res.status(400).json({
-      error:
-        typeof error === "string"
-          ? error
-          : error.message || "Verification failed",
+// Helper function to handle validation errors
+const handleValidationErrors = (req: Request, res: Response): boolean => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({
+      success: false,
+      errors: errors.array(),
     });
+    return false;
   }
-  return res
-    .status(200)
-    .json({ message: "Email verified", session: data?.session });
+  return true;
 };
 
-export const signupController = async (req: Request, res: Response) => {
-  const user = (req as any).user;
-  const { password } = req.body;
-
-  if (!user || !user.id || !user.email) {
-    logger.warn("SIGNUP_UNAUTHORIZED", { user });
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  if (!password) {
-    return res.status(400).json({ error: "Password is required" });
-  }
-
-  if (!supabase) {
-    return res.status(500).json({ error: "Supabase client not configured" });
-  }
-
+// POST /auth/signup
+export const signupRequest = async (req: Request, res: Response) => {
   try {
-    // Update Supabase user password
-    const { data, error } = await supabase.auth.admin.updateUserById(user.id, {
-      password: password,
-    });
+    if (!handleValidationErrors(req, res)) return;
 
-    if (error) {
-      logger.error("SUPABASE_UPDATE_USER_ERROR", {
-        userId: user.id,
-        error: error.message,
+    const { email, password } = req.body;
+
+    const result = await createPendingSignup(email, password);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.error,
       });
-      return res.status(500).json({ error: "Failed to update user password" });
     }
 
-    logger.info("SIGNUP_SUCCESS", {
-      userId: user.id,
-      email: user.email,
-    });
-
-    return res.status(201).json({
-      message: "Signup complete",
-      user: data?.user,
+    return res.status(200).json({
+      success: true,
+      message: "Verification email sent. Please check your inbox.",
     });
   } catch (error) {
-    logger.error("SIGNUP_ERROR", {
-      userId: user?.id,
-      error: error instanceof Error ? error.message : "Unknown error",
+    logger.error("SIGNUP_REQUEST_ERROR", { error });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
-    return res.status(500).json({ error: "Failed to complete signup" });
   }
 };
 
-export const loginController = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required." });
-  }
-
-  if (!supabase) {
-    return res.status(500).json({ error: "Supabase client not configured" });
-  }
-
+// POST /auth/verify
+export const verifyEmail = async (req: Request, res: Response) => {
   try {
-    // Use Supabase Auth for login
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    if (!handleValidationErrors(req, res)) return;
 
-    if (error) {
-      logger.warn("LOGIN_FAILURE", { email, error });
-      return res.status(401).json({ error: "Invalid credentials" });
+    const { token } = req.body;
+
+    const result = await verifySignupToken(token);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.error,
+      });
     }
 
-    logger.info("LOGIN_SUCCESS", {
-      userId: data?.user?.id,
-      email,
+    return res.status(200).json({
+      success: true,
+      message: "Account created successfully. You can now log in.",
+      user: result.user,
     });
+  } catch (error) {
+    logger.error("EMAIL_VERIFICATION_ERROR", { error });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// POST /auth/login
+export const login = async (req: Request, res: Response) => {
+  try {
+    if (!handleValidationErrors(req, res)) return;
+
+    const { email, password } = req.body;
+
+    const result = await authenticateUser(email, password);
+
+    if (!result.success) {
+      return res.status(401).json({
+        success: false,
+        message: result.error,
+      });
+    }
 
     return res.status(200).json({
+      success: true,
       message: "Login successful",
-      session: data?.session,
-      user: data?.user,
+      user: result.user,
+      session: result.session,
     });
   } catch (error) {
-    logger.warn("LOGIN_ERROR", { email, error });
-    return res.status(500).json({ error: "Login failed" });
-  }
-};
-
-export const forgotPasswordController = async (req: Request, res: Response) => {
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ error: "Email is required." });
-  }
-  const result = await authService.forgotPassword(email);
-  logger.info("FORGOT_PASSWORD_REQUEST", { email, result });
-  return res.status(200).json(result);
-};
-
-export const resetPasswordController = async (req: Request, res: Response) => {
-  const { token, newPassword } = req.body;
-  if (!token || !newPassword) {
-    return res
-      .status(400)
-      .json({ error: "Token and new password are required." });
-  }
-  const result = await authService.resetPassword(token, newPassword);
-  logger.info("RESET_PASSWORD", { token, result });
-  return res.status(200).json(result);
-};
-
-export const logoutController = async (req: Request, res: Response) => {
-  const accessToken = req.headers.authorization?.replace("Bearer ", "");
-  if (!accessToken) {
-    return res.status(400).json({ error: "Access token is required." });
-  }
-  const result = await authService.logout(accessToken);
-  logger.info("LOGOUT", { accessToken: accessToken.substring(0, 10) + "..." });
-  return res.status(200).json(result);
-};
-
-export const refreshTokenController = async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
-  if (!refreshToken) {
-    return res.status(400).json({ error: "Refresh token is required." });
-  }
-
-  try {
-    const result = await authService.refreshAccessToken(refreshToken);
-
-    logger.info("TOKEN_REFRESH_SUCCESS", {
-      refreshToken: refreshToken.substring(0, 10) + "...",
+    logger.error("LOGIN_ERROR", { error });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
+  }
+};
+
+// POST /auth/forgot-password
+export const requestPasswordReset = async (req: Request, res: Response) => {
+  try {
+    if (!handleValidationErrors(req, res)) return;
+
+    const { email } = req.body;
+
+    const result = await requestReset(email);
+
+    // Always return success to prevent email enumeration
+    return res.status(200).json({
+      success: true,
+      message:
+        "If an account with this email exists, a password reset link has been sent.",
+    });
+  } catch (error) {
+    logger.error("PASSWORD_RESET_REQUEST_ERROR", { error });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// POST /auth/reset-password
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    if (!handleValidationErrors(req, res)) return;
+
+    const { token, password } = req.body;
+
+    const result = await resetPasswordWithToken(token, password);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.error,
+      });
+    }
 
     return res.status(200).json({
-      message: "Token refreshed successfully",
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
+      success: true,
+      message:
+        "Password reset successfully. You can now log in with your new password.",
     });
   } catch (error) {
-    logger.warn("TOKEN_REFRESH_FAILURE", { error });
-    return res.status(401).json({ error: "Invalid or expired refresh token" });
+    logger.error("PASSWORD_RESET_ERROR", { error });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// POST /auth/logout
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const result = await logoutUser(req);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.error,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    logger.error("LOGOUT_ERROR", { error });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// GET /auth/me
+export const getCurrentUser = async (req: Request, res: Response) => {
+  try {
+    const result = await getCurrentUserData(req);
+
+    if (!result.success) {
+      return res.status(401).json({
+        success: false,
+        message: result.error,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: result.user,
+    });
+  } catch (error) {
+    logger.error("GET_CURRENT_USER_ERROR", { error });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };

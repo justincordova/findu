@@ -1,39 +1,37 @@
 import { Router } from "express";
 import {
-  requestOtpCodeController,
-  verifyOtpCodeController,
-  signupController,
-  loginController,
-  refreshTokenController,
-  forgotPasswordController,
-  resetPasswordController,
-  logoutController,
+  validateSignupRequest,
+  validateEmailVerification,
+  validateLogin,
+  validatePasswordResetRequest,
+  validatePasswordReset,
+} from "./validators";
+import {
+  signupRequest,
+  verifyEmail,
+  login,
+  requestPasswordReset,
+  resetPassword,
+  logout,
+  getCurrentUser,
 } from "./controllers";
-import { validateEmailOnly, validateSignup, validateLogin } from "./validators";
-import { handleValidationErrors } from "@/middleware/error/handleValidationErrors";
 import { requireSupabaseAuth } from "@/middleware/auth/requireSupabaseAuth";
 
 const router = Router();
 
-// Auth Routes
+// Public routes (no authentication required)
+router.post("/signup", validateSignupRequest, signupRequest);
+router.post("/verify", validateEmailVerification, verifyEmail);
+router.post("/login", validateLogin, login);
 router.post(
-  "/send-otp",
-  validateEmailOnly,
-  handleValidationErrors,
-  requestOtpCodeController
+  "/forgot-password",
+  validatePasswordResetRequest,
+  requestPasswordReset
 );
-router.post("/verify-otp", handleValidationErrors, verifyOtpCodeController);
-router.post(
-  "/signup",
-  requireSupabaseAuth,
-  validateSignup,
-  handleValidationErrors,
-  signupController
-);
-router.post("/login", validateLogin, handleValidationErrors, loginController);
-router.post("/refresh-token", refreshTokenController);
-router.post("/logout", logoutController);
-router.post("/forgot-password", forgotPasswordController);
-router.post("/reset-password", resetPasswordController);
+router.post("/reset-password", validatePasswordReset, resetPassword);
+
+// Protected routes (authentication required)
+router.post("/logout", requireSupabaseAuth, logout);
+router.get("/me", requireSupabaseAuth, getCurrentUser);
 
 export default router;

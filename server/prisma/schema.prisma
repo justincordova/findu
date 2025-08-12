@@ -481,6 +481,20 @@ model universities {
   @@schema("public")
 }
 
+model pending_signups {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email             String    @unique
+  hashed_password   String
+  verification_token String   @unique
+  expires_at        DateTime  @db.Timestamptz(6)
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([verification_token])
+  @@index([email])
+  @@schema("public")
+}
+
 enum aal_level {
   aal1
   aal2

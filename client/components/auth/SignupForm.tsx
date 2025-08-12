@@ -8,40 +8,34 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { PRIMARY, DARK, MUTED } from "../../constants/theme";
+import { signup } from "../../api/auth";
 
 export default function SignupForm() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleVerify = async () => {
+  const handleSignup = async () => {
     setError("");
     if (!/^[\w.+-]+@[\w-]+\.edu$/i.test(email)) {
       setError("Only .edu emails are allowed.");
       return;
     }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
     setLoading(true);
     try {
-      const apiUrl = `${
-        process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000"
-      }/api/auth/send-otp`;
-      console.log("Calling API:", apiUrl);
-      console.log("Request body:", { email });
-      const res = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Failed to send verification email.");
+      const result = await signup({ email, password });
+      if (result.success) {
+        router.push({ pathname: "/auth/signup-success", params: { email } });
       } else {
-        router.push({ pathname: "/auth/verify-email", params: { email } });
+        setError(result.message || "Failed to create account.");
       }
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
@@ -63,14 +57,28 @@ export default function SignupForm() {
       <Text style={styles.note}>
         Only <Text style={styles.primaryText}>.edu</Text> emails are allowed.
       </Text>
+      <Text style={styles.label}>Password</Text>
+      <TextInput
+        style={[styles.input, styles.passwordInput]}
+        placeholder="Enter your password"
+        placeholderTextColor="#999"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        autoCapitalize="none"
+      />
+      <Text style={styles.note}>
+        Password must be at least 8 characters with uppercase, lowercase,
+        number, and special character.
+      </Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleVerify}
+        onPress={handleSignup}
         disabled={loading}
       >
         <Text style={styles.buttonText}>
-          {loading ? "Sending..." : "Verify Email"}
+          {loading ? "Creating..." : "Signup"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -99,6 +107,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   emailInput: {
+    marginBottom: 24,
+  },
+  passwordInput: {
     marginBottom: 24,
   },
   note: {

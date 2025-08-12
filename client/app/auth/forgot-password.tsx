@@ -7,40 +7,30 @@ import {
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { PRIMARY, BACKGROUND, DARK, MUTED } from "../../constants/theme";
+import { PRIMARY, DARK, MUTED } from "../../constants/theme";
+import { requestPasswordReset } from "../../api/auth";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleResetPassword = async () => {
+  const handleRequestReset = async () => {
     setError("");
-    setSuccess("");
+    if (!/^[\w.+-]+@[\w-]+\.edu$/i.test(email)) {
+      setError("Please enter a valid .edu email address.");
+      return;
+    }
+
     setLoading(true);
-
     try {
-      const res = await fetch(
-        `${
-          process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000"
-        }/api/auth/forgot-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Failed to send reset email");
+      const result = await requestPasswordReset({ email });
+      if (result.success) {
+        setSuccess(true);
       } else {
-        setSuccess(data.message || "Reset email sent successfully");
+        setError(result.message || "Failed to send reset email.");
       }
     } catch {
       setError("Network error. Please try again.");
@@ -49,12 +39,37 @@ export default function ForgotPassword() {
     }
   };
 
+  const handleGoToLogin = () => {
+    router.push("/auth");
+  };
+
+  if (success) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Check Your Email!</Text>
+          <Text style={styles.subtitle}>
+            We've sent a password reset link to:
+          </Text>
+          <Text style={styles.email}>{email}</Text>
+          <Text style={styles.message}>
+            Click the link in your email to reset your password.
+          </Text>
+
+          <TouchableOpacity style={styles.button} onPress={handleGoToLogin}>
+            <Text style={styles.buttonText}>Back to Login</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Forgot Password</Text>
+      <View style={styles.content}>
+        <Text style={styles.title}>Reset Password</Text>
         <Text style={styles.subtitle}>
-          Enter your email address and we&apos;ll send you a link to reset your
+          Enter your email address and we'll send you a link to reset your
           password.
         </Text>
 
@@ -68,26 +83,30 @@ export default function ForgotPassword() {
           keyboardType="email-address"
           autoCapitalize="none"
         />
+        <Text style={styles.note}>
+          Only <Text style={styles.primaryText}>.edu</Text> emails are allowed.
+        </Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        {success ? <Text style={styles.success}>{success}</Text> : null}
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleResetPassword}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? "Sending..." : "Send Reset Link"}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.button, styles.secondaryButton]}
+            onPress={handleGoToLogin}
+          >
+            <Text style={styles.secondaryButtonText}>Back to Login</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backButtonText}>Back to Login</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleRequestReset}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>
+              {loading ? "Sending..." : "Send Reset Link"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -96,44 +115,34 @@ export default function ForgotPassword() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
+    backgroundColor: "white",
     justifyContent: "center",
-    backgroundColor: BACKGROUND,
-    paddingHorizontal: 24,
+    alignItems: "center",
+    padding: 24,
   },
-  card: {
+  content: {
     width: "100%",
     maxWidth: 400,
-    backgroundColor: "white",
-    borderRadius: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 6,
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-    alignItems: "center",
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: "bold",
     color: DARK,
-    marginBottom: 8,
+    marginBottom: 16,
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
     color: MUTED,
-    marginBottom: 24,
+    marginBottom: 32,
     textAlign: "center",
+    lineHeight: 22,
   },
   label: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 8,
     color: DARK,
-    alignSelf: "flex-start",
-    width: "100%",
   },
   input: {
     borderWidth: 1,
@@ -143,53 +152,62 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginBottom: 16,
     backgroundColor: "white",
-    width: "100%",
     fontSize: 16,
+  },
+  note: {
+    fontSize: 12,
+    color: MUTED,
+    marginBottom: 24,
+  },
+  primaryText: {
+    color: PRIMARY,
+    fontWeight: "600",
   },
   error: {
     color: "#EF4444",
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 24,
   },
-  success: {
-    color: "#10B981",
-    textAlign: "center",
-    marginBottom: 16,
+  buttonContainer: {
+    gap: 16,
   },
   button: {
     backgroundColor: PRIMARY,
     borderRadius: 9999,
-    paddingVertical: 14,
-    width: "100%",
+    paddingVertical: 16,
+    paddingHorizontal: 32,
     alignItems: "center",
-    marginBottom: 16,
+  },
+  secondaryButton: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: PRIMARY,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
   buttonText: {
     color: "white",
-    textAlign: "center",
     fontWeight: "bold",
     fontSize: 16,
   },
-  backButton: {
-    paddingVertical: 8,
-  },
-  backButtonText: {
+  secondaryButtonText: {
     color: PRIMARY,
+    fontWeight: "bold",
     fontSize: 16,
+  },
+  email: {
+    fontSize: 18,
     fontWeight: "600",
-  },
-  note: {
-    fontSize: 14,
-    color: MUTED,
-    marginTop: 8,
-    textAlign: "center",
-    width: "100%",
-  },
-  primaryText: {
     color: PRIMARY,
-    fontWeight: "bold",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  message: {
+    fontSize: 16,
+    color: MUTED,
+    marginBottom: 40,
+    textAlign: "center",
+    lineHeight: 22,
   },
 });

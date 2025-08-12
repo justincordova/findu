@@ -22,12 +22,30 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Third-party Middleware
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    credentials: true,
-  })
-);
+const allowedOrigins = [
+  process.env.FRONTEND_URL, // preferred explicit origin
+  "http://localhost:8081", // Expo web (local)
+  "http://127.0.0.1:8081",
+  "http://localhost:3000", // fallback
+].filter(Boolean) as string[];
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // allow non-browser clients
+
+    // Allow explicit list
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    // Allow LAN Expo web on port 8081 (e.g., http://192.168.x.x:8081)
+    const lanExpoRegex = /^http:\/\/(\d{1,3}\.){3}\d{1,3}:8081$/;
+    if (lanExpoRegex.test(origin)) return callback(null, true);
+
+    callback(new Error(`Not allowed by CORS: ${origin}`));
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(helmet());
 app.use(compression());
 app.use(morgan("dev"));

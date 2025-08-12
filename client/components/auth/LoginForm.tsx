@@ -9,6 +9,7 @@ import {
 import { useRouter } from "expo-router";
 import { PRIMARY, DARK } from "../../constants/theme";
 import { useAuthStore } from "../../store/authStore";
+import { login as loginApi } from "../../api/auth";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -22,26 +23,13 @@ export default function LoginForm() {
     setError("");
     setLoading(true);
     try {
-      const apiUrl = `${
-        process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000"
-      }/api/auth/login`;
-
-      const res = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Login failed");
-      } else {
+      const result = await loginApi({ email, password });
+      if (result.success) {
         // Store session data
-        login(data.user, data.session);
+        login(result.user, result.session);
         router.replace("/home/(tabs)/discover");
+      } else {
+        setError(result.message || "Login failed");
       }
     } catch {
       setError("Network error. Please try again.");
