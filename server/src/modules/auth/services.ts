@@ -1,18 +1,18 @@
 import { supabase } from "@/lib/supabase";
 import prisma from "@/lib/prisma";
-import { sendVerificationEmail } from "@/services/emailService";
+import { sendOTPEmail } from "@/services/emailService";
+import { otpStore } from "@/services/otpStore";
 import logger from "@/config/logger";
 import { Request } from "express";
 import { AuthResult, PendingSignupResult } from "@/types/auth";
 import {
-  generateVerificationToken,
-  hashPassword,
+  generateOTP,
   generateTokenExpiration,
   isTokenExpired,
   extractBearerToken,
 } from "@/utils/auth";
 
-// Create pending signup
+// Create pending signup with OTP
 export const createPendingSignup = async (
   email: string,
   password: string
@@ -29,54 +29,34 @@ export const createPendingSignup = async (
       };
     }
 
-    // Check if there's already a pending signup
-    const existingPending = await prisma.pending_signups.findUnique({
-      where: { email },
-    });
-
-    if (existingPending) {
-      // Delete existing pending signup
-      await prisma.pending_signups.delete({
-        where: { email },
-      });
+    // Check if there's already a pending OTP
+    if (await otpStore.hasOTP(email)) {
+      // Remove existing OTP
+      await otpStore.removeOTP(email);
     }
 
-    // Generate verification token
-    const verificationToken = generateVerificationToken();
+    // Generate 6-digit OTP
+    const otp = generateOTP();
 
-    // Set expiration (24 hours from now)
-    const expiresAt = generateTokenExpiration();
+    // Store OTP in memory (10 minutes expiration)
+    await otpStore.storeOTP(email, otp, password, 600);
 
-    // Create pending signup
-    // Store the plain password temporarily (encrypted in production)
-    await prisma.pending_signups.create({
-      data: {
-        email,
-        hashed_password: password, // Store plain password temporarily
-        verification_token: verificationToken,
-        expires_at: expiresAt,
-      },
-    });
-
-    // Send verification email
-    const emailResult = await sendVerificationEmail({
+    // Send OTP email
+    const emailResult = await sendOTPEmail({
       email,
-      verificationToken,
-      userId: verificationToken, // Using token as userId for email service
+      otp,
     });
 
     if (!emailResult.success) {
-      // Clean up pending signup if email fails
-      await prisma.pending_signups.delete({
-        where: { email },
-      });
+      // Clean up OTP if email fails
+      await otpStore.removeOTP(email);
       return {
         success: false,
-        error: "Failed to send verification email",
+        error: "Failed to send OTP email",
       };
     }
 
-    logger.info("PENDING_SIGNUP_CREATED", { email });
+    logger.info("PENDING_SIGNUP_CREATED_WITH_OTP", { email });
 
     return { success: true };
   } catch (error) {
@@ -88,45 +68,34 @@ export const createPendingSignup = async (
   }
 };
 
-// Verify signup token and create user
-export const verifySignupToken = async (token: string): Promise<AuthResult> => {
+// Verify OTP and create user
+export const verifyOTP = async (
+  email: string,
+  otp: string
+): Promise<AuthResult> => {
   try {
-    // Find pending signup
-    const pendingSignup = await prisma.pending_signups.findUnique({
-      where: { verification_token: token },
-    });
+    // Verify OTP from memory store
+    const otpResult = await otpStore.verifyOTP(email, otp);
 
-    if (!pendingSignup) {
+    if (!otpResult.valid) {
       return {
         success: false,
-        error: "Invalid verification token",
+        error: otpResult.error || "Invalid OTP",
       };
     }
 
-    // Check if token is expired
-    if (isTokenExpired(pendingSignup.expires_at)) {
-      // Clean up expired token
-      await prisma.pending_signups.delete({
-        where: { verification_token: token },
-      });
-      return {
-        success: false,
-        error: "Verification token has expired",
-      };
-    }
-
-    // Create user in Supabase
+    // OTP is valid, create user in Supabase
     const { data: authData, error: authError } =
       await supabase.auth.admin.createUser({
-        email: pendingSignup.email,
-        password: pendingSignup.hashed_password, // This is now the plain password
+        email: email,
+        password: otpResult.password!,
         email_confirm: true,
       });
 
     if (authError || !authData.user) {
       logger.error("SUPABASE_USER_CREATION_ERROR", {
         error: authError,
-        email: pendingSignup.email,
+        email: email,
       });
       return {
         success: false,
@@ -134,13 +103,8 @@ export const verifySignupToken = async (token: string): Promise<AuthResult> => {
       };
     }
 
-    // Clean up pending signup
-    await prisma.pending_signups.delete({
-      where: { verification_token: token },
-    });
-
-    logger.info("USER_CREATED_SUCCESSFULLY", {
-      email: pendingSignup.email,
+    logger.info("USER_CREATED_SUCCESSFULLY_WITH_OTP", {
+      email: email,
       userId: authData.user.id,
     });
 
@@ -153,10 +117,10 @@ export const verifySignupToken = async (token: string): Promise<AuthResult> => {
       },
     };
   } catch (error) {
-    logger.error("VERIFY_SIGNUP_TOKEN_ERROR", { error, token });
+    logger.error("VERIFY_OTP_ERROR", { error, email });
     return {
       success: false,
-      error: "Failed to verify signup token",
+      error: "Failed to verify OTP",
     };
   }
 };

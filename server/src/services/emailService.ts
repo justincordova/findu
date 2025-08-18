@@ -19,6 +19,11 @@ export interface EmailVerificationData {
   userId: string;
 }
 
+export interface OTPEmailData {
+  email: string;
+  otp: string;
+}
+
 export async function sendVerificationEmail(
   data: EmailVerificationData
 ): Promise<{ success: boolean; error?: string }> {
@@ -99,6 +104,73 @@ export async function sendVerificationEmail(
         error instanceof Error
           ? error.message
           : "Failed to send verification email",
+    };
+  }
+}
+
+export async function sendOTPEmail(
+  data: OTPEmailData
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || "FindU <findu.team@gmail.com>",
+      to: data.email,
+      subject: "Your FindU verification code",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">FindU</h1>
+            <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">Verify your account</p>
+          </div>
+          
+          <div style="background: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <h2 style="color: #333; margin-bottom: 20px;">Your verification code</h2>
+            <p style="color: #666; line-height: 1.6; margin-bottom: 30px;">
+              Thanks for signing up! To complete your account creation, 
+              please enter this verification code in the app:
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <div style="background: #f8f9fa; border: 2px solid #667eea; border-radius: 10px; padding: 20px; display: inline-block;">
+                <span style="font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 5px; font-family: monospace;">
+                  ${data.otp}
+                </span>
+              </div>
+            </div>
+            
+            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+              Enter this code in the verification screen to complete your signup.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            
+            <p style="color: #999; font-size: 14px; text-align: center;">
+              This code will expire in 10 minutes. If you didn't sign up for FindU, 
+              you can safely ignore this email.
+            </p>
+          </div>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    logger.info("OTP_EMAIL_SENT", {
+      email: data.email,
+      messageId: info.messageId,
+    });
+
+    return { success: true };
+  } catch (error) {
+    logger.error("OTP_EMAIL_ERROR", {
+      email: data.email,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to send OTP email",
     };
   }
 }

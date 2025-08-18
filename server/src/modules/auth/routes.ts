@@ -1,14 +1,14 @@
 import { Router } from "express";
 import {
   validateSignupRequest,
-  validateEmailVerification,
+  validateOTPVerification,
   validateLogin,
   validatePasswordResetRequest,
   validatePasswordReset,
 } from "./validators";
 import {
   signupRequest,
-  verifyEmail,
+  verifyOTP,
   login,
   requestPasswordReset,
   resetPassword,
@@ -21,7 +21,7 @@ const router = Router();
 
 // Public routes (no authentication required)
 router.post("/signup", validateSignupRequest, signupRequest);
-router.post("/verify", validateEmailVerification, verifyEmail);
+router.post("/verify-otp", validateOTPVerification, verifyOTP);
 router.post("/login", validateLogin, login);
 router.post(
   "/forgot-password",
