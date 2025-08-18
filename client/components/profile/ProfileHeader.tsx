@@ -1,5 +1,6 @@
-import { View, Text, Image, StyleSheet } from "react-native";
-import { PRIMARY, DARK, MUTED } from "../../constants/theme";
+import React from "react";
+import { View, Text, StyleSheet, Image } from "react-native";
+import { PRIMARY, DARK } from "../../constants/theme";
 
 interface ProfileHeaderProps {
   name: string;

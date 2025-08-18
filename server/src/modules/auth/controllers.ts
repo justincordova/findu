@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import {
   createPendingSignup,
-  verifySignupToken,
+  verifyOTP as verifyOTPService,
   authenticateUser,
   requestPasswordReset as requestReset,
   resetPasswordWithToken,
@@ -42,7 +42,8 @@ export const signupRequest = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: "Verification email sent. Please check your inbox.",
+      message:
+        "OTP sent to your email. Please check your inbox and enter the code.",
     });
   } catch (error) {
     logger.error("SIGNUP_REQUEST_ERROR", { error });
@@ -53,14 +54,14 @@ export const signupRequest = async (req: Request, res: Response) => {
   }
 };
 
-// POST /auth/verify
-export const verifyEmail = async (req: Request, res: Response) => {
+// POST /auth/verify-otp
+export const verifyOTP = async (req: Request, res: Response) => {
   try {
     if (!handleValidationErrors(req, res)) return;
 
-    const { token } = req.body;
+    const { email, otp } = req.body;
 
-    const result = await verifySignupToken(token);
+    const result = await verifyOTPService(email, otp);
 
     if (!result.success) {
       return res.status(400).json({
@@ -75,7 +76,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
       user: result.user,
     });
   } catch (error) {
-    logger.error("EMAIL_VERIFICATION_ERROR", { error });
+    logger.error("OTP_VERIFICATION_ERROR", { error });
     return res.status(500).json({
       success: false,
       message: "Internal server error",

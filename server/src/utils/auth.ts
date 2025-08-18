@@ -10,6 +10,14 @@ export const generateVerificationToken = (): string => {
 };
 
 /**
+ * Generate a 6-digit OTP
+ * @returns A 6-digit OTP string
+ */
+export const generateOTP = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+/**
  * Hash a password using bcrypt with salt rounds of 12
  * @param password - The plain text password to hash
  * @returns Promise<string> - The hashed password
@@ -33,12 +41,13 @@ export const verifyPassword = async (
 };
 
 /**
- * Generate an expiration date for tokens (24 hours from now)
+ * Generate an expiration date for tokens (default: 24 hours from now)
+ * @param seconds - Optional: seconds from now (default: 86400 = 24 hours)
  * @returns Date - The expiration date
  */
-export const generateTokenExpiration = (): Date => {
+export const generateTokenExpiration = (seconds: number = 86400): Date => {
   const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + 24);
+  expiresAt.setSeconds(expiresAt.getSeconds() + seconds);
   return expiresAt;
 };
 
@@ -56,7 +65,9 @@ export const isTokenExpired = (expiresAt: Date): boolean => {
  * @param authHeader - The Authorization header value
  * @returns string | null - The token if valid, null otherwise
  */
-export const extractBearerToken = (authHeader: string | undefined): string | null => {
+export const extractBearerToken = (
+  authHeader: string | undefined
+): string | null => {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;
   }

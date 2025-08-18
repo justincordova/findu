@@ -28,6 +28,21 @@ export const validateEmailVerification = [
     .withMessage("Verification token is required"),
 ];
 
+// For OTP verification (email + OTP)
+export const validateOTPVerification = [
+  body("email")
+    .isEmail()
+    .withMessage("Invalid email format")
+    .matches(/^[\w.+-]+@[\w-]+\.edu$/i)
+    .withMessage("Email must be a .edu address"),
+  body("otp")
+    .isString()
+    .isLength({ min: 6, max: 6 })
+    .withMessage("OTP must be exactly 6 digits")
+    .matches(/^\d{6}$/)
+    .withMessage("OTP must contain only digits"),
+];
+
 // For login
 export const validateLogin = [
   body("email")

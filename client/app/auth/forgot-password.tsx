@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,32 +7,38 @@ import {
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { PRIMARY, DARK, MUTED } from "../../constants/theme";
+import { PRIMARY, DARK, MUTED, BACKGROUND } from "../../constants/theme";
 import { requestPasswordReset } from "../../api/auth";
 
-export default function ForgotPassword() {
+export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleRequestReset = async () => {
-    setError("");
-    if (!/^[\w.+-]+@[\w-]+\.edu$/i.test(email)) {
-      setError("Please enter a valid .edu email address.");
+    if (!email) {
+      setError("Please enter your email address");
       return;
     }
 
+    if (!/^[\w.+-]+@[\w-]+\.edu$/i.test(email)) {
+      setError("Please enter a valid .edu email address");
+      return;
+    }
+
+    setError("");
     setLoading(true);
+
     try {
-      const result = await requestPasswordReset({ email });
+      const result = await requestPasswordReset(email);
       if (result.success) {
         setSuccess(true);
       } else {
-        setError(result.message || "Failed to send reset email.");
+        setError(result.message || "Failed to send reset code");
       }
-    } catch {
+    } catch (error: any) {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
@@ -40,7 +46,7 @@ export default function ForgotPassword() {
   };
 
   const handleGoToLogin = () => {
-    router.push("/auth");
+    router.replace("/auth");
   };
 
   if (success) {
@@ -49,11 +55,11 @@ export default function ForgotPassword() {
         <View style={styles.content}>
           <Text style={styles.title}>Check Your Email!</Text>
           <Text style={styles.subtitle}>
-            We've sent a password reset link to:
+            We&apos;ve sent a password reset code to:
           </Text>
           <Text style={styles.email}>{email}</Text>
           <Text style={styles.message}>
-            Click the link in your email to reset your password.
+            Enter the 6-digit code from your email to reset your password.
           </Text>
 
           <TouchableOpacity style={styles.button} onPress={handleGoToLogin}>
@@ -68,9 +74,9 @@ export default function ForgotPassword() {
     <View style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Reset Password</Text>
-        <Text style={styles.subtitle}>
-          Enter your email address and we'll send you a link to reset your
-          password.
+        <Text style={styles.description}>
+          Don&apos;t worry! Enter your email address and we&apos;ll send you a
+          6-digit verification code to reset your password.
         </Text>
 
         <Text style={styles.label}>Email</Text>
@@ -84,7 +90,7 @@ export default function ForgotPassword() {
           autoCapitalize="none"
         />
         <Text style={styles.note}>
-          Only <Text style={styles.primaryText}>.edu</Text> emails are allowed.
+          Didn&apos;t receive the code? Check your spam folder or try again.
         </Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -103,7 +109,7 @@ export default function ForgotPassword() {
             disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {loading ? "Sending..." : "Send Reset Link"}
+              {loading ? "Sending..." : "Send Reset Code"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -132,6 +138,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   subtitle: {
+    fontSize: 16,
+    color: MUTED,
+    marginBottom: 32,
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  description: {
     fontSize: 16,
     color: MUTED,
     marginBottom: 32,

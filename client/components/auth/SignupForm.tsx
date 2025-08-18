@@ -27,15 +27,22 @@ export default function SignupForm() {
       setError("Password must be at least 8 characters long.");
       return;
     }
+
     setLoading(true);
     try {
+      console.log("SignupForm: Sending signup request to backend...");
+
       const result = await signup({ email, password });
+      console.log("SignupForm: Backend response:", result);
+
       if (result.success) {
-        router.push({ pathname: "/auth/signup-success", params: { email } });
+        // Signup successful, redirect to OTP verification
+        router.push({ pathname: "/auth/verify-otp", params: { email } });
       } else {
         setError(result.message || "Failed to create account.");
       }
-    } catch {
+    } catch (error: any) {
+      console.error("SignupForm: Signup error:", error);
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);

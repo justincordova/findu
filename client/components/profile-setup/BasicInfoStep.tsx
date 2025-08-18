@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,8 +8,6 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Picker } from "@react-native-picker/picker";
-import { useState } from "react";
 import { ProfileSetupData } from "../../app/profile-setup/[step]";
 import DropDownPicker from "react-native-dropdown-picker";
 import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
