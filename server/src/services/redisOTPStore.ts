@@ -5,10 +5,10 @@ interface OTPData {
   otp: string;
   email: string;
   password: string;
-  expiresAt: number; // Unix timestamp
+  expiresAt: number;
 }
 
-class RedisOTPStore {
+export class RedisOTPStore {
   private redis: Redis;
   private isConnected: boolean = false;
 
@@ -36,74 +36,35 @@ class RedisOTPStore {
     });
   }
 
-  /**
-   * Store OTP with expiration
-   */
-  async storeOTP(
-    email: string,
-    otp: string,
-    password: string,
-    expiresInSeconds: number = 600
-  ): Promise<void> {
-    if (!this.isConnected) {
-      throw new Error("Redis not connected");
-    }
+  async storeOTP(email: string, otp: string, password: string, expiresInSeconds: number = 600): Promise<void> {
+    if (!this.isConnected) throw new Error("Redis not connected");
 
     const expiresAt = Math.floor(Date.now() / 1000) + expiresInSeconds;
-    const otpData: OTPData = {
-      otp,
-      email,
-      password,
-      expiresAt,
-    };
-
+    const otpData: OTPData = { otp, email, password, expiresAt };
     const key = `otp:${email}`;
     await this.redis.setex(key, expiresInSeconds, JSON.stringify(otpData));
 
-    logger.info("REDIS_OTP_STORED", {
-      email,
-      expiresAt: new Date(expiresAt * 1000).toISOString(),
-      key,
-    });
+    logger.info("REDIS_OTP_STORED", { email, expiresAt: new Date(expiresAt * 1000).toISOString(), key });
   }
 
-  /**
-   * Verify OTP and return data if valid
-   */
-  async verifyOTP(
-    email: string,
-    otp: string
-  ): Promise<{ valid: boolean; password?: string; error?: string }> {
-    if (!this.isConnected) {
-      throw new Error("Redis not connected");
-    }
+  async verifyOTP(email: string, otp: string): Promise<{ valid: boolean; password?: string; error?: string }> {
+    if (!this.isConnected) throw new Error("Redis not connected");
 
     const key = `otp:${email}`;
     const otpDataString = await this.redis.get(key);
-
-    if (!otpDataString) {
-      return { valid: false, error: "No OTP found for this email" };
-    }
+    if (!otpDataString) return { valid: false, error: "No OTP found for this email" };
 
     try {
       const otpData: OTPData = JSON.parse(otpDataString);
-
-      if (otpData.otp !== otp) {
-        return { valid: false, error: "Invalid OTP" };
-      }
-
+      if (otpData.otp !== otp) return { valid: false, error: "Invalid OTP" };
       if (otpData.expiresAt < Math.floor(Date.now() / 1000)) {
-        // Remove expired OTP
         await this.redis.del(key);
         return { valid: false, error: "OTP has expired" };
       }
 
-      // OTP is valid, remove it from store and return password
       const password = otpData.password;
       await this.redis.del(key);
-
       logger.info("REDIS_OTP_VERIFIED_SUCCESSFULLY", { email });
-
       return { valid: true, password };
     } catch (error) {
       logger.error("REDIS_OTP_PARSE_ERROR", { error, email });
@@ -111,59 +72,29 @@ class RedisOTPStore {
     }
   }
 
-  /**
-   * Check if OTP exists for email
-   */
   async hasOTP(email: string): Promise<boolean> {
-    if (!this.isConnected) {
-      return false;
-    }
-
-    const key = `otp:${email}`;
-    const exists = await this.redis.exists(key);
+    if (!this.isConnected) return false;
+    const exists = await this.redis.exists(`otp:${email}`);
     return exists === 1;
   }
 
-  /**
-   * Remove OTP for email
-   */
   async removeOTP(email: string): Promise<void> {
-    if (!this.isConnected) {
-      return;
-    }
-
-    const key = `otp:${email}`;
-    await this.redis.del(key);
+    if (!this.isConnected) return;
+    await this.redis.del(`otp:${email}`);
     logger.info("REDIS_OTP_REMOVED", { email });
   }
 
-  /**
-   * Get store statistics
-   */
-  async getStats(): Promise<{ totalOTPs: number; storeSize: number }> {
-    if (!this.isConnected) {
-      return { totalOTPs: 0, storeSize: 0 };
-    }
+  async getStats(): Promise<{ totalOTPs: number; storeSize: number; storageType: "redis" | "memory" }> {
+    if (!this.isConnected) return { totalOTPs: 0, storeSize: 0, storageType: "memory" };
 
     const keys = await this.redis.keys("otp:*");
-    return {
-      totalOTPs: keys.length,
-      storeSize: keys.length,
-    };
+    return { totalOTPs: keys.length, storeSize: keys.length, storageType: "redis" };
   }
 
-  /**
-   * Cleanup on shutdown
-   */
   async destroy(): Promise<void> {
-    if (this.redis) {
-      await this.redis.quit();
-    }
+    if (this.redis) await this.redis.quit();
   }
 
-  /**
-   * Check connection status
-   */
   isReady(): boolean {
     return this.isConnected;
   }
