@@ -1,5 +1,4 @@
 import { supabase } from "@/lib/supabase";
-import prisma from "@/lib/prisma";
 import { sendOTPEmail } from "@/services/emailService";
 import { otpStore } from "@/services/otpStore";
 import logger from "@/config/logger";
@@ -7,8 +6,6 @@ import { Request } from "express";
 import { AuthResult, PendingSignupResult } from "@/types/auth";
 import {
   generateOTP,
-  generateTokenExpiration,
-  isTokenExpired,
   extractBearerToken,
 } from "@/utils/auth";
 
