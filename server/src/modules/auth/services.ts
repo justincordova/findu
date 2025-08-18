@@ -199,6 +199,7 @@ export const authenticateUser = async (
   }
 };
 
+// STILL WORKING ON THIS AND BELOW
 // Request password reset
 export const requestPasswordReset = async (
   email: string
@@ -252,7 +253,7 @@ export const resetPasswordWithToken = async (
     // First, we need to verify the recovery token and then update the password
     // This is typically handled by Supabase's built-in flow
     // For now, we'll use the updateUser method, but in a real implementation
-    // you might need to handle the recovery token differently
+    // We need to handle the recovery token differently
 
     const { data, error } = await supabase.auth.updateUser({
       password: newPassword,
