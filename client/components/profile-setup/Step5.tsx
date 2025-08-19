@@ -1,65 +1,72 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  Image,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import React, { useState, useCallback, useMemo } from "react";
+import { View, Text, TouchableOpacity, TextInput, Image, StyleSheet, ScrollView } from "react-native";
+import * as ImagePicker from "expo-image-picker"; // For picking images from the gallery
 import { Ionicons } from "@expo/vector-icons";
 import { ProfileSetupData } from "../../types/ProfileSetupData";
 import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
+import { useNavigation } from "@react-navigation/native";
 
 interface Step5Props {
-  data: ProfileSetupData;
-  onUpdate: (data: Partial<ProfileSetupData>) => void;
-  onNext: () => void;
-  onBack: () => void;
+  data: ProfileSetupData; // Current profile data from parent
+  onUpdate: (data: Partial<ProfileSetupData>) => void; // Callback to update parent state
+  onNext: () => void; // Callback to move to next step
 }
 
-export default function Step5({ data, onUpdate, onNext, onBack }: Step5Props) {
+export default function Step5({ data, onUpdate, onNext }: Step5Props) {
+  const navigation = useNavigation(); // For back navigation
+
+  /** Local state for bio and avatar */
   const [bio, setBio] = useState(data.bio || "");
   const [avatarUri, setAvatarUri] = useState(data.avatar_url || "");
 
-  const handleBioChange = (text: string) => {
-    if (text.length <= 500) {
-      setBio(text);
-      onUpdate({ bio: text });
-    }
-  };
+  /** Handle bio text changes, limited to 500 characters */
+  const handleBioChange = useCallback(
+    (text: string) => {
+      if (text.length <= 500) {
+        setBio(text);
+        onUpdate({ bio: text }); // Update parent state
+      }
+    },
+    [onUpdate]
+  );
 
-  const pickImage = async () => {
+  /** Pick image from library and update avatar */
+  const pickImage = useCallback(async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) return;
+    if (!permissionResult.granted) return; // Exit if permission denied
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Only images
+      allowsEditing: true, // Allow cropping
+      aspect: [1, 1], // Square aspect ratio
+      quality: 0.8, // Compression
     });
 
     if (!result.canceled) {
-      setAvatarUri(result.assets[0].uri);
-      onUpdate({ avatar_url: result.assets[0].uri });
+      const uri = result.assets[0].uri;
+      setAvatarUri(uri); // Update local state
+      onUpdate({ avatar_url: uri }); // Update parent state
     }
-  };
+  }, [onUpdate]);
 
-  const canContinue = bio.length > 0 && avatarUri.length > 0;
+  /** Temporary: always allow continue */
+  const canContinue = useMemo(() => true, []);
+
+  /** Back button handler */
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
 
   return (
     <View style={styles.container}>
+      {/* Header section */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={DARK} />
         </TouchableOpacity>
         <Text style={styles.title}>Profile Details</Text>
         <Text style={styles.subtitle}>Add a bio and profile picture</Text>
       </View>
 
+      {/* Form section */}
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
         {/* Profile Picture */}
         <View style={styles.fieldContainer}>
@@ -91,6 +98,7 @@ export default function Step5({ data, onUpdate, onNext, onBack }: Step5Props) {
         </View>
       </ScrollView>
 
+      {/* Continue button */}
       <TouchableOpacity
         onPress={onNext}
         disabled={!canContinue}

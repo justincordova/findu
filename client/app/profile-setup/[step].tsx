@@ -1,29 +1,30 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { PRIMARY, DARK, BACKGROUND } from "../../constants/theme";
 import { ProfileSetupData } from "../../types/ProfileSetupData";
 
-// Step components
-import Step0 from "../../components/profile-setup/Step0"; // Welcome
-import Step1 from "../../components/profile-setup/Step1"; // Welcome
-import Step2 from "../../components/profile-setup/Step2"; // Basic Info
-import Step3 from "../../components/profile-setup/Step3"; // Preferences
-import Step4 from "../../components/profile-setup/Step4"; // More Info (bio/avatar)
-import Step5 from "../../components/profile-setup/Step5"; // Create bio / profile picture
-import Step6 from "../../components/profile-setup/Step6"; // Add photos
-import Step7 from "../../components/profile-setup/Step7"; // Review
+// Import each step component
+import Step0 from "../../components/profile-setup/Step0";
+import Step1 from "../../components/profile-setup/Step1";
+import Step2 from "../../components/profile-setup/Step2";
+import Step3 from "../../components/profile-setup/Step3";
+import Step4 from "../../components/profile-setup/Step4";
+import Step5 from "../../components/profile-setup/Step5";
+import Step6 from "../../components/profile-setup/Step6";
+import Step7 from "../../components/profile-setup/Step7";
 
-const STEPS = ["step0", "step1", "step2", "step3", "step4", "step5", "step6", "step7"] as const;
+// Define all step identifiers in order
+const STEPS = ["step0","step1","step2","step3","step4","step5","step6","step7"] as const;
 type Step = (typeof STEPS)[number];
 
 export default function ProfileSetupStep() {
-  const { step: stepParam } = useLocalSearchParams();
-  const router = useRouter();
+  const { step: stepParam } = useLocalSearchParams(); // Get step from URL query
+  const router = useRouter(); // Expo Router for navigation
 
+  // Store the full profile data for all steps
   const [profileData, setProfileData] = useState<ProfileSetupData>({
-    // Basic Info
     name: "",
     avatar_url: "",
     age: 18,
@@ -31,47 +32,43 @@ export default function ProfileSetupStep() {
     gender: "Male",
     pronouns: "",
     bio: "",
-    // Academic Info
     university: "",
     university_year: "Freshman",
     major: "",
     grad_year: new Date().getFullYear(),
-    // Preferences / Interests
     interests: [],
     intent: "",
     genderPreference: "All",
     sexualOrientation: "Straight",
     min_age: 18,
     max_age: 25,
-    // Photos
     photos: [],
-    // Social Links (optional)
     spotify_url: undefined,
     instagram_url: undefined,
   });
 
-  const step = (stepParam as Step) || "step0";
-  const isValidStep = STEPS.includes(step);
+  const step = (stepParam as Step) || "step0"; // Default to step0 if not set
+  const isValidStep = STEPS.includes(step); // Validate current step
 
-  // Update profile data helper
+  // Memoized function to update profile data partially
   const updateProfileData = useCallback(
     (data: Partial<ProfileSetupData>) => {
-      setProfileData((prev) => ({ ...prev, ...data }));
+      setProfileData(prev => ({ ...prev, ...data }));
     },
     []
   );
 
-  // Complete profile setup
+  // Called when the final step is completed
   const handleComplete = useCallback(async () => {
     try {
       console.log("Profile setup complete:", profileData);
-      router.replace("/");
+      router.replace("/"); // Redirect to home page
     } catch (error) {
       console.error("Failed to save profile:", error);
     }
   }, [profileData, router]);
 
-  // Navigate to specific step
+  // Navigate to a specific step
   const goToStep = useCallback(
     (nextStep: Step) => {
       router.push(`/profile-setup/${nextStep}`);
@@ -79,7 +76,7 @@ export default function ProfileSetupStep() {
     [router]
   );
 
-  // Go to next step
+  // Navigate to the next step, or finish if on last step
   const goToNextStep = useCallback(() => {
     const currentIndex = STEPS.indexOf(step);
     if (currentIndex < STEPS.length - 1) {
@@ -89,73 +86,50 @@ export default function ProfileSetupStep() {
     }
   }, [step, goToStep, handleComplete]);
 
-  // Go to previous step
-  const goToPreviousStep = useCallback(() => {
-    const currentIndex = STEPS.indexOf(step);
-    if (currentIndex > 0) {
-      goToStep(STEPS[currentIndex - 1]);
-    }
-  }, [step, goToStep]);
-
-  // Redirect if invalid step
+  // Redirect to step0 if an invalid step is in the URL
   useEffect(() => {
     if (!isValidStep) {
       router.replace("/profile-setup/step0");
     }
   }, [isValidStep, router]);
 
-  // Render each step component
-  const renderStep = () => {
+  // Render the current step component with necessary props
+  const renderStep = useMemo(() => {
     switch (step) {
-      case "step0":
-        return <Step0 onNext={goToNextStep} />;
-      case "step1":
-        return <Step1 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep} onBack={goToPreviousStep} />;
-      case "step2":
-        return <Step2 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep} onBack={goToPreviousStep} />;
-      case "step3":
-        return <Step3 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep} onBack={goToPreviousStep} />;
-      case "step4":
-        return <Step4 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep} onBack={goToPreviousStep} />;
-      case "step5":
-        return <Step5 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep} onBack={goToPreviousStep} />;
-      case "step6":
-        return <Step6 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep} onBack={goToPreviousStep} />;
-      case "step7":
-        return <Step7 data={profileData} onUpdate={updateProfileData} onNext={handleComplete} onBack={goToPreviousStep} />;
-      default:
-        return null;
+      case "step0": return <Step0 onNext={goToNextStep} />;
+      case "step1": return <Step1 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep}/>;
+      case "step2": return <Step2 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep}/>;
+      case "step3": return <Step3 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep}/>;
+      case "step4": return <Step4 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep}/>;
+      case "step5": return <Step5 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep}/>;
+      case "step6": return <Step6 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep}/>;
+      case "step7": return <Step7 data={profileData} onNext={handleComplete}/>;
+      default: return null;
     }
-  };
+  }, [step, profileData, updateProfileData, goToNextStep, handleComplete]);
 
   if (!isValidStep) return null;
 
-  // Progress calculation (exclude step0)
   const totalSteps = STEPS.length - 1;
   const currentStepIndex = step === "step0" ? 0 : STEPS.indexOf(step);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Progress bar */}
+        {/* Progress bar shown for all steps except step0 */}
         {step !== "step0" && (
           <View style={styles.progressContainer}>
             <View style={styles.progressHeader}>
-              <Text style={styles.progressText}>
-                Step {currentStepIndex} of {totalSteps}
-              </Text>
-              <Text style={styles.progressText}>
-                {Math.round((currentStepIndex / totalSteps) * 100)}%
-              </Text>
+              <Text style={styles.progressText}>Step {currentStepIndex} of {totalSteps}</Text>
+              <Text style={styles.progressText}>{Math.round((currentStepIndex / totalSteps) * 100)}%</Text>
             </View>
             <View style={styles.progressBar}>
               <View style={[styles.progressFill, { width: `${(currentStepIndex / totalSteps) * 100}%` }]} />
             </View>
           </View>
         )}
-
-        {/* Step content */}
-        <View style={styles.stepContent}>{renderStep()}</View>
+        {/* Render the current step */}
+        <View style={styles.stepContent}>{renderStep}</View>
       </View>
     </SafeAreaView>
   );

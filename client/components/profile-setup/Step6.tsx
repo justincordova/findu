@@ -1,92 +1,98 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  StyleSheet,
-} from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import React, { useCallback, useMemo } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet } from "react-native";
+import * as ImagePicker from "expo-image-picker"; // For picking images from gallery
 import { Ionicons } from "@expo/vector-icons";
 import { ProfileSetupData } from "../../types/ProfileSetupData";
 import { DARK, MUTED, PRIMARY } from "../../constants/theme";
+import { useNavigation } from "@react-navigation/native";
 
 interface Step6Props {
-  data: ProfileSetupData;
-  onUpdate: (data: Partial<ProfileSetupData>) => void;
-  onNext: () => void;
-  onBack: () => void;
+  data: ProfileSetupData; // Current profile data
+  onUpdate: (data: Partial<ProfileSetupData>) => void; // Update parent state
+  onNext: () => void; // Move to next step
 }
 
-export default function Step6({ data, onUpdate, onNext, onBack }: Step6Props) {
-  const canContinue = (data.photos?.length || 0) > 0;
+export default function Step6({ data, onUpdate, onNext }: Step6Props) {
+  const navigation = useNavigation(); // For back navigation
 
-  const pickImage = async () => {
-    if ((data.photos?.length || 0) >= 6) return;
+  /** Pick multiple photos up to 6 */
+  const pickImages = useCallback(async () => {
+    const remaining = 6 - (data.photos?.length || 0); // Max 6 photos
+    if (remaining <= 0) return;
 
-    const result: ImagePicker.ImagePickerResult = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'], // Only images
+      allowsMultipleSelection: true, // Allow picking multiple
+      quality: 0.7, // Compression
+      selectionLimit: remaining, // Limit to remaining slots
     });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      const uri = result.assets[0].uri;
-      onUpdate({ photos: [...(data.photos || []), uri] });
+    if (!result.canceled && result.assets?.length) {
+      const uris = result.assets.map((asset) => asset.uri);
+      onUpdate({ photos: [...(data.photos || []), ...uris].slice(0, 6) }); // Append new photos
     }
-  };
+  }, [data.photos, onUpdate]);
 
-  const removePhoto = (index: number) => {
-    const updatedPhotos = [...(data.photos || [])];
-    updatedPhotos.splice(index, 1);
-    onUpdate({ photos: updatedPhotos });
-  };
+  /** Remove a photo by index */
+  const removePhoto = useCallback(
+    (index: number) => {
+      const updatedPhotos = [...(data.photos || [])];
+      updatedPhotos.splice(index, 1);
+      onUpdate({ photos: updatedPhotos });
+    },
+    [data.photos, onUpdate]
+  );
+
+  /** Temporary: allow continue even if no photos added */
+  const canContinue = useMemo(() => true, []);
+
+  /** Back button handler */
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
 
   return (
     <View style={styles.container}>
+      {/* Header section */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={DARK} />
         </TouchableOpacity>
         <Text style={styles.title}>Add your photos</Text>
         <Text style={styles.subtitle}>Add up to 6 photos for your profile</Text>
       </View>
 
+      {/* Horizontal scrollable photos */}
       <ScrollView
         style={styles.form}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.photosContainer}
       >
+        {/* Render existing photos */}
         {(data.photos || []).map((uri, idx) => (
           <View key={idx} style={styles.photoWrapper}>
             <Image source={{ uri }} style={styles.photo} />
-            <TouchableOpacity
-              style={styles.removeButton}
-              onPress={() => removePhoto(idx)}
-            >
+            <TouchableOpacity style={styles.removeButton} onPress={() => removePhoto(idx)}>
               <Ionicons name="close-circle" size={20} color="red" />
             </TouchableOpacity>
           </View>
         ))}
 
+        {/* Add photo button if less than 6 photos */}
         {(data.photos?.length || 0) < 6 && (
-          <TouchableOpacity style={styles.addPhotoButton} onPress={pickImage}>
+          <TouchableOpacity style={styles.addPhotoButton} onPress={pickImages}>
             <Ionicons name="add" size={36} color={PRIMARY} />
             <Text style={styles.addPhotoText}>Add Photo</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
 
+      {/* Continue button */}
       <TouchableOpacity
         onPress={onNext}
         disabled={!canContinue}
         style={[styles.button, !canContinue && styles.buttonDisabled]}
       >
-        <Text
-          style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}
-        >
+        <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
           Continue
         </Text>
       </TouchableOpacity>
