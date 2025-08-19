@@ -1,26 +1,29 @@
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import GradientButton from "../shared/GradientButton";
+import PrimaryButton from "../shared/PrimaryButton";
+import TextButton from "../shared/TextButton";
 
 export default function ActionButtons() {
   const router = useRouter();
 
-  const handleLogin = () => router.push("/auth?mode=login");
   const handleSignup = () => router.push("/auth?mode=signup");
+  const handleLogin = () => router.push("/auth?mode=login");
 
   return (
     <View style={styles.container}>
-      <GradientButton title="Log In" onPress={handleLogin} />
-      <GradientButton title="Sign Up" onPress={handleSignup} />
+      <PrimaryButton title="Create an Account" onPress={handleSignup} />
+      <TextButton title="Sign In" onPress={handleLogin} style={styles.signIn} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 24,
-    marginBottom: 16,
+    width: "90%",
+    alignItems: "center",
+    gap: 12,
+  },
+  signIn: {
+    marginTop: 8,
   },
 });

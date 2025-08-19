@@ -1,7 +1,6 @@
 import { View, StyleSheet } from "react-native";
 import { BACKGROUND } from "../constants/theme";
 import HeaderSection from "../components/entry/HeaderSection";
-import FeaturesSection from "../components/entry/FeaturesSection";
 import ActionButtons from "../components/entry/ActionButtons";
 import TermsSection from "../components/entry/TermsSection";
 
@@ -11,7 +10,6 @@ export default function EntryScreen() {
       {/* Top Section */}
       <View style={styles.topSection}>
         <HeaderSection />
-        <FeaturesSection />
       </View>
 
       {/* Bottom Section */}
@@ -36,6 +34,7 @@ const styles = StyleSheet.create({
   },
   bottomSection: {
     alignItems: "center",
-    marginBottom: 40,
+    marginBottom: 30,
+    gap: 40
   },
 });
