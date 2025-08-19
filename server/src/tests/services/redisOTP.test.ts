@@ -1,105 +1,151 @@
-import { RedisOTPStore } from "@/services/redisOTPStore";
-import Redis from "ioredis";
+import { Request } from "express";
+import { supabase } from "@/lib/supabase";
+import { otpStore } from "@/services/otpStore";
+import { sendOTPEmail } from "@/services/emailService";
+import logger from "@/config/logger";
+import * as authService from "@/modules/auth/services";
 
-jest.mock("ioredis");
+jest.mock("@/lib/supabase");
+jest.mock("@/services/otpStore");
+jest.mock("@/services/emailService");
+jest.mock("@/config/logger");
 
-describe("RedisOTPStore", () => {
-  let store: RedisOTPStore;
-  let redisMock: jest.Mocked<Redis>;
+describe("Auth Service", () => {
   const testEmail = "student@university.edu";
+  const testPassword = "password123";
+  const testOTP = "123456";
+  const mockUser = {
+    id: "user-id",
+    email: testEmail,
+    email_confirmed_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
 
   beforeEach(() => {
-    redisMock = new Redis() as jest.Mocked<Redis>;
+    jest.clearAllMocks();
+  });
 
-    // Mock Redis methods
-    redisMock.setex = jest.fn().mockResolvedValue("OK");
-    redisMock.get = jest.fn();
-    redisMock.del = jest.fn().mockResolvedValue(1);
-    redisMock.exists = jest.fn().mockResolvedValue(1);
-    redisMock.keys = jest.fn().mockResolvedValue([]);
-    redisMock.quit = jest.fn().mockResolvedValue("OK");
+  describe("createPendingSignup", () => {
+    it("should create pending signup successfully", async () => {
+      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({ data: { users: [] }, error: null });
+      (otpStore.hasOTP as jest.Mock).mockResolvedValue(false);
+      (otpStore.storeOTP as jest.Mock).mockResolvedValue(undefined);
+      (sendOTPEmail as jest.Mock).mockResolvedValue({ success: true });
 
-    // Mock event listener for "connect"
-    (redisMock.on as jest.Mock).mockImplementation((event, cb) => {
-      if (event === "connect") cb();
-      return redisMock;
+      const result = await authService.createPendingSignup(testEmail, testPassword);
+      expect(result.success).toBe(true);
+      expect(otpStore.storeOTP).toHaveBeenCalled();
+      expect(sendOTPEmail).toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith("PENDING_SIGNUP_CREATED_WITH_OTP", expect.any(Object));
     });
 
-    store = new RedisOTPStore();
-    store["redis"] = redisMock;
-    store["isConnected"] = true;
+    it("should fail if user already exists", async () => {
+      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({
+        data: { users: [{ email: testEmail }] },
+        error: null,
+      });
+
+      const result = await authService.createPendingSignup(testEmail, testPassword);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("User already exists");
+    });
+
+    it("should clean up OTP if email fails", async () => {
+      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({ data: { users: [] }, error: null });
+      (otpStore.hasOTP as jest.Mock).mockResolvedValue(false);
+      (otpStore.storeOTP as jest.Mock).mockResolvedValue(undefined);
+      (sendOTPEmail as jest.Mock).mockResolvedValue({ success: false });
+
+      const result = await authService.createPendingSignup(testEmail, testPassword);
+      expect(result.success).toBe(false);
+      expect(otpStore.removeOTP).toHaveBeenCalledWith(testEmail);
+    });
   });
 
-  afterEach(async () => {
-    await store.destroy();
-    jest.clearAllMocks();
-    jest.useRealTimers();
+  describe("verifyOTP", () => {
+    it("should verify OTP and create user", async () => {
+      (otpStore.verifyOTP as jest.Mock).mockResolvedValue({ valid: true, password: testPassword });
+      (supabase.auth.admin.createUser as jest.Mock).mockResolvedValue({ data: { user: mockUser }, error: null });
+
+      const result = await authService.verifyOTP(testEmail, testOTP);
+      expect(result.success).toBe(true);
+      expect(result.user?.id).toBe(mockUser.id);
+      expect(logger.info).toHaveBeenCalledWith("USER_CREATED_SUCCESSFULLY_WITH_OTP", expect.any(Object));
+    });
+
+    it("should return error for invalid OTP", async () => {
+      (otpStore.verifyOTP as jest.Mock).mockResolvedValue({ valid: false, error: "Invalid OTP" });
+
+      const result = await authService.verifyOTP(testEmail, testOTP);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Invalid OTP");
+    });
+
+    it("should return error if Supabase creation fails", async () => {
+      (otpStore.verifyOTP as jest.Mock).mockResolvedValue({ valid: true, password: testPassword });
+      (supabase.auth.admin.createUser as jest.Mock).mockResolvedValue({ data: {}, error: "Failed" });
+
+      const result = await authService.verifyOTP(testEmail, testOTP);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Failed to create user account");
+    });
   });
 
-  it("should store OTP in Redis", async () => {
-    await store.storeOTP(testEmail, "123456", "password", 600);
-    expect(redisMock.setex).toHaveBeenCalledWith(`otp:${testEmail}`, 600, expect.any(String));
+  describe("authenticateUser", () => {
+    it("should login successfully", async () => {
+      (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValue({
+        data: { user: mockUser, session: { access_token: "token" } },
+        error: null,
+      });
+
+      const result = await authService.authenticateUser(testEmail, testPassword);
+      expect(result.success).toBe(true);
+      expect(result.user?.id).toBe(mockUser.id);
+    });
+
+    it("should fail login with invalid credentials", async () => {
+      (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValue({ data: {}, error: "Invalid" });
+
+      const result = await authService.authenticateUser(testEmail, testPassword);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Invalid email or password");
+    });
   });
 
-  it("should verify OTP successfully", async () => {
-    redisMock.get.mockResolvedValue(JSON.stringify({
-      otp: "123456",
-      email: testEmail,
-      password: "password",
-      expiresAt: Math.floor(Date.now() / 1000) + 60,
-    }));
-    const result = await store.verifyOTP(testEmail, "123456");
-    expect(result.valid).toBe(true);
-    expect(result.password).toBe("password");
-    expect(redisMock.del).toHaveBeenCalledWith(`otp:${testEmail}`);
+  describe("requestPasswordReset", () => {
+    it("should succeed if user exists", async () => {
+      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({ data: { users: [{ email: testEmail }] }, error: null });
+      (supabase.auth.resetPasswordForEmail as jest.Mock).mockResolvedValue({ error: null });
+
+      const result = await authService.requestPasswordReset(testEmail);
+      expect(result.success).toBe(true);
+    });
+
+    it("should return success if user does not exist (prevent enumeration)", async () => {
+      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({ data: { users: [] }, error: null });
+
+      const result = await authService.requestPasswordReset(testEmail);
+      expect(result.success).toBe(true);
+    });
   });
 
-  it("should fail verification for wrong OTP", async () => {
-    redisMock.get.mockResolvedValue(JSON.stringify({
-      otp: "654321",
-      email: testEmail,
-      password: "password",
-      expiresAt: Math.floor(Date.now() / 1000) + 60,
-    }));
-    const result = await store.verifyOTP(testEmail, "123456");
-    expect(result.valid).toBe(false);
-    expect(result.error).toBe("Invalid OTP");
-  });
+  describe("getCurrentUserData", () => {
+    it("should return user data for valid token", async () => {
+      const req = { headers: { authorization: `Bearer token123` } } as Request;
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({ data: { user: mockUser }, error: null });
 
-  it("should fail verification for expired OTP", async () => {
-    redisMock.get.mockResolvedValue(JSON.stringify({
-      otp: "123456",
-      email: testEmail,
-      password: "password",
-      expiresAt: Math.floor(Date.now() / 1000) - 10,
-    }));
-    const result = await store.verifyOTP(testEmail, "123456");
-    expect(result.valid).toBe(false);
-    expect(result.error).toBe("OTP has expired");
-  });
+      const result = await authService.getCurrentUserData(req);
+      expect(result.success).toBe(true);
+      expect(result.user?.id).toBe(mockUser.id);
+    });
 
-  it("should check if OTP exists", async () => {
-    redisMock.exists.mockResolvedValue(1);
-    expect(await store.hasOTP(testEmail)).toBe(true);
-    redisMock.exists.mockResolvedValue(0);
-    expect(await store.hasOTP(testEmail)).toBe(false);
-  });
+    it("should return error for invalid session", async () => {
+      const req = { headers: { authorization: `Bearer token123` } } as Request;
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({ data: { user: null }, error: "Invalid" });
 
-  it("should remove OTP", async () => {
-    await store.removeOTP(testEmail);
-    expect(redisMock.del).toHaveBeenCalledWith(`otp:${testEmail}`);
-  });
-
-  it("should return stats with storageType", async () => {
-    redisMock.keys.mockResolvedValue(["otp:1", "otp:2", "otp:3"]);
-    const stats = await store.getStats();
-    expect(stats.totalOTPs).toBe(3);
-    expect(stats.storeSize).toBe(3);
-    expect(stats.storageType).toBe("redis");
-  });
-
-  it("should quit Redis on destroy", async () => {
-    await store.destroy();
-    expect(redisMock.quit).toHaveBeenCalled();
+      const result = await authService.getCurrentUserData(req);
+      expect(result.success).toBe(false);
+    });
   });
 });
