@@ -25,15 +25,6 @@ export default function BasicInfoStep({
   onNext,
   onBack,
 }: BasicInfoStepProps) {
-  // const canContinue = Boolean(
-  //   data.name &&
-  //   data.age &&
-  //   data.gender &&
-  //   data.school &&
-  //   data.major &&
-  //   data.schoolYear &&
-  //   data.gradYear
-  // );
   const canContinue = true;
 
   const [genderOpen, setGenderOpen] = useState(false);
@@ -56,7 +47,7 @@ export default function BasicInfoStep({
   };
 
   const [yearOpen, setYearOpen] = useState(false);
-  const [yearValue, setYearValue] = useState(data.schoolYear ?? null);
+  const [yearValue, setYearValue] = useState(data.universityYear ?? null);
   const [yearItems, setYearItems] = useState([
     { label: "Freshman", value: "Freshman" },
     { label: "Sophomore", value: "Sophomore" },
@@ -67,11 +58,11 @@ export default function BasicInfoStep({
 
   const handleYearChange = (value: string | null) => {
     if (value) {
-      setYearValue(value as ProfileSetupData["schoolYear"]);
-      onUpdate({ schoolYear: value as ProfileSetupData["schoolYear"] });
+      setYearValue(value as ProfileSetupData["universityYear"]);
+      onUpdate({ universityYear: value as ProfileSetupData["universityYear"] });
     } else {
       setYearValue(null);
-      onUpdate({ schoolYear: null });
+      onUpdate({ universityYear: null });
     }
   };
 
@@ -167,28 +158,15 @@ export default function BasicInfoStep({
           />
         </View>
 
-        {/* School */}
+        {/* University */}
         <View style={styles.fieldContainer}>
-          <Text style={styles.label}>University/School *</Text>
+          <Text style={styles.label}>University *</Text>
           <TextInput
             style={styles.input}
             placeholder="Enter your university name"
             placeholderTextColor={MUTED}
-            value={data.school}
-            onChangeText={(text) => onUpdate({ school: text })}
-            maxLength={100}
-          />
-        </View>
-
-        {/* Campus */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Campus</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., Main Campus, Boston Campus"
-            placeholderTextColor={MUTED}
-            value={data.campus}
-            onChangeText={(text) => onUpdate({ campus: text })}
+            value={data.university}
+            onChangeText={(text) => onUpdate({ university: text })}
             maxLength={100}
           />
         </View>
@@ -206,11 +184,11 @@ export default function BasicInfoStep({
           />
         </View>
 
-        {/* School Year */}
+        {/* University Year */}
         <View style={styles.fieldContainer}>
-          <Text style={styles.label}>School Year *</Text>
+          <Text style={styles.label}>University Year *</Text>
           <DropDownPicker
-            placeholder="Enter your school year"
+            placeholder="Enter your university year"
             open={yearOpen}
             value={yearValue}
             items={yearItems}
@@ -309,15 +287,6 @@ const styles = StyleSheet.create({
     color: DARK,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-  },
-  pickerContainer: {
-    backgroundColor: BACKGROUND,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-  picker: {
-    height: 50,
   },
   button: {
     width: "100%",
