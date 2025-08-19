@@ -11,7 +11,7 @@ export default function RootLayout() {
     <AuthWrapper>
       <View style={styles.container}>
         {/* Change this to your route */}
-        <DevButton route="/profile-setup/1" />
+        <DevButton route="/home/(tabs)/discover" />
         <Stack screenOptions={{ headerShown: false }} />
       </View>
     </AuthWrapper>
