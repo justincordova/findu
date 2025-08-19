@@ -43,7 +43,7 @@ app.use(
 
 // Rate Limiting Middleware
 // Protects your API from abuse and brute-force attacks
-app.use(limiter);
+// app.use(limiter);
 
 // Application Routes
 // Auth-related routes
