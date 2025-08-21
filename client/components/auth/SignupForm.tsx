@@ -9,6 +9,7 @@ import {
 import { useRouter } from "expo-router";
 import { PRIMARY, DARK, MUTED } from "../../constants/theme";
 import { signup } from "../../api/auth";
+import _log from "../../utils/logger"; // import your logger
 
 export default function SignupForm() {
   const [email, setEmail] = useState("");
@@ -19,30 +20,36 @@ export default function SignupForm() {
 
   const handleSignup = async () => {
     setError("");
+
     if (!/^[\w.+-]+@[\w-]+\.edu$/i.test(email)) {
       setError("Only .edu emails are allowed.");
+      _log.warn("SignupForm: Invalid email format attempted", { email });
       return;
     }
+
     if (password.length < 8) {
       setError("Password must be at least 8 characters long.");
+      _log.warn("SignupForm: Password too short", { passwordLength: password.length });
       return;
     }
 
     setLoading(true);
     try {
-      console.log("SignupForm: Sending signup request to backend...");
+      _log.debug("SignupForm: Sending signup request to backend...", { email });
 
       const result = await signup({ email, password });
-      console.log("SignupForm: Backend response:", result);
+      _log.debug("SignupForm: Backend response:", result);
 
       if (result.success) {
+        _log.info(`SignupForm: Signup successful for email ${email}`);
         // Signup successful, redirect to OTP verification
         router.push({ pathname: "/auth/verify-otp", params: { email } });
       } else {
+        _log.warn("SignupForm: Signup failed", { message: result.message });
         setError(result.message || "Failed to create account.");
       }
     } catch (error: any) {
-      console.error("SignupForm: Signup error:", error);
+      _log.error("SignupForm: Signup error:", error);
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
@@ -135,7 +142,7 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: PRIMARY,
-    borderRadius: 9999,
+    borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
   },

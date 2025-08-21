@@ -3,15 +3,16 @@ import { Stack } from "expo-router";
 import { View, StyleSheet } from "react-native";
 import DevButton from "../components/shared/DevButton";
 import { AuthWrapper } from "../components/auth/AuthWrapper";
+import _log from "../utils/logger"; // import your logger
 
 export default function RootLayout() {
-  console.log("RootLayout: Rendering...");
-  
+  _log.info("RootLayout: Rendering...");
+
   return (
     <AuthWrapper>
       <View style={styles.container}>
         {/* Change this to your route */}
-        <DevButton route="/profile-setup/1" />
+        <DevButton route="/profile-setup/0" />
         <Stack screenOptions={{ headerShown: false }} />
       </View>
     </AuthWrapper>
@@ -23,6 +24,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
 // app/_layout.tsx
 //  ⬆ This is your root layout wrapper (not directly navigable)
 //  It's applied to routes at the same level (index.tsx, etc.)

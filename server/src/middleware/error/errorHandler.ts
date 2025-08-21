@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import logger from '@/config/logger';
 
+
 export const errorHandler = (
   err: Error,
   req: Request,
@@ -23,6 +24,6 @@ export const errorHandler = (
         : err.message,
     ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
   };
-
-  res.status(500).json(response);
+  const statusCode = (err as any).status || 500;
+  res.status(statusCode).json(response);
 };

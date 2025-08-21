@@ -1,240 +1,121 @@
-import { useState, useEffect } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { PRIMARY, DARK, BACKGROUND } from "../../constants/theme";
+import { PRIMARY, DARK, BACKGROUND, MUTED } from "../../constants/theme";
 
-// Step components
-import WelcomeStep from "../../components/profile-setup/WelcomeStep";
-import BasicInfoStep from "../../components/profile-setup/BasicInfoStep";
-import PreferencesStep from "../../components/profile-setup/PreferencesStep";
-import MoreInfoStep from "../../components/profile-setup/MoreInfoStep";
-import ReviewStep from "../../components/profile-setup/ReviewStep";
+import Step1 from "../../components/profile-setup/Step1";
+import Step2 from "../../components/profile-setup/Step2";
+import Step3 from "../../components/profile-setup/Step3";
+import Step4 from "../../components/profile-setup/Step4";
+import Step5 from "../../components/profile-setup/Step5";
+import Step6 from "../../components/profile-setup/Step6";
+import Step7 from "../../components/profile-setup/Step7";
 
-const STEPS = ["welcome", "basicInfo", "pref", "moreInfo", "review"] as const;
+import { useProfileSetupStore } from "../../store/profileSetupStore";
+
+const STEPS = ["step1","step2","step3","step4","step5","step6","step7"] as const;
 type Step = (typeof STEPS)[number];
 
-export interface ProfileSetupData {
-  // Basic Info
-  name: string;
-  age: number;
-  gender: "Male" | "Female" | "Non-binary" | "Other" | null;
-  campus: string;
-  school: string;
-  major: string;
-  schoolYear:
-    | "Freshman"
-    | "Sophomore"
-    | "Junior"
-    | "Senior"
-    | "Graduate"
-    | null;
-  gradYear: string | null;
-
-  // Preferences
-  pronouns: string;
-  intent: string[];
-  minAge: number;
-  maxAge: number;
-  sexualOrientation:
-    | "Straight"
-    | "Gay"
-    | "Lesbian"
-    | "Bisexual"
-    | "Questioning"
-    | "Other"
-    | null;
-  genderPreference: "Men" | "Women" | "Non-binary" | "All" | "Other" | null;
-
-  // More Info
-  bio: string;
-  profilePicture: string;
-}
-
 export default function ProfileSetupStep() {
-  const { step: stepParam } = useLocalSearchParams();
-  const router = useRouter();
+  const [currentStep, setCurrentStep] = useState<Step>("step1");
+  const [isCurrentStepValid, setIsCurrentStepValid] = useState(false);
 
-  const [profileData, setProfileData] = useState<ProfileSetupData>({
-    name: "",
-    age: 18,
-    gender: null,
-    campus: "",
-    school: "",
-    major: "",
-    schoolYear: null,
-    gradYear: null,
-    pronouns: "",
-    intent: [],
-    minAge: 18,
-    maxAge: 25,
-    sexualOrientation: null,
-    genderPreference: null,
-    bio: "",
-    profilePicture: "",
-  });
+  // access store
+  const profileData = useProfileSetupStore(state => state.data);
+  const setField = useProfileSetupStore(state => state.setField);
 
-  const step = (stepParam as Step) || "welcome";
-  const currentStepIndex = STEPS.indexOf(step) + 1;
-  const isValidStep = STEPS.includes(step);
+  const goToNextStep = useCallback(() => {
+    const idx = STEPS.indexOf(currentStep);
+    if (idx < STEPS.length - 1) setCurrentStep(STEPS[idx+1]);
+    setIsCurrentStepValid(false);
+  }, [currentStep]);
 
-  useEffect(() => {
-    if (!isValidStep) {
-      router.replace("/profile-setup/welcome");
-    }
-  }, [step, isValidStep, router]);
+  const goToPreviousStep = useCallback(() => {
+    const idx = STEPS.indexOf(currentStep);
+    if (idx > 0) setCurrentStep(STEPS[idx-1]);
+    setIsCurrentStepValid(true);
+  }, [currentStep]);
 
-  const goToNextStep = () => {
-    const currentIndex = STEPS.indexOf(step);
-    if (currentIndex < STEPS.length - 1) {
-      const nextStep = STEPS[currentIndex + 1];
-      router.push(`/profile-setup/${nextStep}`);
-    } else {
-      // Profile setup complete
-      handleComplete();
-    }
-  };
-
-  const goToPreviousStep = () => {
-    const currentIndex = STEPS.indexOf(step);
-    if (currentIndex > 0) {
-      const prevStep = STEPS[currentIndex - 1];
-      router.push(`/profile-setup/${prevStep}`);
-    }
-  };
-
-  const handleComplete = async () => {
-    try {
-      // TODO: Save profile data to backend
-      console.log("Profile setup complete:", profileData);
-
-      // Navigate to main app
-      router.replace("/");
-    } catch (error) {
-      console.error("Failed to save profile:", error);
-    }
-  };
-
-  const updateProfileData = (data: Partial<ProfileSetupData>) => {
-    setProfileData((prev) => ({ ...prev, ...data }));
+  const stepProps = {
+    data: profileData,
+    onUpdate: setField,
+    onNext: goToNextStep,
+    onBack: goToPreviousStep,
+    onValidityChange: setIsCurrentStepValid,
   };
 
   const renderStep = () => {
-    switch (step) {
-      case "welcome":
-        return <WelcomeStep onNext={goToNextStep} />;
-      case "basicInfo":
-        return (
-          <BasicInfoStep
-            data={profileData}
-            onUpdate={updateProfileData}
-            onNext={goToNextStep}
-            onBack={goToPreviousStep}
-          />
-        );
-      case "pref":
-        return (
-          <PreferencesStep
-            data={profileData}
-            onUpdate={updateProfileData}
-            onNext={goToNextStep}
-            onBack={goToPreviousStep}
-          />
-        );
-      case "moreInfo":
-        return (
-          <MoreInfoStep
-            data={profileData}
-            onUpdate={updateProfileData}
-            onNext={goToNextStep}
-            onBack={goToPreviousStep}
-          />
-        );
-      case "review":
-        return (
-          <ReviewStep
-            data={profileData}
-            onUpdate={updateProfileData}
-            onNext={handleComplete}
-            onBack={goToPreviousStep}
-          />
-        );
-      default:
-        return null;
+    switch(currentStep){
+      case "step1": return <Step1 {...stepProps} />;
+      case "step2": return <Step2 {...stepProps} />;
+      case "step3": return <Step3 {...stepProps} />;
+      case "step4": return <Step4 {...stepProps} />;
+      case "step5": return <Step5 {...stepProps} />;
+      case "step6": return <Step6 {...stepProps} />;
+      case "step7": return <Step7 {...stepProps} />;
+      default: return null;
     }
   };
 
-  if (!isValidStep) {
-    return null;
-  }
+  const totalSteps = STEPS.length;
+  const currentStepIndex = STEPS.indexOf(currentStep) + 1;
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Progress bar */}
-        {step !== "welcome" && (
-          <View style={styles.progressContainer}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressText}>
-                Step {currentStepIndex} of {STEPS.length - 1}
-              </Text>
-              <Text style={styles.progressText}>
-                {Math.round((currentStepIndex / (STEPS.length - 1)) * 100)}%
-              </Text>
-            </View>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${(currentStepIndex / (STEPS.length - 1)) * 100}%`,
-                  },
-                ]}
-              />
-            </View>
+        <View style={styles.progressContainer}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressText}>Step {currentStepIndex} of {totalSteps}</Text>
+            <Text style={styles.progressText}>{Math.round((currentStepIndex / totalSteps)*100)}%</Text>
           </View>
-        )}
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width:`${(currentStepIndex/totalSteps)*100}%` }]} />
+          </View>
+        </View>
 
-        {/* Step content */}
-        <View style={styles.stepContent}>{renderStep()}</View>
+        {/* Wrap step content to allow dropdowns to expand */}
+        <View style={styles.stepContentWrapper}>
+          {renderStep()}
+        </View>
+
+        {currentStep !== "step7" && (
+          <TouchableOpacity
+            onPress={goToNextStep}
+            disabled={!isCurrentStepValid}
+            style={[styles.button, { backgroundColor: isCurrentStepValid ? PRIMARY : MUTED }]}
+          >
+            <Text style={styles.buttonText}>Continue</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex:1, backgroundColor: BACKGROUND },
+  content: { flex:1, paddingHorizontal: 24 },
+  progressContainer: { paddingVertical: 16 },
+  progressHeader: { flexDirection:"row", justifyContent:"space-between", alignItems:"center", marginBottom:8 },
+  progressText: { fontSize:14, color:DARK },
+  progressBar: { height:8, backgroundColor:"#E5E7EB", borderRadius:9999 },
+  progressFill: { height:8, backgroundColor:PRIMARY, borderRadius:9999 },
+  
+  // Updated wrapper for dropdowns
+  stepContentWrapper: {
     flex: 1,
-    backgroundColor: BACKGROUND,
+    position: "relative",
+    zIndex: 1,
+    overflow: "visible",
   },
-  content: {
-    flex: 1,
+
+  button: { 
+    width:"100%", 
+    paddingVertical:16, 
+    borderRadius:12, 
+    marginVertical:16, 
+    justifyContent:"center", 
+    alignItems:"center" 
   },
-  progressContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-  },
-  progressHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  progressText: {
-    fontSize: 14,
-    color: DARK,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 9999,
-  },
-  progressFill: {
-    height: 8,
-    backgroundColor: PRIMARY,
-    borderRadius: 9999,
-  },
-  stepContent: {
-    flex: 1,
-  },
+  buttonText: { color:"white", fontSize:18, fontWeight:"600" },
 });

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { User, Session } from "@supabase/supabase-js";
 import { authService } from "@/services/authService";
+import _log from "@/utils/logger";
 
 interface AuthState {
   user: User | null;
@@ -28,6 +29,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isLoggedIn: true,
       isLoading: false,
     });
+    _log.info("User logged in:", { user, session });
   },
 
   updateSession: async (session) => {
@@ -38,6 +40,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isLoggedIn: !!session,
       isLoading: false,
     });
+    _log.info("Session updated:", { session });
   },
 
   logout: async () => {
@@ -48,18 +51,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isLoggedIn: false,
       isLoading: false,
     });
+    _log.info("User logged out");
   },
 
   initialize: async () => {
     try {
       set({ isLoading: true });
 
-      // Add timeout to prevent hanging
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(
           () => reject(new Error("Auth initialization timeout")),
           10000
-        ); // 10 second timeout
+        );
       });
 
       const initPromise = authService.initializeAuth();
@@ -74,8 +77,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoggedIn: !!session,
         isLoading: false,
       });
+      _log.info("Auth initialized", { user, session });
     } catch (error) {
-      console.error("Error initializing auth:", error);
+      _log.error("Error initializing auth:", error);
       set({ isLoading: false });
     }
   },
@@ -84,15 +88,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const isAuthenticated = await authService.isAuthenticated();
       if (!isAuthenticated) {
-        // Clear state if not authenticated
         set({
           user: null,
           session: null,
           isLoggedIn: false,
         });
+        _log.info("User not authenticated, state cleared");
+      } else {
+        _log.info("User is authenticated");
       }
     } catch (error) {
-      console.error("Error checking auth status:", error);
+      _log.error("Error checking auth status:", error);
     }
   },
 }));

@@ -415,26 +415,28 @@ model matches {
 
 model profiles {
   user_id            String           @id @db.Uuid
-  f_name             String?
-  l_name             String?
+  name               String?
   avatar_url         String?
-  university         String
-  bio                String?
   age                Int?
   birthdate          DateTime?        @db.Date
   gender             String?
   pronouns           String?
+  bio                String?
+  university         String
+  university_year    String?          @db.VarChar(20)
   major              String?
   grad_year          Int?
   interests          String[]
   intent             String?
-  looking_for_gender String[]
+  gender_preference  String[]
+  sexual_orientation String
   min_age            Int?
   max_age            Int?
   spotify_url        String?
   instagram_url      String?
   created_at         DateTime?        @default(now()) @db.Timestamptz(6)
   updated_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  photos             String[]         @default([])
   profile_photos     profile_photos[]
   users              users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -471,7 +473,7 @@ model profile_photos {
 model universities {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   unitid     BigInt?   @unique
-  name       String    @unique
+  name       String
   city       String?
   state      String?
   created_at DateTime? @default(now()) @db.Timestamptz(6)
@@ -482,16 +484,16 @@ model universities {
 }
 
 model pending_signups {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email             String    @unique
-  hashed_password   String
-  verification_token String   @unique
-  expires_at        DateTime  @db.Timestamptz(6)
-  created_at        DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime  @default(now()) @db.Timestamptz(6)
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email              String    @unique
+  hashed_password    String
+  verification_token String    @unique
+  expires_at         DateTime  @db.Timestamptz(6)
+  created_at         DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime? @default(now()) @db.Timestamptz(6)
 
-  @@index([verification_token])
-  @@index([email])
+  @@index([email], map: "idx_pending_signups_email")
+  @@index([verification_token], map: "idx_pending_signups_verification_token")
   @@schema("public")
 }
 

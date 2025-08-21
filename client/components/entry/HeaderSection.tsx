@@ -31,8 +31,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   logo: {
-    width: 96,
-    height: 96,
+    width: 150,
+    height: 150,
     borderRadius: 24,
   },
   title: {
