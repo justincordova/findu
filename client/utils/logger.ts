@@ -1,8 +1,7 @@
-// utils/_log.ts
 import { logger, consoleTransport, fileAsyncTransport } from "react-native-logs";
 import * as FileSystem from "expo-file-system";
 
-// Console colors mapping (readonly to satisfy TS)
+// Console colors mapping
 const consoleColors = {
   debug: "cyanBright",
   info: "blueBright",
