@@ -1,12 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { PRIMARY, DARK, BACKGROUND } from "../../constants/theme";
-import { ProfileSetupData } from "../../types/ProfileSetupData";
+import { PRIMARY, DARK, BACKGROUND, MUTED } from "../../constants/theme";
 
-// Import each step component
-import Step0 from "../../components/profile-setup/Step0";
 import Step1 from "../../components/profile-setup/Step1";
 import Step2 from "../../components/profile-setup/Step2";
 import Step3 from "../../components/profile-setup/Step3";
@@ -15,133 +11,111 @@ import Step5 from "../../components/profile-setup/Step5";
 import Step6 from "../../components/profile-setup/Step6";
 import Step7 from "../../components/profile-setup/Step7";
 
-// Define all step identifiers in order
-const STEPS = ["step0","step1","step2","step3","step4","step5","step6","step7"] as const;
+import { useProfileSetupStore } from "../../store/profileSetupStore";
+
+const STEPS = ["step1","step2","step3","step4","step5","step6","step7"] as const;
 type Step = (typeof STEPS)[number];
 
 export default function ProfileSetupStep() {
-  const { step: stepParam } = useLocalSearchParams(); // Get step from URL query
-  const router = useRouter(); // Expo Router for navigation
+  const [currentStep, setCurrentStep] = useState<Step>("step1");
+  const [isCurrentStepValid, setIsCurrentStepValid] = useState(false);
 
-  // Store the full profile data for all steps
-  const [profileData, setProfileData] = useState<ProfileSetupData>({
-    name: "",
-    avatar_url: "",
-    age: 18,
-    birthdate: "",
-    gender: "Male",
-    pronouns: "",
-    bio: "",
-    university: "",
-    university_year: "Freshman",
-    major: "",
-    grad_year: new Date().getFullYear(),
-    interests: [],
-    intent: "",
-    genderPreference: "All",
-    sexualOrientation: "Straight",
-    min_age: 18,
-    max_age: 25,
-    photos: [],
-    spotify_url: undefined,
-    instagram_url: undefined,
-  });
+  // access store
+  const profileData = useProfileSetupStore(state => state.data);
+  const setField = useProfileSetupStore(state => state.setField);
 
-  const step = (stepParam as Step) || "step0"; // Default to step0 if not set
-  const isValidStep = STEPS.includes(step); // Validate current step
-
-  // Memoized function to update profile data partially
-  const updateProfileData = useCallback(
-    (data: Partial<ProfileSetupData>) => {
-      setProfileData(prev => ({ ...prev, ...data }));
-    },
-    []
-  );
-
-  // Called when the final step is completed
-  const handleComplete = useCallback(async () => {
-    try {
-      console.log("Profile setup complete:", profileData);
-      router.replace("/"); // Redirect to home page
-    } catch (error) {
-      console.error("Failed to save profile:", error);
-    }
-  }, [profileData, router]);
-
-  // Navigate to a specific step
-  const goToStep = useCallback(
-    (nextStep: Step) => {
-      router.push(`/profile-setup/${nextStep}`);
-    },
-    [router]
-  );
-
-  // Navigate to the next step, or finish if on last step
   const goToNextStep = useCallback(() => {
-    const currentIndex = STEPS.indexOf(step);
-    if (currentIndex < STEPS.length - 1) {
-      goToStep(STEPS[currentIndex + 1]);
-    } else {
-      handleComplete();
-    }
-  }, [step, goToStep, handleComplete]);
+    const idx = STEPS.indexOf(currentStep);
+    if (idx < STEPS.length - 1) setCurrentStep(STEPS[idx+1]);
+    setIsCurrentStepValid(false);
+  }, [currentStep]);
 
-  // Redirect to step0 if an invalid step is in the URL
-  useEffect(() => {
-    if (!isValidStep) {
-      router.replace("/profile-setup/step0");
-    }
-  }, [isValidStep, router]);
+  const goToPreviousStep = useCallback(() => {
+    const idx = STEPS.indexOf(currentStep);
+    if (idx > 0) setCurrentStep(STEPS[idx-1]);
+    setIsCurrentStepValid(true);
+  }, [currentStep]);
 
-  // Render the current step component with necessary props
-  const renderStep = useMemo(() => {
-    switch (step) {
-      case "step0": return <Step0 onNext={goToNextStep} />;
-      case "step1": return <Step1 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep}/>;
-      case "step2": return <Step2 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep}/>;
-      case "step3": return <Step3 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep}/>;
-      case "step4": return <Step4 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep}/>;
-      case "step5": return <Step5 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep}/>;
-      case "step6": return <Step6 data={profileData} onUpdate={updateProfileData} onNext={goToNextStep}/>;
-      case "step7": return <Step7 data={profileData} onNext={handleComplete}/>;
+  const stepProps = {
+    data: profileData,
+    onUpdate: setField,
+    onNext: goToNextStep,
+    onBack: goToPreviousStep,
+    onValidityChange: setIsCurrentStepValid,
+  };
+
+  const renderStep = () => {
+    switch(currentStep){
+      case "step1": return <Step1 {...stepProps} />;
+      case "step2": return <Step2 {...stepProps} />;
+      case "step3": return <Step3 {...stepProps} />;
+      case "step4": return <Step4 {...stepProps} />;
+      case "step5": return <Step5 {...stepProps} />;
+      case "step6": return <Step6 {...stepProps} />;
+      case "step7": return <Step7 {...stepProps} />;
       default: return null;
     }
-  }, [step, profileData, updateProfileData, goToNextStep, handleComplete]);
+  };
 
-  if (!isValidStep) return null;
-
-  const totalSteps = STEPS.length - 1;
-  const currentStepIndex = step === "step0" ? 0 : STEPS.indexOf(step);
+  const totalSteps = STEPS.length;
+  const currentStepIndex = STEPS.indexOf(currentStep) + 1;
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Progress bar shown for all steps except step0 */}
-        {step !== "step0" && (
-          <View style={styles.progressContainer}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressText}>Step {currentStepIndex} of {totalSteps}</Text>
-              <Text style={styles.progressText}>{Math.round((currentStepIndex / totalSteps) * 100)}%</Text>
-            </View>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${(currentStepIndex / totalSteps) * 100}%` }]} />
-            </View>
+        <View style={styles.progressContainer}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressText}>Step {currentStepIndex} of {totalSteps}</Text>
+            <Text style={styles.progressText}>{Math.round((currentStepIndex / totalSteps)*100)}%</Text>
           </View>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width:`${(currentStepIndex/totalSteps)*100}%` }]} />
+          </View>
+        </View>
+
+        {/* Wrap step content to allow dropdowns to expand */}
+        <View style={styles.stepContentWrapper}>
+          {renderStep()}
+        </View>
+
+        {currentStep !== "step7" && (
+          <TouchableOpacity
+            onPress={goToNextStep}
+            disabled={!isCurrentStepValid}
+            style={[styles.button, { backgroundColor: isCurrentStepValid ? PRIMARY : MUTED }]}
+          >
+            <Text style={styles.buttonText}>Continue</Text>
+          </TouchableOpacity>
         )}
-        {/* Render the current step */}
-        <View style={styles.stepContent}>{renderStep}</View>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BACKGROUND },
-  content: { flex: 1 },
-  progressContainer: { paddingHorizontal: 24, paddingVertical: 16 },
-  progressHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  progressText: { fontSize: 14, color: DARK },
-  progressBar: { height: 8, backgroundColor: "#E5E7EB", borderRadius: 9999 },
-  progressFill: { height: 8, backgroundColor: PRIMARY, borderRadius: 9999 },
-  stepContent: { flex: 1 },
+  container: { flex:1, backgroundColor: BACKGROUND },
+  content: { flex:1, paddingHorizontal: 24 },
+  progressContainer: { paddingVertical: 16 },
+  progressHeader: { flexDirection:"row", justifyContent:"space-between", alignItems:"center", marginBottom:8 },
+  progressText: { fontSize:14, color:DARK },
+  progressBar: { height:8, backgroundColor:"#E5E7EB", borderRadius:9999 },
+  progressFill: { height:8, backgroundColor:PRIMARY, borderRadius:9999 },
+  
+  // Updated wrapper for dropdowns
+  stepContentWrapper: {
+    flex: 1,
+    position: "relative",
+    zIndex: 1,
+    overflow: "visible",
+  },
+
+  button: { 
+    width:"100%", 
+    paddingVertical:16, 
+    borderRadius:12, 
+    marginVertical:16, 
+    justifyContent:"center", 
+    alignItems:"center" 
+  },
+  buttonText: { color:"white", fontSize:18, fontWeight:"600" },
 });

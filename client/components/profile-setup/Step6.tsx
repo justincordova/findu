@@ -1,64 +1,60 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet } from "react-native";
-import * as ImagePicker from "expo-image-picker"; // For picking images from gallery
+import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { ProfileSetupData } from "../../types/ProfileSetupData";
-import { DARK, MUTED, PRIMARY } from "../../constants/theme";
-import { useNavigation } from "@react-navigation/native";
+import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
+import { useProfileSetupStore } from "../../store/profileSetupStore";
 
-interface Step6Props {
-  data: ProfileSetupData; // Current profile data
-  onUpdate: (data: Partial<ProfileSetupData>) => void; // Update parent state
-  onNext: () => void; // Move to next step
-}
-
-export default function Step6({ data, onUpdate, onNext }: Step6Props) {
-  const navigation = useNavigation(); // For back navigation
+export default function Step6({ onBack, onValidityChange }: { onBack?: () => void; onValidityChange?: (isValid: boolean) => void }) {
+  const profileData = useProfileSetupStore(state => state.data);
+  const setField = useProfileSetupStore(state => state.setField);
 
   /** Pick multiple photos up to 6 */
   const pickImages = useCallback(async () => {
-    const remaining = 6 - (data.photos?.length || 0); // Max 6 photos
+    const remaining = 6 - (profileData.photos?.length || 0);
     if (remaining <= 0) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'], // Only images
-      allowsMultipleSelection: true, // Allow picking multiple
-      quality: 0.7, // Compression
-      selectionLimit: remaining, // Limit to remaining slots
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.7,
+      selectionLimit: remaining,
     });
 
     if (!result.canceled && result.assets?.length) {
-      const uris = result.assets.map((asset) => asset.uri);
-      onUpdate({ photos: [...(data.photos || []), ...uris].slice(0, 6) }); // Append new photos
+      const uris = result.assets.map(asset => asset.uri);
+      setField("photos", [...(profileData.photos || []), ...uris].slice(0, 6));
     }
-  }, [data.photos, onUpdate]);
+  }, [profileData.photos, setField]);
 
   /** Remove a photo by index */
   const removePhoto = useCallback(
     (index: number) => {
-      const updatedPhotos = [...(data.photos || [])];
+      const updatedPhotos = [...(profileData.photos || [])];
       updatedPhotos.splice(index, 1);
-      onUpdate({ photos: updatedPhotos });
+      setField("photos", updatedPhotos);
     },
-    [data.photos, onUpdate]
+    [profileData.photos, setField]
   );
 
-  /** Temporary: allow continue even if no photos added */
-  const canContinue = useMemo(() => true, []);
+/** Step validity: at least 6 photos required */
+const isValid = useMemo(() => (profileData.photos?.length || 0) >= 6, [profileData.photos]);
 
-  /** Back button handler */
-  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+useEffect(() => {
+  onValidityChange?.(isValid);
+}, [isValid, onValidityChange]);
+
 
   return (
     <View style={styles.container}>
-      {/* Header section */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+      {/* Header */}
+      {onBack && (
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={DARK} />
         </TouchableOpacity>
-        <Text style={styles.title}>Add your photos</Text>
-        <Text style={styles.subtitle}>Add up to 6 photos for your profile</Text>
-      </View>
+      )}
+      <Text style={styles.title}>Add your photos</Text>
+      <Text style={styles.subtitle}>Add up to 6 photos for your profile</Text>
 
       {/* Horizontal scrollable photos */}
       <ScrollView
@@ -67,8 +63,7 @@ export default function Step6({ data, onUpdate, onNext }: Step6Props) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.photosContainer}
       >
-        {/* Render existing photos */}
-        {(data.photos || []).map((uri, idx) => (
+        {(profileData.photos || []).map((uri, idx) => (
           <View key={idx} style={styles.photoWrapper}>
             <Image source={{ uri }} style={styles.photo} />
             <TouchableOpacity style={styles.removeButton} onPress={() => removePhoto(idx)}>
@@ -77,32 +72,19 @@ export default function Step6({ data, onUpdate, onNext }: Step6Props) {
           </View>
         ))}
 
-        {/* Add photo button if less than 6 photos */}
-        {(data.photos?.length || 0) < 6 && (
+        {(profileData.photos?.length || 0) < 6 && (
           <TouchableOpacity style={styles.addPhotoButton} onPress={pickImages}>
             <Ionicons name="add" size={36} color={PRIMARY} />
             <Text style={styles.addPhotoText}>Add Photo</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
-
-      {/* Continue button */}
-      <TouchableOpacity
-        onPress={onNext}
-        disabled={!canContinue}
-        style={[styles.button, !canContinue && styles.buttonDisabled]}
-      >
-        <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
-          Continue
-        </Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 24, paddingVertical: 32 },
-  header: { marginBottom: 32 },
+  container: { flex: 1, paddingHorizontal: 24, paddingVertical: 32, backgroundColor: BACKGROUND },
   backButton: { marginBottom: 24 },
   title: { fontSize: 24, fontWeight: "bold", color: DARK, marginBottom: 8, textAlign: "center" },
   subtitle: { fontSize: 16, color: MUTED, textAlign: "center", marginBottom: 16 },
@@ -121,8 +103,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   addPhotoText: { fontSize: 12, color: PRIMARY, marginTop: 4, textAlign: "center" },
-  button: { width: "100%", backgroundColor: PRIMARY, paddingVertical: 16, borderRadius: 12, marginTop: 32 },
-  buttonDisabled: { backgroundColor: "#d1d5db" },
-  buttonText: { color: "white", fontSize: 18, fontWeight: "600", textAlign: "center" },
-  buttonTextDisabled: { color: MUTED },
 });

@@ -1,31 +1,22 @@
 export interface ProfileSetupData {
-  // Basic Info
   name: string;
   avatar_url: string;
-  age: number;
+  age: string | number;              // <-- allow string for placeholder
   birthdate: string;
-  gender: "Male" | "Female" | "Non-binary" | "Other";
+  gender: "Male" | "Female" | "Non-binary" | "Other" | ""; // <-- "" as placeholder
   pronouns: string;
   bio: string;
-
-  // Academic Info
   university: string;
-  university_year: "Freshman" | "Sophomore" | "Junior" | "Senior" | "Graduate";
+  university_year: "Freshman" | "Sophomore" | "Junior" | "Senior" | "Graduate" | "";
   major: string;
-  grad_year: number;
-
-  // Preferences / Interests
+  grad_year: string | number;
   interests: string[];
-  intent: string; // matches "Looking for"
-  genderPreference: "Men" | "Women" | "Non-binary" | "All" | "Other"; // replaced looking_for_gender
-  sexualOrientation: "Straight" | "Gay" | "Lesbian" | "Bisexual" | "Questioning" | "Other"; // added
-  min_age: number;
-  max_age: number;
-
-  // Photos (URLs of up to 6 photos)
+  intent: "dating" | "friendship" | "networking" | "casual";
+  genderPreference: "Non-binary" | "Other" | "Men" | "Women" | "All" | "";
+  sexualOrientation: "Other" | "Straight" | "Gay" | "Lesbian" | "Bisexual" | "Questioning" | "";
+  min_age: string | number;
+  max_age: string | number;
   photos: string[];
-
-  // Social Links (optional)
   spotify_url?: string;
   instagram_url?: string;
 }

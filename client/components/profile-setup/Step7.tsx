@@ -1,65 +1,59 @@
-import React, { useCallback } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  StyleSheet,
-} from "react-native";
+import React, { useCallback, useEffect, useMemo } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { ProfileSetupData } from "../../types/ProfileSetupData";
-import { DARK, MUTED, PRIMARY } from "../../constants/theme";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
+import { useProfileSetupStore } from "../../store/profileSetupStore";
 
-interface Step7Props {
-  data: ProfileSetupData; // All profile data to review
-  onNext: () => void; // Finish setup callback
-}
-
-export default function Step7({ data, onNext }: Step7Props) {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>(); // For navigation
+export default function Step7({ onBack, onNext, onValidityChange }: { onBack?: () => void; onNext: () => void; onValidityChange?: (isValid: boolean) => void }) {
+  const profileData = useProfileSetupStore(state => state.data);
 
   /** Map profile fields to the step where they can be edited */
-  const fieldToStep: { [key: string]: string } = {
+  const fieldToStep: Record<string, string> = {
     name: "step1",
     age: "step1",
     gender: "step1",
     pronouns: "step2",
     intent: "step2",
-    min_age: "step2",
-    max_age: "step2",
-    sexualOrientation: "step2",
-    genderPreference: "step2",
+    min_age: "step4",
+    max_age: "step4",
+    sexualOrientation: "step3",
+    genderPreference: "step3",
     bio: "step5",
     avatar_url: "step5",
     photos: "step6",
   };
 
-  /** Navigate back to the appropriate step when editing a field */
+  /** Navigate back to the appropriate step */
   const goBackToStep = useCallback(
     (step: string) => {
-      navigation.goBack(); // Can be replaced with actual step navigation if needed
+      onBack?.(); // Replace with actual step navigation if needed
     },
-    [navigation]
+    [onBack]
   );
 
-  /** Convert field value to displayable text */
-  const renderValue = (field: keyof ProfileSetupData) => {
-    const value = data[field];
-    if (Array.isArray(value)) return value.join(", "); // For arrays like photos
+  /** Display value */
+  const renderValue = useCallback((field: keyof typeof profileData) => {
+    const value = profileData[field];
+    if (Array.isArray(value)) return value.join(", ");
     if (!value) return "Not set";
     return String(value);
-  };
+  }, [profileData]);
+
+  /** Step validity (always true for review) */
+  const isValid = useMemo(() => true, []);
+  useEffect(() => {
+    onValidityChange?.(isValid);
+  }, [isValid, onValidityChange]);
 
   return (
     <View style={styles.container}>
-      {/* Header section */}
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={DARK} />
-        </TouchableOpacity>
+        {onBack && (
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={DARK} />
+          </TouchableOpacity>
+        )}
         <Text style={styles.title}>Review your profile</Text>
         <Text style={styles.subtitle}>Tap any item to edit</Text>
       </View>
@@ -71,40 +65,38 @@ export default function Step7({ data, onNext }: Step7Props) {
           <TouchableOpacity
             key={field}
             style={styles.infoRow}
-            onPress={() => goBackToStep(fieldToStep[field])} // Edit on tap
+            onPress={() => goBackToStep(fieldToStep[field])}
           >
             <Text style={styles.infoLabel}>{field.charAt(0).toUpperCase() + field.slice(1)}:</Text>
-            <Text style={styles.infoValue}>{renderValue(field as keyof ProfileSetupData)}</Text>
+            <Text style={styles.infoValue}>{renderValue(field as keyof typeof profileData)}</Text>
           </TouchableOpacity>
         ))}
 
         {/* Preferences */}
         <Text style={styles.sectionTitle}>Preferences</Text>
-        {["intent", "min_age", "max_age", "sexualOrientation", "genderPreference"].map(
-          (field) => (
-            <TouchableOpacity
-              key={field}
-              style={styles.infoRow}
-              onPress={() => goBackToStep(fieldToStep[field])} // Edit on tap
-            >
-              <Text style={styles.infoLabel}>{field.charAt(0).toUpperCase() + field.slice(1)}:</Text>
-              <Text style={styles.infoValue}>{renderValue(field as keyof ProfileSetupData)}</Text>
-            </TouchableOpacity>
-          )
-        )}
+        {["intent", "min_age", "max_age", "sexualOrientation", "genderPreference"].map((field) => (
+          <TouchableOpacity
+            key={field}
+            style={styles.infoRow}
+            onPress={() => goBackToStep(fieldToStep[field])}
+          >
+            <Text style={styles.infoLabel}>{field.charAt(0).toUpperCase() + field.slice(1)}:</Text>
+            <Text style={styles.infoValue}>{renderValue(field as keyof typeof profileData)}</Text>
+          </TouchableOpacity>
+        ))}
 
         {/* Bio */}
         <Text style={styles.sectionTitle}>Bio</Text>
         <TouchableOpacity style={styles.infoRow} onPress={() => goBackToStep("step5")}>
           <Text style={styles.infoLabel}>Bio:</Text>
-          <Text style={styles.infoValue}>{data.bio || "Not set"}</Text>
+          <Text style={styles.infoValue}>{profileData.bio || "Not set"}</Text>
         </TouchableOpacity>
 
         {/* Avatar */}
         <Text style={styles.sectionTitle}>Profile Picture</Text>
         <TouchableOpacity style={styles.infoRow} onPress={() => goBackToStep("step5")}>
-          {data.avatar_url ? (
-            <Image source={{ uri: data.avatar_url }} style={styles.avatar} />
+          {profileData.avatar_url ? (
+            <Image source={{ uri: profileData.avatar_url }} style={styles.avatar} />
           ) : (
             <Text style={{ color: MUTED }}>No avatar selected</Text>
           )}
@@ -117,8 +109,8 @@ export default function Step7({ data, onNext }: Step7Props) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.photosContainer}
         >
-          {data.photos && data.photos.length > 0 ? (
-            data.photos.map((uri, idx) => (
+          {profileData.photos && profileData.photos.length > 0 ? (
+            profileData.photos.map((uri, idx) => (
               <TouchableOpacity key={idx} onPress={() => goBackToStep("step6")}>
                 <Image source={{ uri }} style={styles.photo} />
               </TouchableOpacity>
@@ -130,15 +122,19 @@ export default function Step7({ data, onNext }: Step7Props) {
       </ScrollView>
 
       {/* Finish button */}
-      <TouchableOpacity onPress={onNext} style={styles.button}>
-        <Text style={styles.buttonText}>Finish</Text>
+      <TouchableOpacity
+        onPress={onNext}
+        disabled={!isValid}
+        style={[styles.button, !isValid && styles.buttonDisabled]}
+      >
+        <Text style={[styles.buttonText, !isValid && styles.buttonTextDisabled]}>Finish</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 24, paddingVertical: 32 },
+  container: { flex: 1, paddingHorizontal: 24, paddingVertical: 32, backgroundColor: BACKGROUND },
   header: { marginBottom: 32 },
   backButton: { marginBottom: 24 },
   title: { fontSize: 24, fontWeight: "bold", color: DARK, marginBottom: 8, textAlign: "center" },
@@ -165,5 +161,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 32,
   },
+  buttonDisabled: { backgroundColor: "#d1d5db" },
   buttonText: { color: "white", fontSize: 18, fontWeight: "600", textAlign: "center" },
+  buttonTextDisabled: { color: MUTED },
 });

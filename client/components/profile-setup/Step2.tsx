@@ -1,262 +1,157 @@
-import React, { useState, useCallback, useMemo } from "react";
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView } from "react-native";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
+import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
 import { Ionicons } from "@expo/vector-icons";
-import DropDownPicker from "react-native-dropdown-picker";
-import { ProfileSetupData } from "../../types/ProfileSetupData";
-import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
-import { useNavigation } from "@react-navigation/native";
+import { DARK, MUTED, BACKGROUND } from "../../constants/theme";
+import { useProfileSetupStore } from "../../store/profileSetupStore";
+
+const universities = [
+  "NJIT", "Rutgers", "Northeastern", "Bucknell", "Villanova", "Wisconsin", "Brown", "UC Irvine", "UPenn"
+];
+const majors = ["Computer Science", "Mechanical Engineering", "Biology", "Economics", "Math", "Psychology"];
+const years = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate"];
 
 interface Step2Props {
-  data: ProfileSetupData; // Current profile data from parent
-  onUpdate: (data: Partial<ProfileSetupData>) => void; // Callback to update parent state
-  onNext: () => void; // Callback to move to next step
+  onBack?: () => void;
+  onValidityChange?: (isValid: boolean) => void;
 }
 
-// Predefined university and major options
-const universities = [
-  "NJIT", "Rutgers", "Northeastern", "Bucknell",
-  "Villanova", "Wisconsin", "Brown", "UC Irvine", "UPenn"
-];
+type DropdownKey = "univ" | "major" | "year" | "grad" | null;
 
-const majors = [
-  "Computer Science", "Mechanical Engineering",
-  "Biology", "Economics", "Math", "Psychology"
-];
+export default function Step2({ onBack, onValidityChange }: Step2Props) {
+  const profileData = useProfileSetupStore(state => state.data);
+  const setField = useProfileSetupStore(state => state.setField);
 
-export default function Step2({ data, onUpdate, onNext }: Step2Props) {
-  const canContinue = true; // Placeholder: can add validation later
-  const navigation = useNavigation(); // For back navigation
+  const [activeDropdown, setActiveDropdown] = useState<DropdownKey>(null);
 
-  /** University input state */
-  const [univText, setUnivText] = useState(data.university || ""); // Controlled input
-  const [univOpen, setUnivOpen] = useState(false); // Show/hide suggestions
-  const [filteredUnivs, setFilteredUnivs] = useState<string[]>(universities); // Filtered list
-
-  /** Select a university from suggestions */
-  const selectUniversity = useCallback(
-    (univ: string) => {
-      setUnivText(univ); // Update input field
-      onUpdate({ university: univ }); // Update parent state
-      setUnivOpen(false); // Close suggestion list
-    },
-    [onUpdate]
-  );
-
-  /** Filter university suggestions based on input */
-  const handleUnivChange = useCallback((text: string) => {
-    setUnivText(text); // Update input
-    setUnivOpen(true); // Show suggestions
-    setFilteredUnivs(universities.filter(u => u.toLowerCase().includes(text.toLowerCase())));
+  const univItems: ItemType<string>[] = useMemo(() => universities.map(u => ({ label: u, value: u })), []);
+  const majorItems: ItemType<string>[] = useMemo(() => majors.map(m => ({ label: m, value: m })), []);
+  const yearItems: ItemType<string>[] = useMemo(() => years.map(y => ({ label: y, value: y })), []);
+  const gradItems: ItemType<string>[] = useMemo(() => {
+    const startYear = new Date().getFullYear();
+    return Array.from({ length: 2030 - startYear + 1 }, (_, i) => ({ label: String(startYear + i), value: String(startYear + i) }));
   }, []);
 
-  /** Major input state */
-  const [majorText, setMajorText] = useState(data.major || "");
-  const [majorOpen, setMajorOpen] = useState(false); // Show/hide suggestions
-  const [filteredMajors, setFilteredMajors] = useState<string[]>(majors);
-
-  /** Select a major from suggestions */
-  const selectMajor = useCallback(
-    (major: string) => {
-      setMajorText(major); // Update input
-      onUpdate({ major }); // Update parent state
-      setMajorOpen(false); // Close suggestion list
-    },
-    [onUpdate]
+  const isValid = useMemo(
+    () => !!profileData.university && !!profileData.major && !!profileData.university_year && !!profileData.grad_year,
+    [profileData]
   );
 
-  /** Filter major suggestions based on input */
-  const handleMajorChange = useCallback((text: string) => {
-    setMajorText(text);
-    setMajorOpen(true);
-    setFilteredMajors(majors.filter(m => m.toLowerCase().includes(text.toLowerCase())));
-  }, []);
+  useEffect(() => { onValidityChange?.(isValid); }, [isValid, onValidityChange]);
 
-  /** University year dropdown state */
-  const [yearOpen, setYearOpen] = useState(false);
-  const [yearValue, setYearValue] = useState<ProfileSetupData["university_year"] | null>(
-    data.university_year ?? null
-  );
-
-  /** University year options */
-  const yearItems = useMemo(() => [
-    { label: "Freshman", value: "Freshman" as ProfileSetupData["university_year"] },
-    { label: "Sophomore", value: "Sophomore" as ProfileSetupData["university_year"] },
-    { label: "Junior", value: "Junior" as ProfileSetupData["university_year"] },
-    { label: "Senior", value: "Senior" as ProfileSetupData["university_year"] },
-    { label: "Graduate", value: "Graduate" as ProfileSetupData["university_year"] },
-  ], []);
-
-  /** Update university year selection */
-  const handleYearChange = useCallback(
-    (value: ProfileSetupData["university_year"] | null) => {
-      setYearValue(value);
-      if (value) onUpdate({ university_year: value });
-    },
-    [onUpdate]
-  );
-
-  /** DropDownPicker requires a setItems callback even if unused */
+  const handleOpen = (key: DropdownKey) => setActiveDropdown(prev => (prev === key ? null : key));
+  const getZIndex = (key: DropdownKey, baseZ: number) => (activeDropdown === key ? 5000 : baseZ);
   const emptyCallback = useCallback(() => {}, []);
-
-  /** Graduation year dropdown state */
-  const [gradOpen, setGradOpen] = useState(false);
-  const [gradValue, setGradValue] = useState<ProfileSetupData["grad_year"] | null>(
-    data.grad_year ?? null
-  );
-
-  /** Graduation year options: current year → 2030 */
-  const gradItems = useMemo(() => {
-    const now = new Date();
-    const startYear = now.getFullYear();
-    const endYear = 2030;
-    return Array.from({ length: endYear - startYear + 1 }, (_, i) => ({
-      label: (startYear + i).toString(),
-      value: startYear + i,
-    }));
-  }, []);
-
-  /** Update graduation year selection */
-  const handleGradChange = useCallback(
-    (value: number | null) => {
-      if (value !== null) {
-        setGradValue(value);
-        onUpdate({ grad_year: value });
-      }
-    },
-    [onUpdate]
-  );
-
-  /** Back button handler */
-  const handleBack = useCallback(() => {
-    navigation.goBack(); // Navigate to previous screen
-  }, [navigation]);
+  const screenHeight = Dimensions.get("window").height;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 32 }}
-      keyboardShouldPersistTaps="handled"
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+    <View style={styles.container}>
+      {onBack && (
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={DARK} />
         </TouchableOpacity>
-        <Text style={styles.title}>Academic Information</Text>
-        <Text style={styles.subtitle}>Tell us about your studies</Text>
-      </View>
+      )}
 
-      {/* University input */}
-      <View style={styles.fieldContainer}>
+      <Text style={styles.title}>University Info</Text>
+      <Text style={styles.subtitle}>Tell us about your school and major</Text>
+
+      {/* University */}
+      <View style={[styles.fieldContainer, { zIndex: getZIndex("univ", 4000) }]}>
         <Text style={styles.label}>University *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your university"
-          placeholderTextColor={MUTED}
-          value={univText}
-          onChangeText={handleUnivChange} // Filter suggestions as user types
+        <DropDownPicker<string>
+          placeholder="Select your university"
+          open={activeDropdown === "univ"}
+          value={profileData.university ?? ""}
+          items={univItems}
+          setOpen={() => handleOpen("univ")}
+          setValue={val => {
+            const value = typeof val === "function" ? val(profileData.university ?? "") : val;
+            setField("university", value ?? "");
+          }}
+          setItems={emptyCallback}
+          listMode="SCROLLVIEW"
+          style={styles.dropdown}
+          dropDownContainerStyle={[styles.dropdownContainer, { position: "absolute", zIndex: getZIndex("univ", 4000) }]}
         />
-        {univOpen && filteredUnivs.length > 0 && (
-          <View style={styles.dropdownList}>
-            {filteredUnivs.map(u => (
-              <TouchableOpacity key={u} onPress={() => selectUniversity(u)} style={styles.dropdownItem}>
-                <Text style={styles.dropdownText}>{u}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
       </View>
 
-      {/* Major input */}
-      <View style={styles.fieldContainer}>
+      {/* Major */}
+      <View style={[styles.fieldContainer, { zIndex: getZIndex("major", 3000) }]}>
         <Text style={styles.label}>Major *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your major"
-          placeholderTextColor={MUTED}
-          value={majorText}
-          onChangeText={handleMajorChange} // Filter suggestions as user types
+        <DropDownPicker<string>
+          placeholder="Select your major"
+          open={activeDropdown === "major"}
+          value={profileData.major ?? ""}
+          items={majorItems}
+          setOpen={() => handleOpen("major")}
+          setValue={val => {
+            const value = typeof val === "function" ? val(profileData.major ?? "") : val;
+            setField("major", value ?? "");
+          }}
+          setItems={emptyCallback}
+          listMode="SCROLLVIEW"
+          style={styles.dropdown}
+          dropDownContainerStyle={[styles.dropdownContainer, { position: "absolute", zIndex: getZIndex("major", 3000) }]}
         />
-        {majorOpen && filteredMajors.length > 0 && (
-          <View style={styles.dropdownList}>
-            {filteredMajors.map(m => (
-              <TouchableOpacity key={m} onPress={() => selectMajor(m)} style={styles.dropdownItem}>
-                <Text style={styles.dropdownText}>{m}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
       </View>
 
-      {/* University Year dropdown */}
-      <View style={[styles.fieldContainer, { zIndex: 2000 }]}>
+      {/* University Year */}
+      <View style={[styles.fieldContainer, { zIndex: getZIndex("year", 2000) }]}>
         <Text style={styles.label}>University Year *</Text>
-        <DropDownPicker<ProfileSetupData["university_year"]>
+        <DropDownPicker<string>
           placeholder="Select your year"
-          open={yearOpen}
-          value={yearValue}
+          open={activeDropdown === "year"}
+          value={profileData.university_year ?? ""}
           items={yearItems}
-          setOpen={setYearOpen}
-          setValue={setYearValue as any}
+          setOpen={() => handleOpen("year")}
+          setValue={val => {
+            const value = typeof val === "function" ? val(profileData.university_year ?? "") : val;
+            setField("university_year", value ?? "");
+          }}
           setItems={emptyCallback}
-          onChangeValue={handleYearChange} // Sync with parent state
-          style={styles.dropdown}
-          dropDownContainerStyle={styles.dropdownContainer}
-          placeholderStyle={styles.placeholderStyle}
           listMode="SCROLLVIEW"
+          style={styles.dropdown}
+          dropDownContainerStyle={[styles.dropdownContainer, { position: "absolute", zIndex: getZIndex("year", 2000) }]}
         />
       </View>
 
-      {/* Graduation Year dropdown */}
-      <View style={[styles.fieldContainer, { zIndex: 1000 }]}>
+      {/* Graduation Year */}
+      <View style={[styles.fieldContainer, { zIndex: getZIndex("grad", 1000) }]}>
         <Text style={styles.label}>Graduation Year *</Text>
-        <DropDownPicker<number>
+        <DropDownPicker<string>
           placeholder="Select your graduation year"
-          open={gradOpen}
-          value={gradValue}
+          open={activeDropdown === "grad"}
+          value={profileData.grad_year ? String(profileData.grad_year) : ""}
           items={gradItems}
-          setOpen={setGradOpen}
-          setValue={setGradValue as any}
+          setOpen={() => handleOpen("grad")}
+          setValue={val => {
+            const value = typeof val === "function" ? val(profileData.grad_year ? String(profileData.grad_year) : "") : val;
+            setField("grad_year", parseInt(value!, 10));
+          }}
           setItems={emptyCallback}
-          onChangeValue={handleGradChange} // Sync with parent state
-          style={styles.dropdown}
-          dropDownContainerStyle={styles.dropdownContainer}
-          placeholderStyle={styles.placeholderStyle}
           listMode="SCROLLVIEW"
+          maxHeight={screenHeight * 0.4} // Only grad year dropdown scrollable if too tall
+          style={styles.dropdown}
+          dropDownContainerStyle={[styles.dropdownContainer, { position: "absolute", zIndex: getZIndex("grad", 1000) }]}
         />
       </View>
-
-      {/* Continue button */}
-      <TouchableOpacity
-        onPress={onNext}
-        disabled={!canContinue}
-        style={[styles.button, !canContinue && styles.buttonDisabled]}
-      >
-        <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
-          Continue
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 24, paddingTop: 32 },
-  header: { marginBottom: 32 },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    backgroundColor: BACKGROUND,
+  },
   backButton: { marginBottom: 24 },
   title: { fontSize: 24, fontWeight: "bold", color: DARK, marginBottom: 8, textAlign: "center" },
-  subtitle: { fontSize: 16, color: MUTED, textAlign: "center" },
-  fieldContainer: { marginBottom: 24 },
+  subtitle: { fontSize: 16, color: MUTED, marginBottom: 32, textAlign: "center" },
+  fieldContainer: { marginBottom: 24, position: "relative" },
   label: { fontSize: 16, fontWeight: "500", color: DARK, marginBottom: 8, textAlign: "center" },
-  input: { width: "100%", padding: 16, backgroundColor: BACKGROUND, borderRadius: 12, fontSize: 16, color: DARK, borderWidth: 1, borderColor: "#e5e7eb" },
-  dropdownList: { backgroundColor: BACKGROUND, borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, marginTop: 4 },
-  dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: "#e5e7eb" },
-  dropdownText: { color: DARK, fontSize: 16 },
-  button: { width: "100%", backgroundColor: PRIMARY, paddingVertical: 16, borderRadius: 12 },
-  buttonDisabled: { backgroundColor: "#d1d5db" },
-  buttonText: { color: "white", fontSize: 18, fontWeight: "600", textAlign: "center" },
-  buttonTextDisabled: { color: MUTED },
   dropdown: { backgroundColor: BACKGROUND, borderColor: "#e5e7eb", borderRadius: 12, minHeight: 44, paddingHorizontal: 8, marginBottom: 8 },
   dropdownContainer: { backgroundColor: BACKGROUND, borderColor: "#e5e7eb", borderRadius: 12 },
-  placeholderStyle: { color: MUTED, fontSize: 16, fontWeight: "400" },
 });
