@@ -15,6 +15,7 @@ import logger from "@/config/logger";
 
 // Route Imports
 import authRoutes from "@/modules/auth/routes";
+import profileRoutes from "@/modules/profile/routes";
 
 const app = express();
 
@@ -46,8 +47,9 @@ app.use(
 // app.use(limiter);
 
 // Application Routes
-// Auth-related routes
 app.use("/api/auth", authRoutes);
+app.use("/api/profiles", profileRoutes);
+
 // Swagger UI for API documentation/testing
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup({}));
 
