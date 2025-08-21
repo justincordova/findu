@@ -415,28 +415,28 @@ model matches {
 
 model profiles {
   user_id            String           @id @db.Uuid
-  name               String?
-  avatar_url         String?
-  age                Int?
-  birthdate          DateTime?        @db.Date
-  gender             String?
-  pronouns           String?
-  bio                String?
-  university         String
-  university_year    String?          @db.VarChar(20)
-  major              String?
-  grad_year          Int?
-  interests          String[]
-  intent             String?
-  gender_preference  String[]
-  sexual_orientation String
-  min_age            Int?
-  max_age            Int?
+  name               String           @db.VarChar(100)
+  avatar_url         String
+  age                Int
+  birthdate          DateTime         @db.Date
+  gender             String           @db.VarChar(20)
+  pronouns           String           @db.VarChar(20)
+  bio                String
+  university         String           @db.VarChar(100)
+  university_year    Int
+  major              String           @db.VarChar(100)
+  grad_year          Int
+  interests          String[]         @db.VarChar(50)
+  intent             String           @db.VarChar(50)
+  gender_preference  String[]         @db.VarChar(20)
+  sexual_orientation String           @db.VarChar(50)
+  min_age            Int
+  max_age            Int
   spotify_url        String?
   instagram_url      String?
-  created_at         DateTime?        @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime?        @default(now()) @db.Timestamptz(6)
   photos             String[]         @default([])
+  created_at         DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime         @default(now()) @db.Timestamptz(6)
   profile_photos     profile_photos[]
   users              users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 

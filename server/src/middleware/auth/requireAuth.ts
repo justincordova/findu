@@ -2,14 +2,32 @@ import { Request, Response, NextFunction } from "express";
 import { verifySession } from "@/modules/auth/services";
 import logger from "@/config/logger";
 
-export async function requireSupabaseAuth(
+const enableAuth = process.env.ENABLE_AUTH === "true";
+
+export async function requireAuth(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
+  if (!enableAuth) {
+    // Auth disabled → attach mock user for dev/test convenience
+    (req as any).user = {
+      id: "dev-user",
+      email: "dev@example.com",
+      role: "developer",
+    };
+
+    logger.debug("AUTH_DISABLED", {
+      ip: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
+
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    logger.warn("SUPABASE_AUTH_FAILED", {
+    logger.warn("AUTH_FAILED", {
       reason: "missing_or_invalid_header",
       ip: req.ip,
       userAgent: req.get("User-Agent"),
@@ -24,7 +42,7 @@ export async function requireSupabaseAuth(
   try {
     const user = await verifySession(token);
     if (!user) {
-      logger.warn("SUPABASE_AUTH_FAILED", {
+      logger.warn("AUTH_FAILED", {
         reason: "invalid_or_expired_session",
         ip: req.ip,
         userAgent: req.get("User-Agent"),
@@ -32,10 +50,10 @@ export async function requireSupabaseAuth(
       return res.status(401).json({ error: "Invalid or expired session." });
     }
 
-    // Add user to request object
+    // Attach user to request
     (req as any).user = user;
 
-    logger.info("SUPABASE_AUTH_SUCCESS", {
+    logger.info("AUTH_SUCCESS", {
       userId: user.id,
       email: user.email,
       ip: req.ip,
@@ -43,7 +61,7 @@ export async function requireSupabaseAuth(
 
     next();
   } catch (error) {
-    logger.error("SUPABASE_AUTH_ERROR", {
+    logger.error("AUTH_ERROR", {
       error: error instanceof Error ? error.message : "Unknown error",
       ip: req.ip,
       userAgent: req.get("User-Agent"),

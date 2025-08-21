@@ -15,7 +15,7 @@ import {
   logout,
   getCurrentUser,
 } from "./controllers";
-import { requireSupabaseAuth } from "@/middleware/auth/requireSupabaseAuth";
+import { requireAuth } from "@/middleware/auth/requireAuth";
 
 const router = Router();
 
@@ -31,7 +31,7 @@ router.post(
 router.post("/reset-password", validatePasswordReset, resetPassword);
 
 // Protected routes (authentication required)
-router.post("/logout", requireSupabaseAuth, logout);
-router.get("/me", requireSupabaseAuth, getCurrentUser);
+router.post("/logout", requireAuth, logout);
+router.get("/me", requireAuth, getCurrentUser);
 
 export default router;
