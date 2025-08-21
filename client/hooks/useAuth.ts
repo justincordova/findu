@@ -3,6 +3,7 @@ import { AppState, AppStateStatus } from "react-native";
 import { useAuthStore } from "../store/authStore";
 import { authService } from "../services/authService";
 import { AUTH_CONFIG } from "../config/auth";
+import _log from "../utils/logger";
 
 export const useAuth = () => {
   const {
@@ -25,11 +26,9 @@ export const useAuth = () => {
   useEffect(() => {
     if (!initializedRef.current) {
       initializedRef.current = true;
-      console.log("useAuth: Initializing auth...");
+      _log.info("useAuth: Initializing auth...");
       initialize().catch((error) => {
-        console.error("useAuth: Failed to initialize auth:", error);
-        // Set loading to false even if initialization fails
-        // This prevents infinite loading states
+        _log.error("useAuth: Failed to initialize auth:", error);
       });
     }
   }, [initialize]);
@@ -37,20 +36,20 @@ export const useAuth = () => {
   // Set up app state change listener for security
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      _log.debug(`useAuth: AppState changed from ${appState.current} to ${nextAppState}`);
+      
       if (
         appState.current.match(/inactive|background/) &&
         nextAppState === "active"
       ) {
-        // App came to foreground, check auth status
+        _log.debug("useAuth: App came to foreground, checking auth status...");
         checkAuthStatus();
       } else if (
         appState.current === "active" &&
         nextAppState.match(/inactive|background/)
       ) {
-        // App went to background
         if (AUTH_CONFIG.SECURITY.CLEAR_ON_BACKGROUND) {
-          // Clear sensitive data when app goes to background
-          // This is optional and depends on your security requirements
+          _log.debug("useAuth: App went to background, sensitive data may be cleared");
         }
       }
       appState.current = nextAppState;
@@ -65,14 +64,10 @@ export const useAuth = () => {
 
   // Set up automatic token refresh
   useEffect(() => {
-    if (!session || !AUTH_CONFIG.AUTO_REFRESH.ENABLED) {
-      return;
-    }
+    if (!session || !AUTH_CONFIG.AUTO_REFRESH.ENABLED) return;
 
     const setupRefreshTimer = () => {
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
-      }
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
 
       const timeUntilRefresh = Math.max(
         0,
@@ -84,16 +79,17 @@ export const useAuth = () => {
       if (timeUntilRefresh > 0) {
         refreshTimerRef.current = setTimeout(async () => {
           try {
-            // Attempt to refresh the token
+            _log.debug("useAuth: Refreshing session...");
             const refreshedSession = await authService.refreshSession();
             if (refreshedSession) {
+              _log.info("useAuth: Session refreshed successfully");
               updateSession(refreshedSession);
             } else {
-              // Token refresh failed, logout user
+              _log.warn("useAuth: Session refresh failed, logging out...");
               logout();
             }
           } catch (error) {
-            console.error("Token refresh failed:", error);
+            _log.error("useAuth: Token refresh failed:", error);
             logout();
           }
         }, timeUntilRefresh * 1000);
@@ -103,24 +99,20 @@ export const useAuth = () => {
     setupRefreshTimer();
 
     return () => {
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
-      }
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
   }, [session, updateSession, logout]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (refreshTimerRef.current) {
-        clearTimeout(refreshTimerRef.current);
-      }
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
   }, []);
 
-  // Debug logging
+  // Debug logging for auth state
   useEffect(() => {
-    console.log("useAuth: State updated:", {
+    _log.debug("useAuth: State updated", {
       isLoggedIn,
       isLoading,
       hasUser: !!user,

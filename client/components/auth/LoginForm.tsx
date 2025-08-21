@@ -10,6 +10,7 @@ import { useRouter } from "expo-router";
 import { PRIMARY, DARK } from "../../constants/theme";
 import { useAuthStore } from "../../store/authStore";
 import { login } from "../../api/auth";
+import _log from "../../utils/logger";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -23,20 +24,22 @@ export default function LoginForm() {
     setError("");
     setLoading(true);
     try {
-      console.log("LoginForm: Sending login request to backend...");
+      _log.debug("LoginForm: Sending login request to backend...", { email });
 
       const result = await login({ email, password });
-      console.log("LoginForm: Backend response:", result);
+      _log.debug("LoginForm: Backend response:", result);
 
       if (result.success && result.user && result.session) {
         // Login successful, store session and redirect
+        _log.info(`LoginForm: Login successful for user ${result.user.id}`);
         await loginUser(result.user, result.session);
         router.replace("/home/(tabs)/discover");
       } else {
+        _log.warn("LoginForm: Login failed", { message: result.message });
         setError(result.message || "Login failed");
       }
     } catch (error: any) {
-      console.error("LoginForm: Login error:", error);
+      _log.error("LoginForm: Login error:", error);
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
