@@ -1,72 +1,55 @@
 import { Profile } from "@/types/Profile";
 import logger from "@/config/logger";
-import { supabase } from "@/providers/supabase";
+import prisma from "@/providers/prisma"; // default import
 
-/**
- * Sanitize data to remove undefined values
- */
 const sanitizeData = <T extends object>(data: T): Partial<T> => {
   return Object.fromEntries(
     Object.entries(data).filter(([_, v]) => v !== undefined)
   ) as Partial<T>;
 };
 
-/**
- * Create a new profile
- */
 export const createProfile = async (profileData: Profile) => {
   try {
-    const profile = await supabase
-      .from("profiles")
-      .insert({
+    const profile = await prisma.profiles.create({ // plural "profiles"
+      data: {
         ...profileData,
         updated_at: new Date(),
-      })
-      .select()
-      .single();
+      },
+    });
 
     logger.info("PROFILE_CREATED", { userId: profileData.user_id });
-    return profile.data;
+    return profile;
   } catch (error) {
     logger.error("CREATE_PROFILE_ERROR", { error, profileData });
     throw error;
   }
 };
 
-/**
- * Partially update an existing profile
- */
 export const updateProfile = async (
   userId: string,
-  profileData: Partial<Profile>
+  profileData: Partial<Profile> = {}
 ) => {
   try {
     const sanitized = sanitizeData(profileData);
 
-    const { data: existing } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
+    // Convert birthdate to Date if present
+    if (sanitized.birthdate) sanitized.birthdate = new Date(sanitized.birthdate);
 
-    if (!existing) {
+    const existingProfile = await prisma.profiles.findUnique({
+      where: { user_id: userId },
+    });
+
+    if (!existingProfile) {
       logger.warn("PROFILE_NOT_FOUND_FOR_UPDATE", { userId });
       return null;
     }
 
-    const { data: updatedProfile, error } = await supabase
-      .from("profiles")
-      .update({
-        ...sanitized,
-        updated_at: new Date(),
-      })
-      .eq("user_id", userId)
-      .select()
-      .single();
+    const updatedProfile = await prisma.profiles.update({
+      where: { user_id: userId },
+      data: { ...sanitized, updated_at: new Date() },
+    });
 
-    if (error) throw error;
-
-    logger.info("PROFILE_UPDATED", { userId });
+    logger.info("PROFILE_UPDATED", { userId, data: sanitized });
     return updatedProfile;
   } catch (error) {
     logger.error("UPDATE_PROFILE_ERROR", { error, userId, profileData });
@@ -74,24 +57,16 @@ export const updateProfile = async (
   }
 };
 
-/**
- * Get a profile by user ID
- */
+
+
 export const getProfileByUserId = async (userId: string) => {
   try {
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
+    const profile = await prisma.profiles.findUnique({
+      where: { user_id: userId },
+    });
 
-    if (error) throw error;
-
-    if (!profile) {
-      logger.warn("PROFILE_NOT_FOUND", { userId });
-    } else {
-      logger.info("PROFILE_FETCHED", { userId });
-    }
+    if (!profile) logger.warn("PROFILE_NOT_FOUND", { userId });
+    else logger.info("PROFILE_FETCHED", { userId });
 
     return profile;
   } catch (error) {
@@ -100,17 +75,11 @@ export const getProfileByUserId = async (userId: string) => {
   }
 };
 
-/**
- * Delete a profile by user ID
- */
 export const deleteProfile = async (userId: string) => {
   try {
-    const { error } = await supabase
-      .from("profiles")
-      .delete()
-      .eq("user_id", userId);
-
-    if (error) throw error;
+    await prisma.profiles.delete({
+      where: { user_id: userId },
+    });
 
     logger.info("PROFILE_DELETED", { userId });
   } catch (error) {
