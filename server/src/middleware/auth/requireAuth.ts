@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifySession } from "@/modules/auth/services";
+import { AuthService } from "@/modules/auth/services"; // updated import
 import logger from "@/config/logger";
 
 const enableAuth = process.env.ENABLE_AUTH === "true";
@@ -40,7 +40,7 @@ export async function requireAuth(
   const token = authHeader.replace("Bearer ", "");
 
   try {
-    const user = await verifySession(token);
+    const user = await AuthService.verifySession(token); // updated usage
     if (!user) {
       logger.warn("AUTH_FAILED", {
         reason: "invalid_or_expired_session",
