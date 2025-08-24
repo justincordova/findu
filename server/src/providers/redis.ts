@@ -1,4 +1,4 @@
-import Redis from "ioredis";
+import RedisClient from "ioredis";
 import logger from "@/config/logger";
 
 interface OTPData {
@@ -10,14 +10,14 @@ interface OTPData {
 
 type Stats = { totalOTPs: number; storeSize: number; storageType: "redis" | "memory" };
 
-export class OTPStore {
-  private redis: Redis;
+export class Redis {
+  private redis: RedisClient;
   private isConnected: boolean = false;
   private store: Map<string, OTPData> = new Map(); // in-memory fallback
   private useRedis: boolean = false;
 
   constructor() {
-    this.redis = new Redis({
+    this.redis = new RedisClient({
       host: process.env.REDIS_HOST || "localhost",
       port: parseInt(process.env.REDIS_PORT || "6379"),
       password: process.env.REDIS_PASSWORD,
@@ -27,19 +27,19 @@ export class OTPStore {
     this.redis.on("connect", () => {
       this.isConnected = true;
       this.useRedis = true;
-      logger.info("REDIS_OTP_STORE_CONNECTED");
+      logger.info("REDIS_STORE_CONNECTED");
     });
 
     this.redis.on("error", (error) => {
       this.isConnected = false;
       this.useRedis = false;
-      logger.error("REDIS_OTP_STORE_ERROR", { error: error.message });
+      logger.error("REDIS_STORE_ERROR", { error: error.message });
     });
 
     this.redis.on("close", () => {
       this.isConnected = false;
       this.useRedis = false;
-      logger.warn("REDIS_OTP_STORE_DISCONNECTED");
+      logger.warn("REDIS_STORE_DISCONNECTED");
     });
   }
 
@@ -58,8 +58,7 @@ export class OTPStore {
       }
     }
 
-    // fallback to in-memory store
-    this.store.set(email, otpData);
+    this.store.set(email, otpData); // fallback
   }
 
   async verifyOTP(email: string, otp: string): Promise<{ valid: boolean; password?: string; error?: string }> {
@@ -79,12 +78,11 @@ export class OTPStore {
         await this.redis.del(key);
         return { valid: true, password: otpData.password };
       } catch {
-        this.useRedis = false; // fallback to memory
+        this.useRedis = false; // fallback
       }
     }
 
-    // fallback to memory
-    const otpData = this.store.get(email);
+    const otpData = this.store.get(email); // memory fallback
     if (!otpData) return { valid: false, error: "No OTP found for this email" };
     if (otpData.otp !== otp) return { valid: false, error: "Invalid OTP" };
     if (otpData.expiresAt < Math.floor(Date.now() / 1000)) {
@@ -140,4 +138,5 @@ export class OTPStore {
   }
 }
 
-export const otpStore = new OTPStore();
+// Singleton instance
+export const redis = new Redis();
