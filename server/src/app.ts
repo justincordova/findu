@@ -1,11 +1,9 @@
 import express, { Request, Response, NextFunction } from "express";
-import cors from "cors";
-import corsOptions from '@/middleware/security/corsOptions';
-import helmet from "helmet";
-import compression from "compression";
-import limiter from '@/middleware/security/rateLimiter';
-import morgan from "morgan";
-import swaggerUi from "swagger-ui-express";
+import cors from "@/middleware/security/corsConfig";
+import helmet from "@/middleware/security/helmetConfig";
+import compression from "@/middleware/security/compressionConfig";
+import limiter from '@/middleware/security/rateLimiterConfig';
+import morgan from "@/middleware/security/morganConfig";
 
 // Custom Middleware
 import { notFoundHandler } from "@/middleware/error/notFoundHandler";
@@ -20,38 +18,20 @@ import profileRoutes from "@/modules/profile/routes";
 const app = express();
 
 // Built-in Express Middleware
-// Parse JSON bodies with a limit of 10mb
 app.use(express.json({ limit: "10mb" }));
-// Parse URL-encoded bodies with a limit of 10mb
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Third-party Security Middleware
-// Enable CORS with custom options (whitelist origins, allow credentials)
-app.use(cors(corsOptions));
-// Set secure HTTP headers
-app.use(helmet());
-// Enable GZIP compression for responses
-app.use(compression());
-
-// Logging Middleware
-// HTTP request logging via Morgan, piped to Winston logger
-// "combined" format gives Apache-style logs, suitable for production
-app.use(
-  morgan("combined", {
-    stream: { write: (message: string) => logger.http(message.trim()) },
-  })
-);
-
-// Rate Limiting Middleware
-// Protects your API from abuse and brute-force attacks
-// app.use(limiter);
+app.use(cors);
+app.use(helmet);
+app.use(compression);
+app.use(morgan);
+app.use(limiter);
 
 // Application Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/profiles", profileRoutes);
 
-// Swagger UI for API documentation/testing
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup({}));
 
 // Health Check Route
 // Simple endpoint to verify server status
@@ -76,9 +56,6 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Custom Error Handling Middleware
-// - notFoundHandler: catches 404 routes
-// - handleValidationErrors: handles express-validator errors
-// - errorHandler: handles all other uncaught errors
 app.use(notFoundHandler);
 app.use(handleValidationErrors);
 app.use(errorHandler);
