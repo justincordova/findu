@@ -1,13 +1,13 @@
 import { Request } from "express";
-import { supabase } from "@/lib/supabase";
-import { otpStore } from "@/services/otpStore";
-import { sendOTPEmail } from "@/services/emailService";
+import { supabase } from "@/providers/supabase";
+import { otpStore } from "@/providers/redis";
+import { sendOTPEmail } from "@/modules/auth/emailService";
 import logger from "@/config/logger";
 import * as authService from "@/modules/auth/services";
 
-jest.mock("@/lib/supabase");
-jest.mock("@/services/otpStore");
-jest.mock("@/services/emailService");
+jest.mock("@/providers/supabase");
+jest.mock("@/providers/redis");
+jest.mock("@/modules/auth/emailService");
 jest.mock("@/config/logger");
 
 describe("Auth Service", () => {
@@ -28,16 +28,25 @@ describe("Auth Service", () => {
 
   describe("createPendingSignup", () => {
     it("should create pending signup successfully", async () => {
-      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({ data: { users: [] }, error: null });
+      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({
+        data: { users: [] },
+        error: null,
+      });
       (otpStore.hasOTP as jest.Mock).mockResolvedValue(false);
       (otpStore.storeOTP as jest.Mock).mockResolvedValue(undefined);
       (sendOTPEmail as jest.Mock).mockResolvedValue({ success: true });
 
-      const result = await authService.createPendingSignup(testEmail, testPassword);
+      const result = await authService.createPendingSignup(
+        testEmail,
+        testPassword
+      );
       expect(result.success).toBe(true);
       expect(otpStore.storeOTP).toHaveBeenCalled();
       expect(sendOTPEmail).toHaveBeenCalled();
-      expect(logger.info).toHaveBeenCalledWith("PENDING_SIGNUP_CREATED_WITH_OTP", expect.any(Object));
+      expect(logger.info).toHaveBeenCalledWith(
+        "PENDING_SIGNUP_CREATED_WITH_OTP",
+        expect.any(Object)
+      );
     });
 
     it("should fail if user already exists", async () => {
@@ -46,18 +55,27 @@ describe("Auth Service", () => {
         error: null,
       });
 
-      const result = await authService.createPendingSignup(testEmail, testPassword);
+      const result = await authService.createPendingSignup(
+        testEmail,
+        testPassword
+      );
       expect(result.success).toBe(false);
       expect(result.error).toBe("User already exists");
     });
 
     it("should clean up OTP if email fails", async () => {
-      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({ data: { users: [] }, error: null });
+      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({
+        data: { users: [] },
+        error: null,
+      });
       (otpStore.hasOTP as jest.Mock).mockResolvedValue(false);
       (otpStore.storeOTP as jest.Mock).mockResolvedValue(undefined);
       (sendOTPEmail as jest.Mock).mockResolvedValue({ success: false });
 
-      const result = await authService.createPendingSignup(testEmail, testPassword);
+      const result = await authService.createPendingSignup(
+        testEmail,
+        testPassword
+      );
       expect(result.success).toBe(false);
       expect(otpStore.removeOTP).toHaveBeenCalledWith(testEmail);
     });
@@ -65,17 +83,29 @@ describe("Auth Service", () => {
 
   describe("verifyOTP", () => {
     it("should verify OTP and create user", async () => {
-      (otpStore.verifyOTP as jest.Mock).mockResolvedValue({ valid: true, password: testPassword });
-      (supabase.auth.admin.createUser as jest.Mock).mockResolvedValue({ data: { user: mockUser }, error: null });
+      (otpStore.verifyOTP as jest.Mock).mockResolvedValue({
+        valid: true,
+        password: testPassword,
+      });
+      (supabase.auth.admin.createUser as jest.Mock).mockResolvedValue({
+        data: { user: mockUser },
+        error: null,
+      });
 
       const result = await authService.verifyOTP(testEmail, testOTP);
       expect(result.success).toBe(true);
       expect(result.user?.id).toBe(mockUser.id);
-      expect(logger.info).toHaveBeenCalledWith("USER_CREATED_SUCCESSFULLY_WITH_OTP", expect.any(Object));
+      expect(logger.info).toHaveBeenCalledWith(
+        "USER_CREATED_SUCCESSFULLY_WITH_OTP",
+        expect.any(Object)
+      );
     });
 
     it("should return error for invalid OTP", async () => {
-      (otpStore.verifyOTP as jest.Mock).mockResolvedValue({ valid: false, error: "Invalid OTP" });
+      (otpStore.verifyOTP as jest.Mock).mockResolvedValue({
+        valid: false,
+        error: "Invalid OTP",
+      });
 
       const result = await authService.verifyOTP(testEmail, testOTP);
       expect(result.success).toBe(false);
@@ -83,8 +113,14 @@ describe("Auth Service", () => {
     });
 
     it("should return error if Supabase creation fails", async () => {
-      (otpStore.verifyOTP as jest.Mock).mockResolvedValue({ valid: true, password: testPassword });
-      (supabase.auth.admin.createUser as jest.Mock).mockResolvedValue({ data: {}, error: "Failed" });
+      (otpStore.verifyOTP as jest.Mock).mockResolvedValue({
+        valid: true,
+        password: testPassword,
+      });
+      (supabase.auth.admin.createUser as jest.Mock).mockResolvedValue({
+        data: {},
+        error: "Failed",
+      });
 
       const result = await authService.verifyOTP(testEmail, testOTP);
       expect(result.success).toBe(false);
@@ -99,15 +135,24 @@ describe("Auth Service", () => {
         error: null,
       });
 
-      const result = await authService.authenticateUser(testEmail, testPassword);
+      const result = await authService.authenticateUser(
+        testEmail,
+        testPassword
+      );
       expect(result.success).toBe(true);
       expect(result.user?.id).toBe(mockUser.id);
     });
 
     it("should fail login with invalid credentials", async () => {
-      (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValue({ data: {}, error: "Invalid" });
+      (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValue({
+        data: {},
+        error: "Invalid",
+      });
 
-      const result = await authService.authenticateUser(testEmail, testPassword);
+      const result = await authService.authenticateUser(
+        testEmail,
+        testPassword
+      );
       expect(result.success).toBe(false);
       expect(result.error).toBe("Invalid email or password");
     });
@@ -115,15 +160,23 @@ describe("Auth Service", () => {
 
   describe("requestPasswordReset", () => {
     it("should succeed if user exists", async () => {
-      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({ data: { users: [{ email: testEmail }] }, error: null });
-      (supabase.auth.resetPasswordForEmail as jest.Mock).mockResolvedValue({ error: null });
+      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({
+        data: { users: [{ email: testEmail }] },
+        error: null,
+      });
+      (supabase.auth.resetPasswordForEmail as jest.Mock).mockResolvedValue({
+        error: null,
+      });
 
       const result = await authService.requestPasswordReset(testEmail);
       expect(result.success).toBe(true);
     });
 
     it("should return success if user does not exist (prevent enumeration)", async () => {
-      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({ data: { users: [] }, error: null });
+      (supabase.auth.admin.listUsers as jest.Mock).mockResolvedValue({
+        data: { users: [] },
+        error: null,
+      });
 
       const result = await authService.requestPasswordReset(testEmail);
       expect(result.success).toBe(true);
@@ -133,7 +186,10 @@ describe("Auth Service", () => {
   describe("getCurrentUserData", () => {
     it("should return user data for valid token", async () => {
       const req = { headers: { authorization: `Bearer token123` } } as Request;
-      (supabase.auth.getUser as jest.Mock).mockResolvedValue({ data: { user: mockUser }, error: null });
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: mockUser },
+        error: null,
+      });
 
       const result = await authService.getCurrentUserData(req);
       expect(result.success).toBe(true);
@@ -142,7 +198,10 @@ describe("Auth Service", () => {
 
     it("should return error for invalid session", async () => {
       const req = { headers: { authorization: `Bearer token123` } } as Request;
-      (supabase.auth.getUser as jest.Mock).mockResolvedValue({ data: { user: null }, error: "Invalid" });
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: null },
+        error: "Invalid",
+      });
 
       const result = await authService.getCurrentUserData(req);
       expect(result.success).toBe(false);

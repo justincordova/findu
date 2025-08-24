@@ -1,4 +1,4 @@
-import { OTPStore } from "@/services/otpStore";
+import { OTPStore } from "@/providers/redis";
 import Redis from "ioredis";
 
 jest.mock("ioredis");

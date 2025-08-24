@@ -1,13 +1,10 @@
-import { supabase } from "@/lib/supabase";
-import { sendOTPEmail } from "@/services/emailService";
-import { otpStore } from "@/services/otpStore";
+import { supabase } from "@/providers/supabase";
+import { sendOTPEmail } from "@/modules/auth/emailService";
+import { otpStore } from "@/providers/redis";
 import logger from "@/config/logger";
 import { Request } from "express";
-import { AuthResult, PendingSignupResult } from "@/types/auth";
-import {
-  generateOTP,
-  extractBearerToken,
-} from "@/utils/auth";
+import { AuthResult, PendingSignupResult } from "@/types/Auth";
+import { generateOTP, extractBearerToken } from "@/utils/auth";
 
 // Create pending signup with OTP
 export const createPendingSignup = async (

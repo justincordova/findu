@@ -1,6 +1,6 @@
 import { Profile } from "@/types/Profile";
 import logger from "@/config/logger";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/providers/supabase";
 
 /**
  * Sanitize data to remove undefined values
@@ -16,10 +16,14 @@ const sanitizeData = <T extends object>(data: T): Partial<T> => {
  */
 export const createProfile = async (profileData: Profile) => {
   try {
-    const profile = await supabase.from("profiles").insert({
-      ...profileData,
-      updated_at: new Date(),
-    }).select().single();
+    const profile = await supabase
+      .from("profiles")
+      .insert({
+        ...profileData,
+        updated_at: new Date(),
+      })
+      .select()
+      .single();
 
     logger.info("PROFILE_CREATED", { userId: profileData.user_id });
     return profile.data;
