@@ -2,19 +2,11 @@ import compression from "compression";
 import { RequestHandler } from "express";
 
 /**
- * Compression Middleware Config
+ * Compression Middleware
  *
- * - In production: enables GZIP compression for responses
- * - In development: disabled to make debugging easier
+ * - Enables GZIP compression for all responses.
+ * - Safe to use in dev, test, and production.
  */
-let compressionMiddleware: RequestHandler;
+const compressionMiddleware: RequestHandler = compression();
 
-if (process.env.NODE_ENV !== "development") {
-  // Production / staging: enable compression
-  compressionMiddleware = compression();
-} else {
-  // Development: no-op middleware (skip compression)
-  compressionMiddleware = (_req, _res, next) => next();
-}
-
-export default compression;
+export default compressionMiddleware;
