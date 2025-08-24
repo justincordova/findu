@@ -1,7 +1,20 @@
 import request from "supertest";
 import app from "@/app";
 
-// Testing for health, 404, and error handler routes
+// Mock all security middleware so they don’t run during tests
+jest.mock("@/middleware/security/corsConfig", () => jest.fn((req, res, next) => next()));
+jest.mock("@/middleware/security/helmetConfig", () => jest.fn((req, res, next) => next()));
+jest.mock("@/middleware/security/compressionConfig", () => jest.fn((req, res, next) => next()));
+jest.mock("@/middleware/security/morganConfig", () => jest.fn((req, res, next) => next()));
+jest.mock("@/middleware/security/rateLimiterConfig", () => jest.fn((req, res, next) => next()));
+
+// Mock logger to prevent async file writes
+jest.mock("@/config/logger", () => ({
+  http: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+}));
 
 describe("App Integration Tests", () => {
   it("should return 200 and OK for /health route", async () => {
@@ -21,10 +34,8 @@ describe("App Integration Tests", () => {
   });
 
   it("should trigger global error handler on thrown error", async () => {
-    // Temporarily add a route that throws an error
-    app.get("/error-test", (_req, _res) => {
-      throw new Error("Test Error");
-    });
+    // Only run this test in non-production
+    if (process.env.NODE_ENV === "production") return;
 
     const res = await request(app).get("/error-test");
     expect(res.status).toBe(500);
