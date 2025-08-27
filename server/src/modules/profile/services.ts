@@ -1,6 +1,6 @@
 import { Profile } from "@/types/Profile";
 import logger from "@/config/logger";
-import prisma from "@/providers/prisma"; // default import
+import prisma from "@/lib/prismaClient";
 
 const sanitizeData = <T extends object>(data: T): Partial<T> => {
   return Object.fromEntries(
@@ -10,7 +10,8 @@ const sanitizeData = <T extends object>(data: T): Partial<T> => {
 
 export const createProfile = async (profileData: Profile) => {
   try {
-    const profile = await prisma.profiles.create({ // plural "profiles"
+    const profile = await prisma.profiles.create({
+      // plural "profiles"
       data: {
         ...profileData,
         updated_at: new Date(),
@@ -33,7 +34,8 @@ export const updateProfile = async (
     const sanitized = sanitizeData(profileData);
 
     // Convert birthdate to Date if present
-    if (sanitized.birthdate) sanitized.birthdate = new Date(sanitized.birthdate);
+    if (sanitized.birthdate)
+      sanitized.birthdate = new Date(sanitized.birthdate);
 
     const existingProfile = await prisma.profiles.findUnique({
       where: { user_id: userId },
@@ -56,8 +58,6 @@ export const updateProfile = async (
     throw error;
   }
 };
-
-
 
 export const getProfileByUserId = async (userId: string) => {
   try {

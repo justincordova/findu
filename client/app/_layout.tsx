@@ -1,53 +1,69 @@
 import "react-native-url-polyfill/auto";
 import { Stack } from "expo-router";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Text, ActivityIndicator } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
 import DevButton from "../components/shared/DevButton";
-import { AuthWrapper } from "../components/auth/AuthWrapper";
-import _log from "../utils/logger"; // import your logger
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from "@expo-google-fonts/inter";
+import { useAuth } from "../hooks/useAuth"; // <-- use hook, not store directly
+
+// Prevent splash screen from auto hiding
+SplashScreen.preventAutoHideAsync();
+
+// Set default font globally (once)
+if (!(Text as any).defaultProps) (Text as any).defaultProps = {};
+(Text as any).defaultProps.style = [{ fontFamily: "Inter_400Regular" }];
 
 export default function RootLayout() {
-  _log.info("RootLayout: Rendering...");
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  const { isLoading, restoreSession } = useAuth();
+
+  // Restore session on app start
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
+
+  // Hide splash screen after fonts + auth check
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (isLoading || !fontsLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   return (
-    <AuthWrapper>
-      <View style={styles.container}>
-        {/* Change this to your route */}
-        <DevButton route="/profile-setup/0" />
-        <Stack screenOptions={{ headerShown: false }} />
-      </View>
-    </AuthWrapper>
+    <View style={styles.container}>
+      {__DEV__ && <DevButton route="/profile-setup/0" />}
+      <Stack screenOptions={{ headerShown: false }} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+  loadingContainer: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
   },
 });
-
-// app/_layout.tsx
-//  ⬆ This is your root layout wrapper (not directly navigable)
-//  It's applied to routes at the same level (index.tsx, etc.)
-
-// app/index.tsx
-// "/" → Starting entry point (home/root screen)
-
-// app/auth/forget-password.tsx
-// "/auth/forget-password"
-
-// app/auth/verify-otp/index.tsx
-// "/auth/verify-otp"
-
-// app/matches/[userId].tsx
-// "/matches/:userId"
-// Example: "/matches/123" or "/matches/jane-doe"
-
-// app/onboarding/index.tsx
-// "/onboarding"
-
-// app/onboarding/afterInfo.tsx
-// "/onboarding/afterInfo"
-
-// app/profile-setup/[step].tsx
-// "/profile-setup/:step"
-// Example: "/profile-setup/1" or "/profile-setup/basic-info"

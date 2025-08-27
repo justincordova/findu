@@ -1,15 +1,9 @@
-import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import React, { useState } from "react";
+import { View, Text, TextInput, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { PRIMARY, DARK, MUTED } from "../../constants/theme";
-import { signup } from "../../api/auth";
-import _log from "../../utils/logger"; // import your logger
+import { DANGER } from "@/constants/theme";
+import { useAuth } from "@/hooks/useAuth"; // Use hook instead of direct fetch
+import Button from "../shared/Button";
 
 export default function SignupForm() {
   const [email, setEmail] = useState("");
@@ -17,39 +11,23 @@ export default function SignupForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { signup } = useAuth();
 
   const handleSignup = async () => {
     setError("");
-
-    if (!/^[\w.+-]+@[\w-]+\.edu$/i.test(email)) {
-      setError("Only .edu emails are allowed.");
-      _log.warn("SignupForm: Invalid email format attempted", { email });
-      return;
-    }
-
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long.");
-      _log.warn("SignupForm: Password too short", { passwordLength: password.length });
-      return;
-    }
-
     setLoading(true);
+
     try {
-      _log.debug("SignupForm: Sending signup request to backend...", { email });
+      const result = await signup(email, password);
 
-      const result = await signup({ email, password });
-      _log.debug("SignupForm: Backend response:", result);
-
-      if (result.success) {
-        _log.info(`SignupForm: Signup successful for email ${email}`);
-        // Signup successful, redirect to OTP verification
-        router.push({ pathname: "/auth/verify-otp", params: { email } });
+      if (!result.success) {
+        setError(result.error || "Signup failed");
       } else {
-        _log.warn("SignupForm: Signup failed", { message: result.message });
-        setError(result.message || "Failed to create account.");
+        // Navigate to verify-otp page with email param
+        router.push(`/auth/verify-otp?email=${encodeURIComponent(email)}`);
       }
-    } catch (error: any) {
-      _log.error("SignupForm: Signup error:", error);
+    } catch (err) {
+      console.error("SignupForm: signup error", err);
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
@@ -58,58 +36,39 @@ export default function SignupForm() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Email</Text>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
       <TextInput
-        style={[styles.input, styles.emailInput]}
-        placeholder="Enter your email"
-        placeholderTextColor="#999"
+        style={styles.input}
+        placeholder="Email"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        placeholderTextColor="#A1A1A1"
       />
-      <Text style={styles.note}>
-        Only <Text style={styles.primaryText}>.edu</Text> emails are allowed.
-      </Text>
-      <Text style={styles.label}>Password</Text>
+
       <TextInput
-        style={[styles.input, styles.passwordInput]}
-        placeholder="Enter your password"
-        placeholderTextColor="#999"
+        style={styles.input}
+        placeholder="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
         autoCapitalize="none"
+        placeholderTextColor="#A1A1A1"
       />
-      <Text style={styles.note}>
-        Password must be at least 8 characters with uppercase, lowercase,
-        number, and special character.
-      </Text>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
+
+      <Button
+        label={loading ? "Signing up..." : "Sign Up"}
         onPress={handleSignup}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? "Creating..." : "Signup"}
-        </Text>
-      </TouchableOpacity>
+        style={{ opacity: loading ? 0.7 : 1 }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    marginTop: 24,
-  },
-  label: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 8,
-    color: DARK,
-  },
+  container: { width: "100%", marginTop: 24 },
   input: {
     borderWidth: 1,
     borderColor: "#D1D5DB",
@@ -120,39 +79,9 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     fontSize: 16,
   },
-  emailInput: {
-    marginBottom: 24,
-  },
-  passwordInput: {
-    marginBottom: 24,
-  },
-  note: {
-    fontSize: 12,
-    color: MUTED,
-    marginBottom: 16,
-  },
-  primaryText: {
-    color: PRIMARY,
-    fontWeight: "600",
-  },
   error: {
-    color: "#EF4444",
+    color: DANGER,
     textAlign: "center",
     marginBottom: 16,
-  },
-  button: {
-    backgroundColor: PRIMARY,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
-    fontSize: 16,
   },
 });

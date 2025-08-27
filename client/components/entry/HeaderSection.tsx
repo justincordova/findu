@@ -1,27 +1,29 @@
-import { View, Text, Image, StyleSheet } from "react-native";
-import { DARK, MUTED } from "../../constants/theme";
+import { View, Text, StyleSheet } from "react-native";
+import MaskedView from "@react-native-masked-view/masked-view";
+import { LinearGradient } from "expo-linear-gradient";
+import { DARK, GRADIENT } from "../../constants/theme";
 
-interface HeaderSectionProps {
-  title?: string;
-  subtitle?: string;
-  description?: string;
-}
-
-export default function HeaderSection({
-  title = "FindU",
-  subtitle = "Dating App for Verified College Students Only",
-  description = "Discover real connections on your campus.",
-}: HeaderSectionProps) {
+export default function HeaderSection() {
   return (
     <View style={styles.container}>
-      <Image
-        source={require("../../assets/images/logo.png")}
-        style={styles.logo}
-        resizeMode="contain"
-      />
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
-      <Text style={styles.description}>{description}</Text>
+      {/* Gradient Text for findU */}
+      <MaskedView
+        maskElement={
+          <Text style={styles.logo}>findU</Text>
+        }
+      >
+        <LinearGradient
+          colors={GRADIENT}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }} // left → right gradient
+          style={styles.gradientText}
+        >
+          {/* Invisible text ensures the gradient has correct size */}
+          <Text style={[styles.logo, { opacity: 0 }]}>findU</Text>
+        </LinearGradient>
+      </MaskedView>
+
+      <Text style={styles.subtitle}>Where college hearts connect</Text>
     </View>
   );
 }
@@ -31,28 +33,92 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   logo: {
-    width: 150,
-    height: 150,
-    borderRadius: 24,
-  },
-  title: {
-    fontSize: 48,
+    fontSize: 42,
     fontWeight: "bold",
-    color: DARK,
-    marginBottom: 8,
+    textAlign: "center",
+  },
+  gradientText: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   subtitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: DARK,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  description: {
-    fontStyle: "italic",
     fontSize: 18,
-    color: MUTED,
+    color: DARK,
     textAlign: "center",
-    marginBottom: 24,
+    marginTop: 12, // ensures gap from logo
   },
-}); 
+});
+
+
+// Floating findU
+// import { useEffect, useRef } from "react";
+// import { View, Text, StyleSheet, Animated, Easing } from "react-native";
+// import MaskedView from "@react-native-masked-view/masked-view";
+// import { LinearGradient } from "expo-linear-gradient";
+// import { DARK, GRADIENT } from "../../constants/theme";
+
+// export default function HeaderSection() {
+//   const translateY = useRef(new Animated.Value(0)).current;
+
+//   useEffect(() => {
+//     Animated.loop(
+//       Animated.sequence([
+//         Animated.timing(translateY, {
+//           toValue: -10, // float up
+//           duration: 1500,
+//           easing: Easing.inOut(Easing.ease),
+//           useNativeDriver: true,
+//         }),
+//         Animated.timing(translateY, {
+//           toValue: 0, // float down
+//           duration: 1500,
+//           easing: Easing.inOut(Easing.ease),
+//           useNativeDriver: true,
+//         }),
+//       ])
+//     ).start();
+//   }, [translateY]);
+
+//   return (
+//     <View style={styles.container}>
+//       {/* Floating Gradient Logo */}
+//       <Animated.View style={{ transform: [{ translateY }] }}>
+//         <MaskedView maskElement={<Text style={styles.logo}>findU</Text>}>
+//           <LinearGradient
+//             colors={GRADIENT}
+//             start={{ x: 0, y: 0 }}
+//             end={{ x: 1, y: 0 }}
+//             style={styles.gradientText}
+//           >
+//             {/* Invisible text ensures gradient has size */}
+//             <Text style={[styles.logo, { opacity: 0 }]}>findU</Text>
+//           </LinearGradient>
+//         </MaskedView>
+//       </Animated.View>
+
+//       {/* Subtitle */}
+//       <Text style={styles.subtitle}>Where college hearts connect</Text>
+//     </View>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   container: {
+//     alignItems: "center",
+//   },
+//   logo: {
+//     fontSize: 42,
+//     fontWeight: "bold",
+//     textAlign: "center",
+//   },
+//   gradientText: {
+//     justifyContent: "center",
+//     alignItems: "center",
+//   },
+//   subtitle: {
+//     fontSize: 18,
+//     color: DARK,
+//     textAlign: "center",
+//     marginTop: 16, // keeps consistent gap below floating logo
+//   },
+// });

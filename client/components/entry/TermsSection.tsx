@@ -1,18 +1,10 @@
 import { Text, StyleSheet } from "react-native";
 import { MUTED } from "../../constants/theme";
 
-interface TermsSectionProps {
-  text?: string;
-  underlinedText?: string;
-}
-
-export default function TermsSection({
-  text = "By continuing, you agree to our",
-  underlinedText = "Terms & Privacy Policy",
-}: TermsSectionProps) {
+export default function TermsSection() {
   return (
     <Text style={styles.text}>
-      {text} <Text style={styles.underline}>{underlinedText}</Text>
+      Made for college students, by college students
     </Text>
   );
 }
@@ -22,9 +14,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: MUTED,
     fontSize: 12,
-    marginTop: 8,
+    marginTop: 20,
   },
-  underline: {
-    textDecorationLine: "underline",
-  },
-}); 
+});

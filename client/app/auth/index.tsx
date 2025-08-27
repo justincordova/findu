@@ -11,7 +11,7 @@ const TOGGLE_HEIGHT = 48;
 const TOGGLE_RADIUS = 10;
 const PILL_WIDTH = TOGGLE_WIDTH / 2;
 const FORM_BOX_WIDTH = 360;
-const FORM_BOX_HEIGHT = 420;
+const FORM_BOX_HEIGHT = 320;
 
 export default function AuthIndex() {
   const { mode: modeParam } = useLocalSearchParams();
@@ -108,7 +108,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start", // move content to the top
+    paddingTop: 80, // adjust this to push the form down a bit from the top
     paddingHorizontal: 24,
   },
   backButton: {

@@ -1,104 +1,49 @@
 import { create } from "zustand";
-import { User, Session } from "@supabase/supabase-js";
-import { authService } from "@/services/authService";
-import _log from "@/utils/logger";
+import logger from "@/config/logger";
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
 
 interface AuthState {
   user: User | null;
-  session: Session | null;
-  isLoggedIn: boolean;
+  token: string | null;
   isLoading: boolean;
-  login: (user: User, session: Session) => Promise<void>;
-  updateSession: (session: Session | null) => Promise<void>;
-  logout: () => Promise<void>;
-  initialize: () => Promise<void>;
-  checkAuthStatus: () => Promise<void>;
+  isLoggedIn: boolean;
+  setUser: (user: User | null) => void;
+  setToken: (token: string | null) => void;
+  setLoading: (loading: boolean) => void;
+  setLoggedIn: (loggedIn: boolean) => void;
+  reset: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  session: null,
-  isLoggedIn: false,
-  isLoading: true,
+export const useAuthStore = create<AuthState>((set, get) => {
+  // Log all current state plus updates
+  const logAndSet = (partial: Partial<AuthState>) => {
+    const nextState = { ...get(), ...partial };
 
-  login: async (user, session) => {
-    await authService.setSession(session);
-    set({
-      user,
-      session,
-      isLoggedIn: true,
-      isLoading: false,
-    });
-    _log.info("User logged in:", { user, session });
-  },
+    // Sanitize token
+    const sanitized = {
+      ...nextState,
+      token: nextState.token ? "[REDACTED]" : null,
+    };
 
-  updateSession: async (session) => {
-    await authService.setSession(session);
-    set({
-      session,
-      user: session?.user || null,
-      isLoggedIn: !!session,
-      isLoading: false,
-    });
-    _log.info("Session updated:", { session });
-  },
+    logger.debug("AuthStore: update", sanitized);
+    set(partial);
+  };
 
-  logout: async () => {
-    await authService.signOut();
-    set({
-      user: null,
-      session: null,
-      isLoggedIn: false,
-      isLoading: false,
-    });
-    _log.info("User logged out");
-  },
+  return {
+    user: null,
+    token: null,
+    isLoading: false,
+    isLoggedIn: false,
 
-  initialize: async () => {
-    try {
-      set({ isLoading: true });
-
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(
-          () => reject(new Error("Auth initialization timeout")),
-          10000
-        );
-      });
-
-      const initPromise = authService.initializeAuth();
-      const { user, session } = await Promise.race([
-        initPromise,
-        timeoutPromise,
-      ]);
-
-      set({
-        user,
-        session,
-        isLoggedIn: !!session,
-        isLoading: false,
-      });
-      _log.info("Auth initialized", { user, session });
-    } catch (error) {
-      _log.error("Error initializing auth:", error);
-      set({ isLoading: false });
-    }
-  },
-
-  checkAuthStatus: async () => {
-    try {
-      const isAuthenticated = await authService.isAuthenticated();
-      if (!isAuthenticated) {
-        set({
-          user: null,
-          session: null,
-          isLoggedIn: false,
-        });
-        _log.info("User not authenticated, state cleared");
-      } else {
-        _log.info("User is authenticated");
-      }
-    } catch (error) {
-      _log.error("Error checking auth status:", error);
-    }
-  },
-}));
+    setUser: (user) => logAndSet({ user }),
+    setToken: (token) => logAndSet({ token }),
+    setLoading: (isLoading) => logAndSet({ isLoading }),
+    setLoggedIn: (isLoggedIn) => logAndSet({ isLoggedIn }),
+    reset: () => logAndSet({ user: null, token: null, isLoggedIn: false }),
+  };
+});

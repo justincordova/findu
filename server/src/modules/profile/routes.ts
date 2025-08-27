@@ -1,23 +1,17 @@
 import { Router } from "express";
-import {
-  createProfileController,
-  updateProfileController,
-  getProfileController,
-  deleteProfileController,
-} from "./controllers";
-import {
-  validateCreateProfile,
-  validateUpdateProfile,
-} from "./validators";
-import { requireAuth } from "@/middleware/auth/requireAuth";
+import * as profileControllers from "./controllers";
+import * as profileValidators from "./validators";
+import * as authMiddleware from "@/middleware/auth/requireAuth";
 
 const router = Router();
 
-// Routes
-router.use(requireAuth);
-router.post("/", validateCreateProfile, createProfileController);
-router.get("/:userId", getProfileController);
-router.patch("/:userId", validateUpdateProfile, updateProfileController);
-router.delete("/:userId", deleteProfileController);
+// Apply auth middleware
+router.use(authMiddleware.requireAuth);
+
+// Profile CRUD routes
+router.post("/", profileValidators.validateCreateProfile, profileControllers.createProfileController);
+router.get("/:userId", profileControllers.getProfileController);
+router.patch("/:userId", profileValidators.validateUpdateProfile, profileControllers.updateProfileController);
+router.delete("/:userId", profileControllers.deleteProfileController);
 
 export default router;

@@ -2,7 +2,7 @@ export interface Profile {
   user_id: string;
   name: string;
   avatar_url: string;
-  birthdate: Date;
+  birthdate: string;
   gender: string;
   pronouns: string;
   bio: string;
@@ -16,9 +16,5 @@ export interface Profile {
   sexual_orientation: string;
   min_age: number;
   max_age: number;
-  spotify_url?: string;
-  instagram_url?: string;
   photos: string[];
-  readonly created_at: Date;
-  readonly updated_at: Date;
 }

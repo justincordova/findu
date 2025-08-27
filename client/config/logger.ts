@@ -10,7 +10,7 @@ const consoleColors = {
 } as const;
 
 // Create logger based on environment
-const _log = __DEV__
+const Ilogger = __DEV__
   ? logger.createLogger({
       levels: { debug: 0, info: 1, warn: 2, error: 3 },
       severity: "debug", // log everything in dev
@@ -34,4 +34,4 @@ const _log = __DEV__
       async: true,
     });
 
-export default _log;
+export default Ilogger;

@@ -1,4 +1,4 @@
-import { supabase } from "@/providers/supabase";
+import { supabase } from "@/lib/supabaseClient";
 import { sendOTPEmail } from "@/modules/auth/emailService";
 import { redis } from "@/providers/redis";
 import logger from "@/config/logger";
@@ -6,18 +6,25 @@ import { Request } from "express";
 import { AuthResult, PendingSignupResult } from "@/types/Auth";
 import { generateOTP, extractBearerToken } from "@/utils/auth";
 
+const OTP_EXPIRATION = Number(process.env.OTP_EXPIRATION_SECONDS) || 600;
+
 export const OTPService = {
   // Create pending signup with OTP
-  createPendingSignup: async (email: string, password: string): Promise<PendingSignupResult> => {
+  createPendingSignup: async (
+    email: string,
+    password: string
+  ): Promise<PendingSignupResult> => {
     try {
       const { data: existingUser } = await supabase.auth.admin.listUsers();
-      const userExists = existingUser.users?.some((user) => user.email === email);
+      const userExists = existingUser.users?.some(
+        (user) => user.email === email
+      );
       if (userExists) return { success: false, error: "User already exists" };
 
       if (await redis.hasOTP(email)) await redis.removeOTP(email);
 
       const otp = generateOTP();
-      await redis.storeOTP(email, otp, password, 600);
+      await redis.storeOTP(email, otp, password, OTP_EXPIRATION);
 
       const emailResult = await sendOTPEmail({ email, otp });
       if (!emailResult.success) {
@@ -37,20 +44,28 @@ export const OTPService = {
   verifyOTP: async (email: string, otp: string): Promise<AuthResult> => {
     try {
       const otpResult = await redis.verifyOTP(email, otp);
-      if (!otpResult.valid) return { success: false, error: otpResult.error || "Invalid OTP" };
+      if (!otpResult.valid)
+        return { success: false, error: otpResult.error || "Invalid OTP" };
 
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password: otpResult.password!,
-        email_confirm: true,
-      });
+      const { data: authData, error: authError } =
+        await supabase.auth.admin.createUser({
+          email,
+          password: otpResult.password!,
+          email_confirm: true,
+        });
 
       if (authError || !authData.user) {
-        logger.error("SUPABASE_USER_CREATION_ERROR", { error: authError, email });
+        logger.error("SUPABASE_USER_CREATION_ERROR", {
+          error: authError,
+          email,
+        });
         return { success: false, error: "Failed to create user account" };
       }
 
-      logger.info("USER_CREATED_SUCCESSFULLY_WITH_OTP", { email, userId: authData.user.id });
+      logger.info("USER_CREATED_SUCCESSFULLY_WITH_OTP", {
+        email,
+        userId: authData.user.id,
+      });
       return {
         success: true,
         user: {
@@ -67,10 +82,17 @@ export const OTPService = {
 };
 
 export const AuthService = {
-  authenticate: async (email: string, password: string): Promise<AuthResult> => {
+  authenticate: async (
+    email: string,
+    password: string
+  ): Promise<AuthResult> => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error || !data.user) return { success: false, error: "Invalid email or password" };
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error || !data.user)
+        return { success: false, error: "Invalid email or password" };
 
       logger.info("USER_LOGIN_SUCCESSFUL", { email, userId: data.user.id });
       return {
@@ -95,7 +117,9 @@ export const AuthService = {
       if (!userExists) return { success: true };
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.FRONTEND_URL || "http://localhost:8081"}/auth/reset-password`,
+        redirectTo: `${
+          process.env.FRONTEND_URL || "http://localhost:8081"
+        }/auth/reset-password`,
       });
 
       if (error) {
@@ -111,12 +135,20 @@ export const AuthService = {
     }
   },
 
-  resetPassword: async (token: string, newPassword: string): Promise<AuthResult> => {
+  resetPassword: async (
+    token: string,
+    newPassword: string
+  ): Promise<AuthResult> => {
     try {
-      const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
       if (error || !data.user) {
         logger.error("PASSWORD_RESET_ERROR", { error });
-        return { success: false, error: "Failed to reset password. Please try again." };
+        return {
+          success: false,
+          error: "Failed to reset password. Please try again.",
+        };
       }
 
       logger.info("PASSWORD_RESET_SUCCESSFUL", { email: data.user.email });
@@ -130,24 +162,34 @@ export const AuthService = {
   logout: async (req: Request): Promise<AuthResult> => {
     try {
       const token = extractBearerToken(req.headers.authorization);
-      if (!token) return { success: false, error: "No valid session found" };
+      logger.info("LOGOUT_ATTEMPT", { token });
+
+      if (!token) {
+        logger.warn("LOGOUT_FAILED_NO_TOKEN");
+        return { success: false, error: "No valid session found" };
+      }
 
       const { error } = await supabase.auth.admin.signOut(token);
+
       if (error) {
-        logger.error("LOGOUT_ERROR", { error });
+        logger.error("LOGOUT_FAILED_SUPABASE_ERROR", { error });
         return { success: false, error: "Failed to logout" };
       }
 
+      logger.info("LOGOUT_SUCCESS", { token });
       return { success: true };
     } catch (error) {
-      logger.error("LOGOUT_USER_ERROR", { error });
+      logger.error("LOGOUT_EXCEPTION", { error });
       return { success: false, error: "Failed to logout" };
     }
   },
 
   verifySession: async (token: string): Promise<any> => {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser(token);
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(token);
       if (error || !user) return null;
 
       return {
@@ -168,9 +210,13 @@ export const AuthService = {
       const token = extractBearerToken(req.headers.authorization);
       if (!token) return { success: false, error: "No valid session found" };
 
-      const { data: { user }, error } = await supabase.auth.getUser(token);
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(token);
       if (error || !user) return { success: false, error: "Invalid session" };
 
+      // Return user and session info
       return {
         success: true,
         user: {
@@ -180,6 +226,9 @@ export const AuthService = {
           created_at: user.created_at,
           updated_at: user.updated_at,
         },
+        session: {
+          access_token: token,
+        },
       };
     } catch (error) {
       logger.error("GET_CURRENT_USER_DATA_ERROR", { error });
@@ -187,9 +236,35 @@ export const AuthService = {
     }
   },
 
+  refreshSession: async (refreshToken: string): Promise<AuthResult> => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession({
+        refresh_token: refreshToken,
+      });
+      if (error || !data.session || !data.user) {
+        logger.error("REFRESH_SESSION_ERROR", { error });
+        return { success: false, error: "Failed to refresh session" };
+      }
+
+      return {
+        success: true,
+        user: {
+          id: data.user.id,
+          email: data.user.email || "",
+          email_confirmed_at: data.user.email_confirmed_at,
+        },
+        session: data.session,
+      };
+    } catch (error) {
+      logger.error("REFRESH_SESSION_EXCEPTION", { error });
+      return { success: false, error: "Failed to refresh session" };
+    }
+  },
+
   deleteUser: async (userId: string): Promise<AuthResult> => {
     try {
-      const { data: usersData, error: listError } = await supabase.auth.admin.listUsers();
+      const { data: usersData, error: listError } =
+        await supabase.auth.admin.listUsers();
       if (listError) {
         logger.error("DELETE_USER_LIST_ERROR", { error: listError, userId });
         return { success: false, error: "Failed to retrieve users" };
@@ -198,7 +273,9 @@ export const AuthService = {
       const userExists = usersData.users?.some((user) => user.id === userId);
       if (!userExists) return { success: false, error: "User not found" };
 
-      const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(
+        userId
+      );
       if (deleteError) {
         logger.error("DELETE_USER_ERROR", { error: deleteError, userId });
         return { success: false, error: "Failed to delete user" };

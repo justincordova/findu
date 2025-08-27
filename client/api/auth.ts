@@ -1,177 +1,87 @@
-import axios from "axios";
+const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/auth`;
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
+/** Helper to extract JSON and handle errors */
+async function handleResponse(res: Response) {
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw data;
+  return data;
+}
 
-const api = axios.create({
-  baseURL: `${API_BASE_URL}/api/auth`,
-  headers: {
-    "Content-Type": "application/json",
+export const AuthAPI = {
+  // Create pending signup with OTP
+  signup: async (email: string, password: string) => {
+    const res = await fetch(`${API_BASE}/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    return handleResponse(res);
   },
-});
 
-// Add auth token to requests if available
-api.interceptors.request.use(async (config) => {
-  try {
-    // Import here to avoid circular dependency
-    const { authService } = await import("../services/authService");
-    const token = await authService.getAccessToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  } catch (error) {
-    console.error("Error getting access token:", error);
-  }
-  return config;
-});
+  // Verify OTP and create account
+  verifyOTP: async (email: string, otp: string) => {
+    const res = await fetch(`${API_BASE}/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp }),
+    });
+    return handleResponse(res);
+  },
 
-// Handle token expiration in responses
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid, clear auth state
-      try {
-        const { authService } = await import("../services/authService");
-        await authService.signOut();
-        // You might want to redirect to login here
-      } catch (clearError) {
-        console.error("Error clearing auth state:", clearError);
-      }
-    }
-    return Promise.reject(error);
-  }
-);
+  // Login with email and password
+  login: async (email: string, password: string) => {
+    const res = await fetch(`${API_BASE}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    return handleResponse(res);
+  },
 
-export interface SignupRequest {
-  email: string;
-  password: string;
-}
+  // Request password reset
+  requestPasswordReset: async (email: string) => {
+    const res = await fetch(`${API_BASE}/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    return handleResponse(res);
+  },
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
+  // Reset password
+  resetPassword: async (token: string, newPassword: string) => {
+    const res = await fetch(`${API_BASE}/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, password: newPassword }),
+    });
+    return handleResponse(res);
+  },
 
-export interface OTPVerificationRequest {
-  email: string;
-  otp: string;
-}
+  // Logout
+  logout: async (token: string) => {
+    const res = await fetch(`${API_BASE}/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return handleResponse(res);
+  },
 
-export interface AuthResponse {
-  success: boolean;
-  message?: string;
-  user?: any;
-  session?: any;
-  errors?: any[];
-}
+  // Get current user and session
+  getCurrentUser: async (token: string) => {
+    const res = await fetch(`${API_BASE}/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return handleResponse(res);
+  },
 
-// Signup - Create pending signup
-export const signup = async (data: SignupRequest): Promise<AuthResponse> => {
-  try {
-    const response = await api.post("/signup", data);
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      return error.response.data;
-    }
-    throw error;
-  }
-};
-
-// Verify OTP and create account
-export const verifyOTP = async (
-  data: OTPVerificationRequest
-): Promise<AuthResponse> => {
-  try {
-    const response = await api.post("/verify-otp", data);
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      return error.response.data;
-    }
-    throw error;
-  }
-};
-
-// Request password reset
-export const requestPasswordReset = async (
-  email: string
-): Promise<AuthResponse> => {
-  try {
-    const response = await api.post("/forgot-password", { email });
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      return error.response.data;
-    }
-    throw error;
-  }
-};
-
-// Reset password with token
-export const resetPassword = async (
-  token: string,
-  password: string
-): Promise<AuthResponse> => {
-  try {
-    const response = await api.post("/reset-password", { token, password });
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      return error.response.data;
-    }
-    throw error;
-  }
-};
-
-// Login
-export const login = async (data: LoginRequest): Promise<AuthResponse> => {
-  try {
-    const response = await api.post("/login", data);
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      return error.response.data;
-    }
-    throw error;
-  }
-};
-
-// Logout
-export const logout = async (): Promise<AuthResponse> => {
-  try {
-    const response = await api.post("/logout");
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      return error.response.data;
-    }
-    throw error;
-  }
-};
-
-// Refresh token
-export const refreshToken = async (): Promise<AuthResponse> => {
-  try {
-    const response = await api.post("/refresh");
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      return error.response.data;
-    }
-    throw error;
-  }
-};
-
-// Get current user
-export const getCurrentUser = async (): Promise<AuthResponse> => {
-  try {
-    const response = await api.get("/me");
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      return error.response.data;
-    }
-    throw error;
-  }
+  // Refresh session using refresh token
+  refreshSession: async (refreshToken: string) => {
+    const res = await fetch(`${API_BASE}/refresh-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+    return handleResponse(res);
+  },
 };

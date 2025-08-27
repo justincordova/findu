@@ -27,12 +27,12 @@ export default function Step4({
   /** Validity check */
   const isValid = useMemo(
     () =>
-      typeof profileData.min_age === "number" &&
-      typeof profileData.max_age === "number" &&
-      profileData.min_age > 0 &&
-      profileData.max_age > 0 &&
-      profileData.min_age <= profileData.max_age,
-    [profileData.min_age, profileData.max_age]
+      typeof profileData?.min_age === "number" &&
+      typeof profileData?.max_age === "number" &&
+      profileData?.min_age > 0 &&
+      profileData?.max_age > 0 &&
+      profileData?.min_age <= profileData?.max_age,
+    [profileData?.min_age, profileData?.max_age]
   );
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function Step4({
         <Text style={styles.label}>Age Range</Text>
         <View style={styles.ageRangeContainer}>
           <Text style={styles.ageRangeDisplay}>
-            {profileData.min_age ?? 18} - {profileData.max_age ?? 26} years old
+            {profileData?.min_age ?? 18} - {profileData?.max_age ?? 26} years old
           </Text>
           <View style={styles.rangeSliderContainer}>
             <View style={styles.sliderBox}>
@@ -76,8 +76,8 @@ export default function Step4({
                 min={18}
                 max={26}
                 step={1}
-                low={Number(profileData.min_age ?? 18)} // <-- coerce to number
-                high={Number(profileData.max_age ?? 26)} // <-- coerce to number
+                low={Number(profileData?.min_age ?? 18)} // <-- coerce to number
+                high={Number(profileData?.max_age ?? 26)} // <-- coerce to number
                 onValueChanged={handleSliderChange}
                 renderThumb={renderThumb}
                 renderRail={renderRail}

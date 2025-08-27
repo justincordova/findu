@@ -7,8 +7,8 @@ import {
   StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { PRIMARY, DARK, MUTED, BACKGROUND } from "../../constants/theme";
-import { requestPasswordReset } from "../../api/auth";
+import { PRIMARY, DARK, MUTED } from "../../constants/theme";
+import { supabase } from "../../lib/supabaseClient";
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
@@ -32,13 +32,19 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
 
     try {
-      const result = await requestPasswordReset(email);
-      if (result.success) {
-        setSuccess(true);
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        email,
+        {
+          redirectTo: `${window.location.origin}/auth/reset-password`,
+        }
+      );
+
+      if (resetError) {
+        setError(resetError.message || "Failed to send reset code");
       } else {
-        setError(result.message || "Failed to send reset code");
+        setSuccess(true);
       }
-    } catch (error: any) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);

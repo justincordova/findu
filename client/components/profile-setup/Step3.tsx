@@ -15,23 +15,10 @@ export default function Step3({
   const profileData = useProfileSetupStore((state) => state.data);
   const setField = useProfileSetupStore((state) => state.setField);
 
-  /** Pronouns */
-  const [activeDropdown, setActiveDropdown] = useState<
-    "pronoun" | "orientation" | "gender" | null
-  >(null);
+  /** Active dropdown state for orientation */
+  const [activeDropdown, setActiveDropdown] = useState<"orientation" | null>(null);
 
-  const pronounItems: ItemType<string>[] = useMemo(
-    () => [
-      { label: "they/them", value: "they/them" },
-      { label: "he/him", value: "he/him" },
-      { label: "she/her", value: "she/her" },
-      { label: "xe/xem", value: "xe/xem" },
-      { label: "ze/zir", value: "ze/zir" },
-      { label: "other", value: "other" },
-    ],
-    []
-  );
-
+  /** Dropdown items */
   const orientationItems: ItemType<string>[] = useMemo(
     () => [
       { label: "Straight", value: "Straight" },
@@ -44,54 +31,50 @@ export default function Step3({
     []
   );
 
-  const genderItems: ItemType<string>[] = useMemo(
-    () => [
-      { label: "Men", value: "Men" },
-      { label: "Women", value: "Women" },
-      { label: "Non-binary", value: "Non-binary" },
-      { label: "All", value: "All" },
-      { label: "Other", value: "Other" },
-    ],
-    []
-  );
+  /** Gender preference options (multi-select tap boxes) */
+  const genderOptions = useMemo(() => ["Men", "Women", "Non-binary", "All", "Other"], []);
 
-  const handleOpen = (key: "pronoun" | "orientation" | "gender") =>
-    setActiveDropdown((prev) => (prev === key ? null : key));
+  /** Intent options (tap boxes) */
+  const intentOptions = useMemo(() => ["dating", "friendship", "networking", "casual"], []);
 
-  const getZIndex = (
-    key: "pronoun" | "orientation" | "gender",
-    baseZ: number
-  ) => (activeDropdown === key ? 5000 : baseZ);
+  /** Dropdown handlers */
+  const handleOpen = (key: "orientation") => setActiveDropdown((prev) => (prev === key ? null : key));
+  const getZIndex = (key: "orientation", baseZ: number) => (activeDropdown === key ? 5000 : baseZ);
 
-  /** Intent options */
-  const intentOptions: ("dating" | "friendship" | "networking" | "casual")[] = [
-    "dating",
-    "friendship",
-    "networking",
-    "casual",
-  ];
-
-  const setIntent = useCallback(
-    (intent: (typeof intentOptions)[number]) => {
-      setField("intent", intent);
-    },
+  /** Intent selection */
+  const toggleIntent = useCallback(
+    (intent: string) => setField("intent", intent),
     [setField]
   );
-
   const isIntentSelected = useCallback(
-    (intent: (typeof intentOptions)[number]) => {
-      return profileData.intent === intent;
+    (intent: string) => profileData?.intent === intent,
+    [profileData?.intent]
+  );
+
+  /** Gender preference selection */
+  const toggleGenderPreference = useCallback(
+    (gender: string) => {
+      const current = profileData?.gender_preference ?? [];
+      if (current.includes(gender)) {
+        setField("gender_preference", current.filter((g) => g !== gender));
+      } else {
+        setField("gender_preference", [...current, gender]);
+      }
     },
-    [profileData.intent]
+    [profileData?.gender_preference, setField]
+  );
+  const isGenderSelected = useCallback(
+    (gender: string) => profileData?.gender_preference?.includes(gender),
+    [profileData?.gender_preference]
   );
 
   /** Validity check */
   const isValid = useMemo(
     () =>
-      !!profileData.pronouns &&
-      !!profileData.sexualOrientation &&
-      !!profileData.genderPreference &&
-      !!profileData.intent,
+      !!profileData?.sexual_orientation &&
+      Array.isArray(profileData?.gender_preference) &&
+      profileData.gender_preference.length > 0 &&
+      !!profileData?.intent,
     [profileData]
   );
 
@@ -112,54 +95,18 @@ export default function Step3({
       <Text style={styles.title}>Preferences</Text>
       <Text style={styles.subtitle}>Tell us about yourself</Text>
 
-      {/* Pronouns */}
-      <View
-        style={[styles.fieldContainer, { zIndex: getZIndex("pronoun", 3000) }]}
-      >
-        <Text style={styles.label}>Pronouns</Text>
-        <DropDownPicker<string>
-          placeholder="Select pronouns"
-          open={activeDropdown === "pronoun"}
-          value={profileData.pronouns ?? ""}
-          items={pronounItems}
-          setOpen={() => handleOpen("pronoun")}
-          setValue={(callback) => {
-            const val =
-              typeof callback === "function"
-                ? callback(profileData.pronouns ?? "")
-                : callback;
-            setField("pronouns", val ?? "");
-          }}
-          setItems={emptyCallback}
-          listMode="SCROLLVIEW"
-          style={styles.dropdown}
-          dropDownContainerStyle={[
-            styles.dropdownContainer,
-            { position: "absolute", zIndex: getZIndex("pronoun", 3000) },
-          ]}
-        />
-      </View>
-
       {/* Sexual Orientation */}
-      <View
-        style={[
-          styles.fieldContainer,
-          { zIndex: getZIndex("orientation", 2000) },
-        ]}
-      >
+      <View style={[styles.fieldContainer, { zIndex: getZIndex("orientation", 2000) }]}>
         <Text style={styles.label}>Sexual Orientation</Text>
         <DropDownPicker<string>
           placeholder="Select orientation"
           open={activeDropdown === "orientation"}
-          value={profileData.sexualOrientation ?? ""}
+          value={profileData?.sexual_orientation ?? ""}
           items={orientationItems}
           setOpen={() => handleOpen("orientation")}
           setValue={(callback) => {
-            const val =
-              typeof callback === "function"
-                ? callback(profileData.sexualOrientation ?? "")
-                : callback;
-            setField("sexualOrientation", val ?? "");
+            const val = typeof callback === "function" ? callback(profileData?.sexual_orientation ?? "") : callback;
+            setField("sexual_orientation", val ?? "");
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
@@ -171,32 +118,22 @@ export default function Step3({
         />
       </View>
 
-      {/* Gender Preference */}
-      <View
-        style={[styles.fieldContainer, { zIndex: getZIndex("gender", 1000) }]}
-      >
-        <Text style={styles.label}>Preferred Gender</Text>
-        <DropDownPicker<string>
-          placeholder="Select preferred gender"
-          open={activeDropdown === "gender"}
-          value={profileData.genderPreference ?? ""}
-          items={genderItems}
-          setOpen={() => handleOpen("gender")}
-          setValue={(callback) => {
-            const val =
-              typeof callback === "function"
-                ? callback(profileData.genderPreference ?? "")
-                : callback;
-            setField("genderPreference", val ?? "");
-          }}
-          setItems={emptyCallback}
-          listMode="SCROLLVIEW"
-          style={styles.dropdown}
-          dropDownContainerStyle={[
-            styles.dropdownContainer,
-            { position: "absolute", zIndex: getZIndex("gender", 1000) },
-          ]}
-        />
+      {/* Gender Preference (multi-select tap boxes) */}
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>Preferred Gender(s)</Text>
+        <View style={styles.intentContainer}>
+          {genderOptions.map((gender) => (
+            <TouchableOpacity
+              key={gender}
+              onPress={() => toggleGenderPreference(gender)}
+              style={[styles.intentBox, isGenderSelected(gender) && styles.intentBoxSelected]}
+            >
+              <Text style={[styles.intentText, isGenderSelected(gender) && styles.intentTextSelected]}>
+                {gender}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       {/* Intent Selection */}
@@ -206,18 +143,10 @@ export default function Step3({
           {intentOptions.map((intent) => (
             <TouchableOpacity
               key={intent}
-              onPress={() => setIntent(intent)}
-              style={[
-                styles.intentBox,
-                isIntentSelected(intent) && styles.intentBoxSelected,
-              ]}
+              onPress={() => toggleIntent(intent)}
+              style={[styles.intentBox, isIntentSelected(intent) && styles.intentBoxSelected]}
             >
-              <Text
-                style={[
-                  styles.intentText,
-                  isIntentSelected(intent) && styles.intentTextSelected,
-                ]}
-              >
+              <Text style={[styles.intentText, isIntentSelected(intent) && styles.intentTextSelected]}>
                 {intent.charAt(0).toUpperCase() + intent.slice(1)}
               </Text>
             </TouchableOpacity>

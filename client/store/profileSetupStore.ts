@@ -1,32 +1,30 @@
 import { create } from "zustand";
-import { ProfileSetupData } from "../types/ProfileSetupData";
-import _log from "../utils/logger";
+import logger from "../config/logger";
+import { Profile } from "@/types/Profile";
 
 interface ProfileSetupState {
-  data: Partial<ProfileSetupData>;
-  setField: <K extends keyof ProfileSetupData>(key: K, value: ProfileSetupData[K]) => void;
+  data: Partial<Profile> | null;
+  setField: <K extends keyof Profile>(key: K, value: Profile[K]) => void;
   reset: () => void;
 }
 
 export const useProfileSetupStore = create<ProfileSetupState>((set) => ({
-  data: {},
-  setField: <K extends keyof ProfileSetupData>(key: K, value: ProfileSetupData[K]) =>
+  data: null,
+
+  setField: <K extends keyof Profile>(key: K, value: Profile[K]) => {
     set((state) => {
-      const newData = { ...state.data, [key]: value };
-
-      // Log-friendly version (avoid printing huge arrays like photos)
-      const logData = {
-        ...newData,
-        photos: newData.photos ? `[${newData.photos.length} photos]` : undefined,
-      };
-
-      _log.debug(`✅ Store updated: "${key}" =`, value);
-      _log.debug("📦 Current state:", logData);
+      const currentData = state.data || {};
+      const newData = { ...currentData, [key]: value };
+      
+      logger.debug(`Store updated: "${key}" =`, value);
+      logger.debug("Current state:", newData);
 
       return { data: newData };
-    }),
+    });
+  },
+
   reset: () => {
-    _log.info("🗑 Store reset");
-    return { data: {} };
+    logger.info("Store reset");
+    set({ data: null });
   },
 }));

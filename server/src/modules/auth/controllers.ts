@@ -125,19 +125,47 @@ export const logoutController = async (req: Request, res: Response) => {
   }
 };
 
-// GET /auth/me
+// POST /auth/refresh-session
+export const refreshSessionController = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return res.status(400).json({ success: false, message: "refreshToken is required" });
+
+    const result = await AuthService.AuthService.refreshSession(refreshToken);
+
+    if (!result.success) return res.status(401).json({ success: false, message: result.error });
+
+    return res.status(200).json({
+      success: true,
+      message: "Session refreshed successfully",
+      user: result.user,
+      session: result.session,
+    });
+  } catch (error) {
+    logger.error("REFRESH_SESSION_ERROR", { error });
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+// GET /auth/me (updated to include session info)
 export const getCurrentUserController = async (req: Request, res: Response) => {
   try {
     const result = await AuthService.AuthService.getCurrentUser(req);
 
     if (!result.success) return res.status(401).json({ success: false, message: result.error });
 
-    return res.status(200).json({ success: true, user: result.user });
+    // Return both user info and session
+    return res.status(200).json({
+      success: true,
+      user: result.user,
+      session: result.session, // <- this is the update
+    });
   } catch (error) {
-    logger.error('GET_CURRENT_USER_ERROR', { error });
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    logger.error("GET_CURRENT_USER_ERROR", { error });
+    return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
 
 // DELETE /auth/user/:id
 export const deleteUserController = async (req: Request, res: Response) => {

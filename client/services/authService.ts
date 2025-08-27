@@ -1,139 +1,158 @@
-import { User, Session } from "@supabase/supabase-js";
-import { SecureStorageService } from "./secureStorage";
-import {
-  logout as logoutApi,
-  refreshToken as refreshTokenApi,
-} from "../api/auth";
+// services/authService.ts
+import { AuthAPI } from "@/api/auth";
+import { useAuthStore } from "@/store/authStore";
+import { saveAuthToken, getAuthToken, clearAuthToken } from "@/storage/secure";
+import logger from "@/config/logger";
 
-export class AuthService {
-  private static instance: AuthService;
-  private currentSession: Session | null = null;
+const ENABLE_AUTH = process.env.EXPO_PUBLIC_ENABLE_AUTH;
 
-  static getInstance(): AuthService {
-    if (!AuthService.instance) {
-      AuthService.instance = new AuthService();
-    }
-    return AuthService.instance;
-  }
-
-  /**
-   * Set the current session and store it securely
-   */
-  async setSession(session: Session | null): Promise<void> {
-    this.currentSession = session;
-
-    if (session) {
-      await SecureStorageService.storeSession(session);
-    } else {
-      await SecureStorageService.clearSession();
-    }
-  }
-
-  /**
-   * Get the current session from secure storage
-   */
-  async getSession(): Promise<Session | null> {
-    if (this.currentSession) {
-      // Check if current session is still valid
-      if (
-        !SecureStorageService.isTokenExpired(
-          this.currentSession.expires_at || 0
-        )
-      ) {
-        return this.currentSession;
-      }
+export async function login(email: string, password: string) {
+  const { setUser, setToken, setLoggedIn, setLoading } =
+    useAuthStore.getState();
+  setLoading(true);
+  try {
+    if (!ENABLE_AUTH) {
+      logger.info("AuthService: ENABLE_AUTH=false, short-circuit login");
+      setLoggedIn(true);
+      return { success: true };
     }
 
-    // Try to get session from secure storage
-    const storedSession = await SecureStorageService.getSession();
-    if (storedSession) {
-      this.currentSession = {
-        access_token: storedSession.access_token,
-        refresh_token: storedSession.refresh_token,
-        expires_at: storedSession.expires_at,
-        user: storedSession.user,
-      } as Session;
-      return this.currentSession;
+    const res = await AuthAPI.login(email, password);
+    if (res?.success && res.session?.access_token) {
+      const token = res.session.access_token;
+      await saveAuthToken(token);
+      setUser(res.user);
+      setToken(token);
+      setLoggedIn(true);
+      logger.info("AuthService: login success", { userId: res.user?.id });
+      return { success: true };
     }
-
-    return null;
-  }
-
-  /**
-   * Get the current user from secure storage
-   */
-  async getCurrentUser(): Promise<User | null> {
-    const session = await this.getSession();
-    return session?.user || null;
-  }
-
-  /**
-   * Check if user is currently authenticated
-   */
-  async isAuthenticated(): Promise<boolean> {
-    return await SecureStorageService.hasValidSession();
-  }
-
-  /**
-   * Get the access token for API requests
-   */
-  async getAccessToken(): Promise<string | null> {
-    const session = await this.getSession();
-    return session?.access_token || null;
-  }
-
-  /**
-   * Refresh the current session by calling backend
-   */
-  async refreshSession(): Promise<Session | null> {
-    try {
-      const result = await refreshTokenApi();
-
-      if (result.success && result.session) {
-        this.currentSession = result.session;
-        await SecureStorageService.storeSession(result.session);
-        return result.session;
-      }
-
-      return null;
-    } catch (error) {
-      console.error("Error refreshing session:", error);
-      return null;
-    }
-  }
-
-  /**
-   * Sign out the current user
-   */
-  async signOut(): Promise<void> {
-    try {
-      await logoutApi();
-    } catch (error) {
-      console.error("Error signing out:", error);
-    } finally {
-      this.currentSession = null;
-      await SecureStorageService.clearSession();
-    }
-  }
-
-  /**
-   * Initialize auth state from secure storage
-   */
-  async initializeAuth(): Promise<{
-    user: User | null;
-    session: Session | null;
-  }> {
-    try {
-      // Get session from secure storage
-      const storedSession = await this.getSession();
-      const user = storedSession?.user || null;
-
-      return { user, session: storedSession };
-    } catch (error) {
-      console.error("Error initializing auth:", error);
-      return { user: null, session: null };
-    }
+    logger.warn("AuthService: login failed", { error: res?.error });
+    return { success: false, error: res?.error || "Login failed" };
+  } catch (err) {
+    logger.error("AuthService: login error", { err });
+    return { success: false, error: "Login failed" };
+  } finally {
+    setLoading(false);
   }
 }
 
-export const authService = AuthService.getInstance();
+export async function signup(email: string, password: string) {
+  const { setLoading } = useAuthStore.getState();
+  setLoading(true);
+
+  try {
+    const res = await AuthAPI.signup(email, password);
+    if (!res?.success) {
+      logger.warn("AuthService: signup failed", { error: res?.error });
+      return { success: false, error: res?.error || "Signup failed" };
+    }
+
+    logger.info("AuthService: signup success", { email });
+    return { success: true };
+  } catch (err) {
+    logger.error("AuthService: signup error", { err });
+    return { success: false, error: "Signup failed" };
+  } finally {
+    setLoading(false);
+  }
+}
+
+export async function verifyOTP(email: string, otp: string) {
+  const { setLoading } = useAuthStore.getState();
+  setLoading(true);
+
+  try {
+    const res = await AuthAPI.verifyOTP(email, otp);
+    if (!res?.success) {
+      logger.warn("AuthService: verifyOTP failed", { error: res?.error });
+      return { success: false, error: res?.error || "OTP verification failed" };
+    }
+
+    logger.info("AuthService: OTP verified successfully", { email });
+    return { success: true, user: res.user };
+  } catch (err) {
+    logger.error("AuthService: verifyOTP error", { err });
+    return { success: false, error: "OTP verification failed" };
+  } finally {
+    setLoading(false);
+  }
+}
+
+export async function logout() {
+  const { token, reset, setLoading } = useAuthStore.getState();
+  setLoading(true);
+  try {
+    if (ENABLE_AUTH && token) {
+      await AuthAPI.logout(token);
+    }
+    await clearAuthToken();
+    reset();
+    logger.info("AuthService: logout success");
+  } catch (err) {
+    logger.error("AuthService: logout error", { err });
+  } finally {
+    setLoading(false);
+  }
+}
+
+export async function restoreSession() {
+  const { setUser, setToken, setLoggedIn, setLoading, reset } =
+    useAuthStore.getState();
+  setLoading(true);
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      logger.info("AuthService: no token found");
+      return;
+    }
+
+    if (!ENABLE_AUTH) {
+      // If auth disabled, just trust the token exists
+      setToken(token);
+      setLoggedIn(true);
+      logger.info("AuthService: ENABLE_AUTH=false, restored session");
+      return;
+    }
+
+    const res = await AuthAPI.getCurrentUser(token);
+    if (res?.success) {
+      setUser(res.user);
+      setToken(token);
+      setLoggedIn(true);
+      logger.info("AuthService: session restored", { userId: res.user?.id });
+    } else {
+      await clearAuthToken();
+      reset();
+      logger.warn("AuthService: invalid/expired token; cleared");
+    }
+  } catch (err) {
+    logger.error("AuthService: restore session error", { err });
+  } finally {
+    setLoading(false);
+  }
+}
+
+/** Optional: if you support refresh tokens in your API */
+export async function refreshSession(refreshToken: string) {
+  const { setToken, setLoggedIn, setLoading } = useAuthStore.getState();
+  if (!ENABLE_AUTH) return;
+
+  setLoading(true);
+  try {
+    const res = await AuthAPI.refreshSession(refreshToken);
+    if (res?.success && res.session?.access_token) {
+      const token = res.session.access_token;
+      await saveAuthToken(token);
+      setToken(token);
+      setLoggedIn(true);
+      logger.info("AuthService: session refreshed");
+    } else {
+      logger.warn("AuthService: refresh failed", { error: res?.error });
+    }
+  } catch (err) {
+    logger.error("AuthService: refresh error", { err });
+  } finally {
+    setLoading(false);
+  }
+}

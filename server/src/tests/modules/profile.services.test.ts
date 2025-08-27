@@ -1,5 +1,5 @@
 import * as profileService from "@/modules/profile/services";
-import prisma from "@/providers/prisma";
+import prisma from "@/lib/prismaClient";
 import { Profile } from "@/types/Profile";
 
 // Mock prisma methods
@@ -73,9 +73,15 @@ describe("Profile Service", () => {
     const updates = { bio: "Updated bio" };
 
     mockPrisma.profiles.findUnique.mockResolvedValue(profileData);
-    mockPrisma.profiles.update.mockResolvedValue({ ...profileData, ...updates });
+    mockPrisma.profiles.update.mockResolvedValue({
+      ...profileData,
+      ...updates,
+    });
 
-    const result = await profileService.updateProfile(profileData.user_id, updates);
+    const result = await profileService.updateProfile(
+      profileData.user_id,
+      updates
+    );
 
     expect(mockPrisma.profiles.findUnique).toHaveBeenCalledWith({
       where: { user_id: profileData.user_id },
@@ -92,7 +98,9 @@ describe("Profile Service", () => {
 
   it("should return null if profile not found on update", async () => {
     mockPrisma.profiles.findUnique.mockResolvedValue(null);
-    const result = await profileService.updateProfile("nonexistent", { bio: "X" });
+    const result = await profileService.updateProfile("nonexistent", {
+      bio: "X",
+    });
     expect(result).toBeNull();
   });
 

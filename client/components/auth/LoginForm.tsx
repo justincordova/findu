@@ -1,89 +1,64 @@
-import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import React, { useState } from "react";
+import { View, Text, TextInput, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { PRIMARY, DARK } from "../../constants/theme";
-import { useAuthStore } from "../../store/authStore";
-import { login } from "../../api/auth";
-import _log from "../../utils/logger";
+import { DANGER } from "@/constants/theme";
+import { useAuth } from "@/hooks/useAuth"; // <-- Use the hook now
+import Button from "../shared/Button";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const loginUser = useAuthStore((state) => state.login);
+
+  const { login, isLoading } = useAuth(); // <-- Use hook
 
   const handleLogin = async () => {
     setError("");
-    setLoading(true);
+
     try {
-      _log.debug("LoginForm: Sending login request to backend...", { email });
+      const result = await login(email, password); // Hook handles store internally
 
-      const result = await login({ email, password });
-      _log.debug("LoginForm: Backend response:", result);
-
-      if (result.success && result.user && result.session) {
-        // Login successful, store session and redirect
-        _log.info(`LoginForm: Login successful for user ${result.user.id}`);
-        await loginUser(result.user, result.session);
-        router.replace("/home/(tabs)/discover");
+      if (!result.success) {
+        setError(result.error || "Login failed");
       } else {
-        _log.warn("LoginForm: Login failed", { message: result.message });
-        setError(result.message || "Login failed");
+        router.replace("/home/(tabs)/discover"); // Navigate after successful login
       }
-    } catch (error: any) {
-      _log.error("LoginForm: Login error:", error);
+    } catch (err) {
+      console.error("LoginForm: Login error", err);
       setError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Email</Text>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
       <TextInput
         style={styles.input}
-        placeholder="Enter your email"
-        placeholderTextColor="#999"
+        placeholder="Email"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        placeholderTextColor="#A1A1A1"
       />
-      <Text style={styles.label}>Password</Text>
+
       <TextInput
-        style={[styles.input, styles.passwordInput]}
-        placeholder="Enter your password"
-        placeholderTextColor="#999"
+        style={styles.input}
+        placeholder="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        autoCapitalize="none"
+        placeholderTextColor="#A1A1A1"
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleLogin}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? "Logging in..." : "Login"}
-        </Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.forgotPassword}
-        onPress={() => router.push("/auth/forgot-password")}
-      >
-        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-      </TouchableOpacity>
+      <Button
+        label={isLoading ? "Logging in..." : "Login"}
+        onPress={handleLogin}
+        style={{ opacity: isLoading ? 0.7 : 1 }}
+      />
     </View>
   );
 }
@@ -92,12 +67,6 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     marginTop: 24,
-  },
-  label: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 8,
-    color: DARK,
   },
   input: {
     borderWidth: 1,
@@ -109,45 +78,9 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     fontSize: 16,
   },
-  passwordInput: {
-    marginBottom: 24,
-  },
   error: {
-    color: "#EF4444",
+    color: DANGER,
     textAlign: "center",
     marginBottom: 16,
-  },
-  button: {
-    backgroundColor: PRIMARY,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  forgotPassword: {
-    alignSelf: "center",
-    marginTop: 16,
-  },
-  forgotPasswordText: {
-    color: PRIMARY,
-    textDecorationLine: "underline",
-    fontSize: 14,
-  },
-  note: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  primaryText: {
-    color: PRIMARY,
   },
 });

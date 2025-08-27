@@ -417,7 +417,6 @@ model profiles {
   user_id            String           @id @db.Uuid
   name               String           @db.VarChar(100)
   avatar_url         String
-  age                Int
   birthdate          DateTime         @db.Date
   gender             String           @db.VarChar(20)
   pronouns           String           @db.VarChar(20)
@@ -432,8 +431,6 @@ model profiles {
   sexual_orientation String           @db.VarChar(50)
   min_age            Int
   max_age            Int
-  spotify_url        String?
-  instagram_url      String?
   photos             String[]         @default([])
   created_at         DateTime         @default(now()) @db.Timestamptz(6)
   updated_at         DateTime         @default(now()) @db.Timestamptz(6)
