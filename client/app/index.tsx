@@ -11,11 +11,6 @@ export default function EntryScreen() {
       {/* Top Section */}
       <View style={styles.topSection}>
         <FloatingLogo />
-        {/* <Image
-          source={require("../assets/images/logo.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        /> */}
         <HeaderSection />
       </View>
 
@@ -36,14 +31,9 @@ const styles = StyleSheet.create({
   },
   topSection: {
     flex: 1,
-    justifyContent: "center", // keep centered vertically
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: 40, // push everything down slightly (fine-tune)
-  },
-  logo: {
-    width: 150,
-    height: 150,
-    marginBottom: 12, // space between logo and text
+    marginTop: 40,
   },
   bottomSection: {
     alignItems: "center",

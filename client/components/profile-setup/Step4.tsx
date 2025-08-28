@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import RangeSlider from "rn-range-slider";
 import { Ionicons } from "@expo/vector-icons";
 import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileSetupStore";
+import { useProfileSetupStore } from "../../store/profileStore";
 
 export default function Step4({
   onBack,
@@ -67,7 +67,8 @@ export default function Step4({
         <Text style={styles.label}>Age Range</Text>
         <View style={styles.ageRangeContainer}>
           <Text style={styles.ageRangeDisplay}>
-            {profileData?.min_age ?? 18} - {profileData?.max_age ?? 26} years old
+            {profileData?.min_age ?? 18} - {profileData?.max_age ?? 26} years
+            old
           </Text>
           <View style={styles.rangeSliderContainer}>
             <View style={styles.sliderBox}>

@@ -1,8 +1,7 @@
-// components/shared/Button.tsx
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, DimensionValue } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { GRADIENT, PRIMARY } from "../../constants/theme";
+import { GRADIENT, PRIMARY, MUTED } from "../../constants/theme";
 
 type ButtonProps = {
   label: string;
@@ -11,8 +10,9 @@ type ButtonProps = {
   style?: ViewStyle;
   textStyle?: TextStyle;
   outlineColor?: string;
-  width?: DimensionValue;  // FIX: use correct RN type
+  width?: DimensionValue;
   height?: number;
+  disabled?: boolean; // <-- new
 };
 
 export default function Button({
@@ -24,17 +24,19 @@ export default function Button({
   outlineColor = PRIMARY,
   width,
   height,
+  disabled = false,
 }: ButtonProps) {
-  const buttonStyle: ViewStyle = {
-    width: width ?? "100%",
-    height,
-  };
+  const buttonStyle: ViewStyle = { width: width ?? "100%", height };
 
   if (type === "gradient") {
     return (
-      <TouchableOpacity style={[styles.gradientWrapper, buttonStyle, style]} onPress={onPress}>
+      <TouchableOpacity
+        style={[styles.gradientWrapper, buttonStyle, style, disabled && styles.disabledWrapper]}
+        onPress={onPress}
+        disabled={disabled} // prevent press
+      >
         <LinearGradient
-          colors={[...GRADIENT] as [string, string, ...string[]]}
+          colors={disabled ? [MUTED, MUTED] : ([...GRADIENT] as [string, string, ...string[]])}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[styles.gradientBtn, buttonStyle]}
@@ -47,10 +49,18 @@ export default function Button({
 
   return (
     <TouchableOpacity
-      style={[styles.outlineBtn, buttonStyle, { borderColor: outlineColor }, style]}
+      style={[
+        styles.outlineBtn,
+        buttonStyle,
+        { borderColor: disabled ? MUTED : outlineColor },
+        style,
+      ]}
       onPress={onPress}
+      disabled={disabled}
     >
-      <Text style={[styles.outlineText, { color: outlineColor }, textStyle]}>{label}</Text>
+      <Text style={[styles.outlineText, { color: disabled ? MUTED : outlineColor }, textStyle]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -59,6 +69,9 @@ const styles = StyleSheet.create({
   gradientWrapper: {
     borderRadius: 8,
     overflow: "hidden",
+  },
+  disabledWrapper: {
+    opacity: 0.6, // slight fade for disabled
   },
   gradientBtn: {
     paddingVertical: 16,

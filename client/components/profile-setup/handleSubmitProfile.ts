@@ -1,38 +1,47 @@
-import { supabase } from "@/lib/supabaseClient";
-import { useProfileSetupStore } from "@/store/profileSetupStore";
-import { profileApi } from "@/api/profileSetup";
+import { useProfileSetupStore } from "@/store/profileStore";
+import { useAuthStore } from "@/store/authStore";
+import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
-import { validateProfile } from "../../utils/profile/validation";
-import { uploadAvatar, uploadPhotos } from "../../utils/profile/upload";
+import { validateProfile } from "@/utils/profile/validation";
+import { uploadAvatar, uploadPhotos } from "@/services/uploadService";
 import { Profile } from "@/types/Profile";
 
-export async function handleSubmitProfile() {
-  logger.info("Starting profile submission...");
-
-  const { data } = await supabase.auth.getSession();
-  const session = data?.session;
-  if (!session?.access_token) throw new Error("User not authenticated");
-
-  const userId = session.user.id;
-  const profileData = useProfileSetupStore.getState().data;
-  if (!profileData) throw new Error("Profile data is empty");
-
-  logger.info("User authenticated, profile data retrieved.", { userId });
-
+/**
+ * Submit profile for the currently authenticated user
+ */
+export async function handleSubmitProfile(userId?: string) {
   try {
-    const photoUris = profileData.photos ?? [];
+    const authState = useAuthStore.getState();
+    logger.info("[handleSubmitProfile] Auth state", { authState });
 
+    const currentUserId = userId ?? authState.userId;
+    if (!currentUserId) {
+      logger.error("[handleSubmitProfile] No userId found in store or argument", {
+        userId,
+        authState,
+      });
+      throw new Error("User not authenticated");
+    }
+
+    const profileData = useProfileSetupStore.getState().data;
+    if (!profileData) {
+      logger.error("[handleSubmitProfile] Profile data empty", { authState });
+      throw new Error("Profile data is empty");
+    }
+
+    logger.info("[handleSubmitProfile] Submitting profile", { currentUserId, profileData });
+
+    // Upload avatar & photos
     const [avatarUrl, uploadedPhotos] = await Promise.all([
-      uploadAvatar(userId, profileData.avatar_url),
-      uploadPhotos(userId, photoUris),
+      uploadAvatar(currentUserId, profileData.avatar_url),
+      uploadPhotos(currentUserId, profileData.photos ?? []),
     ]);
 
-    logger.info(`Uploaded avatar and ${uploadedPhotos.length} photos`, {
-      userId,
-    });
+    logger.info("[handleSubmitProfile] Upload completed", { avatarUrl, uploadedPhotos });
 
+    // Build final profile object
     const finalProfile: Profile = {
-      user_id: userId,
+      user_id: currentUserId,
       name: profileData.name ?? "",
       birthdate: profileData.birthdate ?? "",
       gender: profileData.gender ?? "",
@@ -49,16 +58,21 @@ export async function handleSubmitProfile() {
       min_age: Number(profileData.min_age) || 0,
       max_age: Number(profileData.max_age) || 0,
       avatar_url: avatarUrl ?? "",
-      photos: uploadedPhotos ?? []
+      photos: uploadedPhotos ?? [],
     };
 
+    // Validate before submission
     validateProfile(finalProfile);
-    await profileApi.create(finalProfile);
+    logger.info("[handleSubmitProfile] Validation passed", { finalProfile });
 
-    logger.info("Profile submitted successfully", { userId });
+    // Submit via API
+    await profileApi.create(finalProfile);
+    logger.info("[handleSubmitProfile] Profile submitted successfully", { currentUserId });
+
+    // Reset local store
     useProfileSetupStore.getState().reset();
   } catch (err: any) {
-    logger.error("Failed to submit profile", err);
+    logger.error("[handleSubmitProfile] Failed to submit profile", { error: err });
     throw err;
   }
 }

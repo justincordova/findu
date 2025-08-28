@@ -3,7 +3,8 @@ import { Stack } from "expo-router";
 import { View, StyleSheet, Text, ActivityIndicator } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import DevButton from "../components/shared/DevButton";
+import DevButton from "@/components/shared/DevButton";
+import logger from "@/config/logger";
 import {
   useFonts,
   Inter_400Regular,
@@ -11,7 +12,7 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
-import { useAuth } from "../hooks/useAuth"; // <-- use hook, not store directly
+import { useAuth } from "@/hooks/useAuth";
 
 // Prevent splash screen from auto hiding
 SplashScreen.preventAutoHideAsync();
@@ -21,6 +22,8 @@ if (!(Text as any).defaultProps) (Text as any).defaultProps = {};
 (Text as any).defaultProps.style = [{ fontFamily: "Inter_400Regular" }];
 
 export default function RootLayout() {
+  logger.info("RootLayout: Rendering...");
+
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -28,42 +31,62 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  const { isLoading, restoreSession } = useAuth();
+  const { isLoading, restoreSession, autoRefreshIfNeeded } = useAuth();
 
   // Restore session on app start
   useEffect(() => {
-    restoreSession();
-  }, [restoreSession]);
+    (async () => {
+      logger.info("RootLayout: Restoring session...");
+      await restoreSession();
+      logger.info("RootLayout: Triggering auto-refresh from hook...");
+      await autoRefreshIfNeeded();
+    })();
+  }, [restoreSession, autoRefreshIfNeeded]);
 
-  // Hide splash screen after fonts + auth check
+  // Periodically check for token refresh in background
+  useEffect(() => {
+    const interval = setInterval(() => {
+      logger.info("RootLayout: Periodic auto-refresh check via hook");
+      autoRefreshIfNeeded();
+    }, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [autoRefreshIfNeeded]);
+
+  // Hide splash screen once fonts and auth check are ready
   useEffect(() => {
     if (fontsLoaded) {
+      logger.info("RootLayout: Fonts loaded, hiding splash screen");
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
 
-  if (isLoading || !fontsLoaded) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      {__DEV__ && <DevButton route="/profile-setup/0" />}
-      <Stack screenOptions={{ headerShown: false }} />
+    <View style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { flex: 1 } }} />
+
+      {/* Loading overlay */}
+      {(isLoading || !fontsLoaded) && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      )}
+
+      {/* Dev button */}
+      {__DEV__ && (
+        <View style={{ position: "absolute", top: 50, right: 20 }}>
+          <DevButton route="/profile-setup/0" />
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  loadingContainer: {
-    flex: 1,
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.7)",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    zIndex: 999,
   },
 });

@@ -1,49 +1,25 @@
 import { create } from "zustand";
 import logger from "@/config/logger";
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
-interface AuthState {
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  isLoggedIn: boolean;
-  setUser: (user: User | null) => void;
-  setToken: (token: string | null) => void;
-  setLoading: (loading: boolean) => void;
-  setLoggedIn: (loggedIn: boolean) => void;
-  reset: () => void;
-}
+import { AuthState } from "@/types/Auth";
 
 export const useAuthStore = create<AuthState>((set, get) => {
-  // Log all current state plus updates
   const logAndSet = (partial: Partial<AuthState>) => {
     const nextState = { ...get(), ...partial };
-
-    // Sanitize token
-    const sanitized = {
-      ...nextState,
-      token: nextState.token ? "[REDACTED]" : null,
-    };
-
+    const sanitized = { ...nextState, token: nextState.token ? "[REDACTED]" : null };
     logger.debug("AuthStore: update", sanitized);
     set(partial);
   };
 
   return {
-    user: null,
+    userId: null,
     token: null,
     isLoading: false,
     isLoggedIn: false,
 
-    setUser: (user) => logAndSet({ user }),
-    setToken: (token) => logAndSet({ token }),
-    setLoading: (isLoading) => logAndSet({ isLoading }),
-    setLoggedIn: (isLoggedIn) => logAndSet({ isLoggedIn }),
-    reset: () => logAndSet({ user: null, token: null, isLoggedIn: false }),
+    setUserId: (id: string) => logAndSet({ userId: id }),
+    setToken: (token: string | null) => logAndSet({ token }),
+    setLoading: (isLoading: boolean) => logAndSet({ isLoading }),
+    setLoggedIn: (isLoggedIn: boolean) => logAndSet({ isLoggedIn }),
+    reset: () => logAndSet({ userId: null, token: null, isLoggedIn: false }),
   };
 });

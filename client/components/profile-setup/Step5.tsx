@@ -13,8 +13,14 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { DARK, MUTED, BACKGROUND, PRIMARY, SUCCESS } from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileSetupStore";
+import {
+  DARK,
+  MUTED,
+  BACKGROUND,
+  PRIMARY,
+  SUCCESS,
+} from "../../constants/theme";
+import { useProfileSetupStore } from "../../store/profileStore";
 
 export default function Step5({
   onBack,
@@ -32,7 +38,8 @@ export default function Step5({
 
   /** Pick image from library */
   const pickImage = useCallback(async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -114,7 +121,10 @@ export default function Step5({
       keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
     >
       <Animated.ScrollView
-        contentContainerStyle={[styles.container, { paddingBottom: keyboardHeight }]}
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: keyboardHeight },
+        ]}
         keyboardShouldPersistTaps="handled"
       >
         {onBack && (
@@ -135,7 +145,9 @@ export default function Step5({
             <Ionicons name="camera" size={20} color="white" />
             <Text style={styles.uploadButtonText}>Upload</Text>
           </TouchableOpacity>
-          {photoUploaded && <Text style={styles.uploadSuccess}>Uploaded ✓</Text>}
+          {photoUploaded && (
+            <Text style={styles.uploadSuccess}>Uploaded ✓</Text>
+          )}
         </View>
 
         {/* Bio */}

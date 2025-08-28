@@ -59,3 +59,22 @@ export const deleteProfileController = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to delete profile" });
   }
 };
+
+
+/**
+ * Get profile of the authenticated user
+ */
+export const getMyProfileController = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+
+    const profile = await profileService.getProfileByUserId(userId);
+
+    if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+    res.json(profile);
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    res.status(500).json({ error: "Failed to fetch profile" });
+  }
+};

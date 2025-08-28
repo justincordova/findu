@@ -12,27 +12,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileSetupStore";
+import { useProfileSetupStore } from "../../store/profileStore";
 import { handleSubmitProfile } from "./handleSubmitProfile";
+import { Profile } from "@/types/Profile";
+import { useAuthStore } from "@/store/authStore";
 
-type ProfileData = {
-  name?: string;
-  birthdate?: string;
-  gender?: string;
-  pronouns?: string;
-  intent?: string;
-  min_age?: number;
-  max_age?: number;
-  sexual_orientation?: string;
-  gender_preference?: string[];
-  bio?: string;
-  avatar_url?: string;
-  photos?: string[];
-};
+type ProfileData = Partial<Profile>;
 
-/**
- * Format birthdate into readable string
- */
+/** Format birthdate into readable string */
 function formatBirthdate(birthdate: string | Date | undefined) {
   if (!birthdate) return "Not set";
   const date = new Date(birthdate);
@@ -43,6 +30,7 @@ function formatBirthdate(birthdate: string | Date | undefined) {
   });
 }
 
+/** ...imports remain the same... */
 export default function Step7({
   onBack,
   onNext,
@@ -52,9 +40,14 @@ export default function Step7({
   onNext: () => void;
   onValidityChange?: (isValid: boolean) => void;
 }) {
-  const profileData: ProfileData = useProfileSetupStore((state) => state.data);
-  const [submitting, setSubmitting] = useState(false);
+  const authState = useAuthStore.getState();
+  const rawProfileData = useProfileSetupStore((state) => state.data);
+  const profileData: ProfileData = useMemo(
+    () => rawProfileData ?? {},
+    [rawProfileData]
+  );
 
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
   const fieldToStep: Record<string, string> = {
@@ -82,10 +75,10 @@ export default function Step7({
   const renderValue = useCallback(
     (field: keyof ProfileData) => {
       if (field === "birthdate") return formatBirthdate(profileData?.birthdate);
-
       const value = profileData?.[field];
-      if (Array.isArray(value)) return (value as string[]).join(", ");
-      if (value === null || value === undefined || value === "") return "Not set";
+      if (Array.isArray(value)) return value.join(", ");
+      if (value === null || value === undefined || value === "")
+        return "Not set";
       return String(value);
     },
     [profileData]
@@ -96,19 +89,31 @@ export default function Step7({
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
+  /** Handle finishing the profile submission */
   const handleFinish = useCallback(async () => {
     setSubmitting(true);
     try {
-      await handleSubmitProfile();
+      // ✅ Auth check using store
+      const userId = authState.userId;
+      const token = authState.token;
 
-      // Navigate to home tab after submission
+      if (!userId || !token) {
+        console.error("User not authenticated");
+        setSubmitting(false);
+        return;
+      }
+
+      // Submit profile using store
+      await handleSubmitProfile(userId);
+
+      // Redirect after success
       router.replace("/home/(tabs)/discover");
     } catch (err) {
       console.error("Error submitting profile:", err);
     } finally {
       setSubmitting(false);
     }
-  }, [router]);
+  }, [authState.userId, authState.token, router]);
 
   return (
     <View style={styles.container}>
@@ -177,7 +182,7 @@ export default function Step7({
         >
           {profileData?.avatar_url ? (
             <Image
-              source={{ uri: profileData?.avatar_url }}
+              source={{ uri: profileData.avatar_url }}
               style={styles.avatar}
             />
           ) : (
@@ -192,7 +197,7 @@ export default function Step7({
           contentContainerStyle={styles.photosContainer}
         >
           {profileData?.photos && profileData.photos.length > 0 ? (
-            (profileData.photos as string[]).map((uri: string, idx: number) => (
+            profileData.photos.map((uri: string, idx: number) => (
               <TouchableOpacity key={idx} onPress={() => goBackToStep("step6")}>
                 <Image source={{ uri }} style={styles.photo} />
               </TouchableOpacity>

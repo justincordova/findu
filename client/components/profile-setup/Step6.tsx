@@ -10,7 +10,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileSetupStore";
+import { useProfileSetupStore } from "../../store/profileStore";
 
 export default function Step6({
   onBack,

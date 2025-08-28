@@ -3,10 +3,10 @@ import { View, Text, StyleSheet } from "react-native";
 import { DARK, MUTED } from "@/constants/theme";
 
 interface AcademicSectionProps {
-  university: string;
-  university_year: number; // 1-5
-  major: string;
-  grad_year: number;
+  university?: string;
+  university_year?: number; // 1-5
+  major?: string;
+  grad_year?: number;
 }
 
 const yearMap: Record<number, string> = {
@@ -18,9 +18,9 @@ const yearMap: Record<number, string> = {
 };
 
 export default function AcademicSection({
-  university,
+  university = "",
   university_year,
-  major,
+  major = "",
   grad_year,
 }: AcademicSectionProps) {
   return (
@@ -28,16 +28,20 @@ export default function AcademicSection({
       <Text style={styles.title}>Academic Info</Text>
 
       <Text style={styles.label}>University:</Text>
-      <Text style={styles.value}>{university}</Text>
+      <Text style={styles.value}>{university || "Not set"}</Text>
 
       <Text style={styles.label}>Year:</Text>
-      <Text style={styles.value}>{yearMap[university_year] || "N/A"}</Text>
+      <Text style={styles.value}>
+        {university_year != null ? yearMap[university_year] || "N/A" : "Not set"}
+      </Text>
 
       <Text style={styles.label}>Major:</Text>
-      <Text style={styles.value}>{major}</Text>
+      <Text style={styles.value}>{major || "Not set"}</Text>
 
       <Text style={styles.label}>Graduation Year:</Text>
-      <Text style={styles.value}>{grad_year}</Text>
+      <Text style={styles.value}>
+        {grad_year != null ? grad_year : "Not set"}
+      </Text>
     </View>
   );
 }

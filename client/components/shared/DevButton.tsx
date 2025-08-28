@@ -2,7 +2,8 @@ import React, { useMemo } from "react";
 import { TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { DANGER } from "@/constants/theme";
-import { useAuth } from "@/hooks/useAuth"; 
+import { useAuthStore } from "@/store/authStore";
+import * as AuthService from "@/services/authService";
 
 interface DevButtonProps {
   route?: string;
@@ -12,8 +13,8 @@ export default function DevButton({ route }: DevButtonProps) {
   const router = useRouter();
   const { route: paramRouteRaw } = useLocalSearchParams();
 
-  // Auth state from the hook
-  const { user, isLoading, logout } = useAuth();
+  // Auth state from store
+  const { userId, isLoading } = useAuthStore();
 
   // Memoize targetRoute safely
   const targetRoute = useMemo(() => {
@@ -28,12 +29,11 @@ export default function DevButton({ route }: DevButtonProps) {
   };
 
   const handleLongPress = () => {
-    if (isLoading || !user) {
+    if (isLoading || !userId) {
       Alert.alert("Logout", "You are not signed in.");
       return;
     }
 
-    // Show Yes/No confirmation alert
     Alert.alert(
       "Confirm Logout",
       "Do you really want to log out?",
@@ -47,7 +47,8 @@ export default function DevButton({ route }: DevButtonProps) {
           style: "destructive",
           onPress: async () => {
             try {
-              await logout(); // Call logout from hook
+              await AuthService.logout();
+              router.replace("/");
               Alert.alert("Logout", "Successfully logged out.");
             } catch (err) {
               console.error("DevButton: Logout failed", err);
@@ -77,8 +78,8 @@ export default function DevButton({ route }: DevButtonProps) {
 const styles = StyleSheet.create({
   devButton: {
     position: "absolute",
-    top: 50,
-    right: 20,
+    top: 0,
+    right: 0,
     backgroundColor: DANGER,
     paddingHorizontal: 12,
     paddingVertical: 8,

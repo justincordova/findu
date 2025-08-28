@@ -3,28 +3,30 @@ import { View, Text, StyleSheet } from "react-native";
 import { DARK, MUTED } from "@/constants/theme";
 
 interface PreferencesSectionProps {
-  intent: string;
-  gender_preference: string[];
-  min_age: number;
-  max_age: number;
-  sexual_orientation: string;
+  intent?: string;
+  gender_preference?: (string | null)[];
+  min_age?: number | null;
+  max_age?: number | null;
+  sexual_orientation?: string;
 }
 
 export default function PreferencesSection({
-  intent,
-  gender_preference,
+  intent = "",
+  gender_preference = [],
   min_age,
   max_age,
-  sexual_orientation,
+  sexual_orientation = "",
 }: PreferencesSectionProps) {
   const formatGenderPreference = () => {
     if (!gender_preference || gender_preference.length === 0) return "Not set";
-    return gender_preference.join(", ");
+    return gender_preference.filter(Boolean).join(", ");
   };
 
   const formatAgeRange = () => {
-    if (!min_age && !max_age) return "Not set";
-    return `${min_age || "?"} - ${max_age || "?"}`;
+    const min = min_age != null ? min_age : "?";
+    const max = max_age != null ? max_age : "?";
+    if (min === "?" && max === "?") return "Not set";
+    return `${min} - ${max}`;
   };
 
   return (

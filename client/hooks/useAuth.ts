@@ -1,8 +1,18 @@
+import { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 import * as AuthService from "@/services/authService";
 
 export function useAuth() {
   const { user, token, isLoggedIn, isLoading } = useAuthStore();
+
+  // On mount, restore session and auto-refresh if needed
+  useEffect(() => {
+    async function initAuth() {
+      await AuthService.restoreSession();
+      await AuthService.autoRefreshIfNeeded();
+    }
+    initAuth();
+  }, []);
 
   return {
     user,
@@ -16,5 +26,6 @@ export function useAuth() {
     refreshSession: AuthService.refreshSession,
     signup: AuthService.signup,
     verifyOTP: AuthService.verifyOTP,
+    autoRefreshIfNeeded: AuthService.autoRefreshIfNeeded,
   };
 }

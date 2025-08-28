@@ -1,48 +1,49 @@
-// storage/secure.ts
 import * as SecureStore from "expo-secure-store";
 import logger from "@/config/logger";
 
-const TOKEN_KEY = "auth_token";
 const ENABLE_PERSISTENCE = process.env.EXPO_PUBLIC_ENABLE_PERSISTENCE !== "false";
 
-export async function saveAuthToken(token: string) {
+//Save a value under a given key
+export async function saveSecureItem(key: string, value: string) {
   if (!ENABLE_PERSISTENCE) {
-    logger.info("SecureStore: persistence disabled; skipping save");
+    logger.info(`SecureStore: persistence disabled; skipping save for ${key}`);
     return;
   }
   try {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
-    logger.debug("SecureStore: saved token");
+    await SecureStore.setItemAsync(key, value);
+    logger.debug(`SecureStore: saved key ${key}`);
   } catch (e) {
-    logger.error("SecureStore: save failed", { e });
+    logger.error(`SecureStore: save failed for ${key}`, { e });
     throw e;
   }
 }
 
-export async function getAuthToken(): Promise<string | null> {
+//Retrieve a value by key
+export async function getSecureItem(key: string): Promise<string | null> {
   if (!ENABLE_PERSISTENCE) {
-    logger.info("SecureStore: persistence disabled; returning null");
+    logger.info(`SecureStore: persistence disabled; returning null for ${key}`);
     return null;
   }
   try {
-    const token = await SecureStore.getItemAsync(TOKEN_KEY);
-    logger.debug("SecureStore: read token", { exists: !!token });
-    return token;
+    const value = await SecureStore.getItemAsync(key);
+    logger.debug(`SecureStore: read key ${key}`, { exists: !!value });
+    return value;
   } catch (e) {
-    logger.error("SecureStore: read failed", { e });
+    logger.error(`SecureStore: read failed for ${key}`, { e });
     return null;
   }
 }
 
-export async function clearAuthToken() {
+//Delete a value by key
+export async function deleteSecureItem(key: string) {
   if (!ENABLE_PERSISTENCE) {
-    logger.info("SecureStore: persistence disabled; skipping clear");
+    logger.info(`SecureStore: persistence disabled; skipping delete for ${key}`);
     return;
   }
   try {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
-    logger.debug("SecureStore: cleared token");
+    await SecureStore.deleteItemAsync(key);
+    logger.debug(`SecureStore: deleted key ${key}`);
   } catch (e) {
-    logger.error("SecureStore: clear failed", { e });
+    logger.error(`SecureStore: delete failed for ${key}`, { e });
   }
 }

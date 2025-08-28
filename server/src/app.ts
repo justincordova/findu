@@ -14,6 +14,7 @@ import logger from "@/config/logger";
 // Route Imports
 import authRoutes from "@/modules/auth/routes";
 import profileRoutes from "@/modules/profile/routes";
+import storageRoutes from "@/modules/storage/routes";
 
 const app = express();
 
@@ -44,6 +45,7 @@ if (!isDev) {
 // Application Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/profiles", profileRoutes);
+app.use("/api/storage", storageRoutes);
 
 
 // Health Check Route

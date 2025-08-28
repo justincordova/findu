@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { DARK, MUTED, BACKGROUND, PRIMARY } from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileSetupStore";
+import { useProfileSetupStore } from "../../store/profileStore";
 
 export default function Step3({
   onBack,
@@ -16,7 +16,9 @@ export default function Step3({
   const setField = useProfileSetupStore((state) => state.setField);
 
   /** Active dropdown state for orientation */
-  const [activeDropdown, setActiveDropdown] = useState<"orientation" | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<"orientation" | null>(
+    null
+  );
 
   /** Dropdown items */
   const orientationItems: ItemType<string>[] = useMemo(
@@ -32,14 +34,22 @@ export default function Step3({
   );
 
   /** Gender preference options (multi-select tap boxes) */
-  const genderOptions = useMemo(() => ["Men", "Women", "Non-binary", "All", "Other"], []);
+  const genderOptions = useMemo(
+    () => ["Men", "Women", "Non-binary", "All", "Other"],
+    []
+  );
 
   /** Intent options (tap boxes) */
-  const intentOptions = useMemo(() => ["dating", "friendship", "networking", "casual"], []);
+  const intentOptions = useMemo(
+    () => ["dating", "friendship", "networking", "casual"],
+    []
+  );
 
   /** Dropdown handlers */
-  const handleOpen = (key: "orientation") => setActiveDropdown((prev) => (prev === key ? null : key));
-  const getZIndex = (key: "orientation", baseZ: number) => (activeDropdown === key ? 5000 : baseZ);
+  const handleOpen = (key: "orientation") =>
+    setActiveDropdown((prev) => (prev === key ? null : key));
+  const getZIndex = (key: "orientation", baseZ: number) =>
+    activeDropdown === key ? 5000 : baseZ;
 
   /** Intent selection */
   const toggleIntent = useCallback(
@@ -56,7 +66,10 @@ export default function Step3({
     (gender: string) => {
       const current = profileData?.gender_preference ?? [];
       if (current.includes(gender)) {
-        setField("gender_preference", current.filter((g) => g !== gender));
+        setField(
+          "gender_preference",
+          current.filter((g) => g !== gender)
+        );
       } else {
         setField("gender_preference", [...current, gender]);
       }
@@ -96,7 +109,12 @@ export default function Step3({
       <Text style={styles.subtitle}>Tell us about yourself</Text>
 
       {/* Sexual Orientation */}
-      <View style={[styles.fieldContainer, { zIndex: getZIndex("orientation", 2000) }]}>
+      <View
+        style={[
+          styles.fieldContainer,
+          { zIndex: getZIndex("orientation", 2000) },
+        ]}
+      >
         <Text style={styles.label}>Sexual Orientation</Text>
         <DropDownPicker<string>
           placeholder="Select orientation"
@@ -105,7 +123,10 @@ export default function Step3({
           items={orientationItems}
           setOpen={() => handleOpen("orientation")}
           setValue={(callback) => {
-            const val = typeof callback === "function" ? callback(profileData?.sexual_orientation ?? "") : callback;
+            const val =
+              typeof callback === "function"
+                ? callback(profileData?.sexual_orientation ?? "")
+                : callback;
             setField("sexual_orientation", val ?? "");
           }}
           setItems={emptyCallback}
@@ -126,9 +147,17 @@ export default function Step3({
             <TouchableOpacity
               key={gender}
               onPress={() => toggleGenderPreference(gender)}
-              style={[styles.intentBox, isGenderSelected(gender) && styles.intentBoxSelected]}
+              style={[
+                styles.intentBox,
+                isGenderSelected(gender) && styles.intentBoxSelected,
+              ]}
             >
-              <Text style={[styles.intentText, isGenderSelected(gender) && styles.intentTextSelected]}>
+              <Text
+                style={[
+                  styles.intentText,
+                  isGenderSelected(gender) && styles.intentTextSelected,
+                ]}
+              >
                 {gender}
               </Text>
             </TouchableOpacity>
@@ -144,9 +173,17 @@ export default function Step3({
             <TouchableOpacity
               key={intent}
               onPress={() => toggleIntent(intent)}
-              style={[styles.intentBox, isIntentSelected(intent) && styles.intentBoxSelected]}
+              style={[
+                styles.intentBox,
+                isIntentSelected(intent) && styles.intentBoxSelected,
+              ]}
             >
-              <Text style={[styles.intentText, isIntentSelected(intent) && styles.intentTextSelected]}>
+              <Text
+                style={[
+                  styles.intentText,
+                  isIntentSelected(intent) && styles.intentTextSelected,
+                ]}
+              >
                 {intent.charAt(0).toUpperCase() + intent.slice(1)}
               </Text>
             </TouchableOpacity>

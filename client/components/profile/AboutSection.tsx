@@ -3,11 +3,18 @@ import { View, Text, StyleSheet, FlatList } from "react-native";
 import { DARK, MUTED, PRIMARY } from "@/constants/theme";
 
 interface AboutSectionProps {
-  bio: string;
-  interests: string[];
+  bio?: string;
+  interests?: string[];
 }
 
-export default function AboutSection({ bio, interests }: AboutSectionProps) {
+export default function AboutSection({
+  bio = "",
+  interests = [],
+}: AboutSectionProps) {
+  const safeInterests = Array.isArray(interests)
+    ? interests.map((i) => String(i))
+    : [];
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>About</Text>
@@ -16,9 +23,9 @@ export default function AboutSection({ bio, interests }: AboutSectionProps) {
       <Text style={styles.content}>{bio || "No bio provided."}</Text>
 
       <Text style={styles.subtitle}>Interests</Text>
-      {interests && interests.length > 0 ? (
+      {safeInterests.length > 0 ? (
         <FlatList
-          data={interests}
+          data={safeInterests}
           keyExtractor={(item, index) => `${item}-${index}`}
           horizontal
           showsHorizontalScrollIndicator={false}

@@ -1,32 +1,69 @@
-// services/authService.ts
 import { AuthAPI } from "@/api/auth";
 import { useAuthStore } from "@/store/authStore";
-import { saveAuthToken, getAuthToken, clearAuthToken } from "@/storage/secure";
+import { saveSecureItem, getSecureItem, deleteSecureItem } from "@/storage/secure";
 import logger from "@/config/logger";
 
-const ENABLE_AUTH = process.env.EXPO_PUBLIC_ENABLE_AUTH;
+const ENABLE_AUTH = process.env.EXPO_PUBLIC_ENABLE_AUTH === "true";
+const ACCESS_TOKEN_EXPIRY = parseInt(process.env.EXPO_PUBLIC_ACCESS_TOKEN_EXPIRY || "3600"); // seconds
+const AUTO_REFRESH_THRESHOLD = parseInt(process.env.EXPO_PUBLIC_AUTO_REFRESH_THRESHOLD || "300"); // seconds
+const AUTO_REFRESH_ENABLED = process.env.EXPO_PUBLIC_AUTO_REFRESH_ENABLED === "true";
+
+// ------------------- Helpers -------------------
+
+async function storeToken(token: string, refreshToken?: string) {
+  const expiryTime = Date.now() + ACCESS_TOKEN_EXPIRY * 1000;
+  await saveSecureItem("accessToken", token);
+  await saveSecureItem("accessTokenExpiry", expiryTime.toString());
+  if (refreshToken) await saveSecureItem("refreshToken", refreshToken);
+}
+
+async function tokenNeedsRefresh() {
+  if (!AUTO_REFRESH_ENABLED) return false;
+  const expiryStr = await getSecureItem("accessTokenExpiry");
+  if (!expiryStr) return false;
+  const expiry = parseInt(expiryStr);
+  const secondsLeft = (expiry - Date.now()) / 1000;
+  return secondsLeft < AUTO_REFRESH_THRESHOLD;
+}
+
+export async function autoRefreshIfNeeded() {
+  if (!(ENABLE_AUTH && AUTO_REFRESH_ENABLED)) return;
+
+  const refreshToken = await getSecureItem("refreshToken");
+  if (!refreshToken) return;
+
+  if (await tokenNeedsRefresh()) {
+    logger.info("AuthService: auto-refreshing access token");
+    await refreshSession(refreshToken);
+  }
+}
+
+// ------------------- Auth Methods -------------------
 
 export async function login(email: string, password: string) {
-  const { setUser, setToken, setLoggedIn, setLoading } =
-    useAuthStore.getState();
+  const { setUserId, setToken, setLoggedIn, setLoading } = useAuthStore.getState();
   setLoading(true);
+
   try {
     if (!ENABLE_AUTH) {
-      logger.info("AuthService: ENABLE_AUTH=false, short-circuit login");
       setLoggedIn(true);
       return { success: true };
     }
 
     const res = await AuthAPI.login(email, password);
-    if (res?.success && res.session?.access_token) {
+
+    if (res?.success && res.session?.access_token && res.user?.id) {
       const token = res.session.access_token;
-      await saveAuthToken(token);
-      setUser(res.user);
+      await storeToken(token, res.session.refresh_token);
+
+      setUserId(res.user.id);
       setToken(token);
       setLoggedIn(true);
-      logger.info("AuthService: login success", { userId: res.user?.id });
+
+      logger.info("AuthService: login success", { userId: res.user.id });
       return { success: true };
     }
+
     logger.warn("AuthService: login failed", { error: res?.error });
     return { success: false, error: res?.error || "Login failed" };
   } catch (err) {
@@ -43,6 +80,7 @@ export async function signup(email: string, password: string) {
 
   try {
     const res = await AuthAPI.signup(email, password);
+
     if (!res?.success) {
       logger.warn("AuthService: signup failed", { error: res?.error });
       return { success: false, error: res?.error || "Signup failed" };
@@ -64,13 +102,14 @@ export async function verifyOTP(email: string, otp: string) {
 
   try {
     const res = await AuthAPI.verifyOTP(email, otp);
-    if (!res?.success) {
+
+    if (!res?.success || !res.user?.id) {
       logger.warn("AuthService: verifyOTP failed", { error: res?.error });
       return { success: false, error: res?.error || "OTP verification failed" };
     }
 
-    logger.info("AuthService: OTP verified successfully", { email });
-    return { success: true, user: res.user };
+    logger.info("AuthService: OTP verified successfully", { userId: res.user.id });
+    return { success: true, userId: res.user.id };
   } catch (err) {
     logger.error("AuthService: verifyOTP error", { err });
     return { success: false, error: "OTP verification failed" };
@@ -79,15 +118,22 @@ export async function verifyOTP(email: string, otp: string) {
   }
 }
 
+
 export async function logout() {
   const { token, reset, setLoading } = useAuthStore.getState();
   setLoading(true);
+
   try {
     if (ENABLE_AUTH && token) {
       await AuthAPI.logout(token);
     }
-    await clearAuthToken();
+
+    await deleteSecureItem("accessToken");
+    await deleteSecureItem("accessTokenExpiry");
+    await deleteSecureItem("refreshToken");
+    // Reset clears isloggedin, userId, token
     reset();
+
     logger.info("AuthService: logout success");
   } catch (err) {
     logger.error("AuthService: logout error", { err });
@@ -97,18 +143,17 @@ export async function logout() {
 }
 
 export async function restoreSession() {
-  const { setUser, setToken, setLoggedIn, setLoading, reset } =
-    useAuthStore.getState();
+  const { setUserId, setToken, setLoggedIn, setLoading, reset } = useAuthStore.getState();
   setLoading(true);
+
   try {
-    const token = await getAuthToken();
+    const token = await getSecureItem("accessToken");
     if (!token) {
       logger.info("AuthService: no token found");
       return;
     }
 
     if (!ENABLE_AUTH) {
-      // If auth disabled, just trust the token exists
       setToken(token);
       setLoggedIn(true);
       logger.info("AuthService: ENABLE_AUTH=false, restored session");
@@ -116,13 +161,15 @@ export async function restoreSession() {
     }
 
     const res = await AuthAPI.getCurrentUser(token);
-    if (res?.success) {
-      setUser(res.user);
+    if (res?.success && res.user?.id) {
+      setUserId(res.user.id);
       setToken(token);
       setLoggedIn(true);
-      logger.info("AuthService: session restored", { userId: res.user?.id });
+      logger.info("AuthService: session restored", { userId: res.user.id });
     } else {
-      await clearAuthToken();
+      await deleteSecureItem("accessToken");
+      await deleteSecureItem("accessTokenExpiry");
+      await deleteSecureItem("refreshToken");
       reset();
       logger.warn("AuthService: invalid/expired token; cleared");
     }
@@ -133,7 +180,6 @@ export async function restoreSession() {
   }
 }
 
-/** Optional: if you support refresh tokens in your API */
 export async function refreshSession(refreshToken: string) {
   const { setToken, setLoggedIn, setLoading } = useAuthStore.getState();
   if (!ENABLE_AUTH) return;
@@ -143,7 +189,7 @@ export async function refreshSession(refreshToken: string) {
     const res = await AuthAPI.refreshSession(refreshToken);
     if (res?.success && res.session?.access_token) {
       const token = res.session.access_token;
-      await saveAuthToken(token);
+      await storeToken(token, res.session.refresh_token);
       setToken(token);
       setLoggedIn(true);
       logger.info("AuthService: session refreshed");

@@ -2,7 +2,7 @@ import React, { useMemo, useEffect, useState, useCallback } from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
 import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
 import { DARK, MUTED, BACKGROUND } from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileSetupStore";
+import { useProfileSetupStore } from "../../store/profileStore";
 
 interface Step2Props {
   onValidityChange?: (isValid: boolean) => void;
@@ -94,10 +94,14 @@ export default function Step2({ onValidityChange }: Step2Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Education</Text>
-      <Text style={styles.subtitle}>Tell us about your academic background</Text>
+      <Text style={styles.subtitle}>
+        Tell us about your academic background
+      </Text>
 
       {/* University */}
-      <View style={[styles.fieldContainer, { zIndex: getZIndex("university", 4) }]}>
+      <View
+        style={[styles.fieldContainer, { zIndex: getZIndex("university", 4) }]}
+      >
         <Text style={styles.label}>University *</Text>
         <DropDownPicker<string>
           placeholder="Select your university"
@@ -115,7 +119,10 @@ export default function Step2({ onValidityChange }: Step2Props) {
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
           style={styles.dropdown}
-          dropDownContainerStyle={[styles.dropdownContainer, { maxHeight: screenHeight * 0.35 }]}
+          dropDownContainerStyle={[
+            styles.dropdownContainer,
+            { maxHeight: screenHeight * 0.35 },
+          ]}
         />
       </View>
 
@@ -138,53 +145,83 @@ export default function Step2({ onValidityChange }: Step2Props) {
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
           style={styles.dropdown}
-          dropDownContainerStyle={[styles.dropdownContainer, { maxHeight: screenHeight * 0.35 }]}
+          dropDownContainerStyle={[
+            styles.dropdownContainer,
+            { maxHeight: screenHeight * 0.35 },
+          ]}
         />
       </View>
 
       {/* University Year */}
-      <View style={[styles.fieldContainer, { zIndex: getZIndex("university_year", 2) }]}>
+      <View
+        style={[
+          styles.fieldContainer,
+          { zIndex: getZIndex("university_year", 2) },
+        ]}
+      >
         <Text style={styles.label}>Year *</Text>
         <DropDownPicker<string>
           placeholder="Select your year"
           open={activeDropdown === "university_year"}
-          value={profileData?.university_year !== undefined ? String(profileData.university_year) : null}
+          value={
+            profileData?.university_year !== undefined
+              ? String(profileData.university_year)
+              : null
+          }
           items={universityYearItems}
           setOpen={() => handleOpen("university_year")}
           setValue={(callback) => {
             const value =
               typeof callback === "function"
-                ? callback(profileData?.university_year ? String(profileData.university_year) : "")
+                ? callback(
+                    profileData?.university_year
+                      ? String(profileData.university_year)
+                      : ""
+                  )
                 : callback;
             setField("university_year", value ? parseInt(value) : 0);
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
           style={styles.dropdown}
-          dropDownContainerStyle={[styles.dropdownContainer, { maxHeight: screenHeight * 0.35 }]}
+          dropDownContainerStyle={[
+            styles.dropdownContainer,
+            { maxHeight: screenHeight * 0.35 },
+          ]}
         />
       </View>
 
       {/* Graduation Year */}
-      <View style={[styles.fieldContainer, { zIndex: getZIndex("grad_year", 1) }]}>
+      <View
+        style={[styles.fieldContainer, { zIndex: getZIndex("grad_year", 1) }]}
+      >
         <Text style={styles.label}>Graduation Year *</Text>
         <DropDownPicker<string>
           placeholder="Select graduation year"
           open={activeDropdown === "grad_year"}
-          value={profileData?.grad_year !== undefined ? String(profileData.grad_year) : null}
+          value={
+            profileData?.grad_year !== undefined
+              ? String(profileData.grad_year)
+              : null
+          }
           items={gradYearItems}
           setOpen={() => handleOpen("grad_year")}
           setValue={(callback) => {
             const value =
               typeof callback === "function"
-                ? callback(profileData?.grad_year ? String(profileData.grad_year) : "")
+                ? callback(
+                    profileData?.grad_year ? String(profileData.grad_year) : ""
+                  )
                 : callback;
             setField("grad_year", value ? parseInt(value) : 0);
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
           style={styles.dropdown}
-          dropDownContainerStyle={[styles.dropdownContainer, { maxHeight: screenHeight * 0.35 }]}
+          dropDownContainerStyle={[
+            styles.dropdownContainer,
+            { maxHeight: screenHeight * 0.35 },
+          ]}
           dropDownDirection="TOP" // opens upward
         />
       </View>
