@@ -2,7 +2,7 @@ import axios from "axios";
 import { Profile } from "@/types/Profile";
 import { useAuthStore } from "@/store/authStore";
 
-const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/profiles`;
+const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/profile`;
 
 const getAuthHeaders = () => {
   const token = useAuthStore.getState().token;

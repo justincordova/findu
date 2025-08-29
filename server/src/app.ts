@@ -44,7 +44,7 @@ if (!isDev) {
 
 // Application Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/profiles", profileRoutes);
+app.use("/api/profile", profileRoutes);
 app.use("/api/storage", storageRoutes);
 
 
