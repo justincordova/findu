@@ -3,15 +3,35 @@ dotenv.config({ quiet: true });
 
 import app from "@/app";
 import { PORT } from "@/config/env";
-import { Server } from "http";
+import { Server as HTTPServer } from "http";
 import logger, { logError, logStartup, logShutdown } from "@/config/logger";
+import { initSocket } from "@/lib/socket";
 
 // Ensure PORT is a number
 const port = Number(PORT);
 
 // Start the Express server
 // logStartup records server start with metadata
-const server: Server = app.listen(port, () => {
+
+// Create HTTP server from Express app 
+// This allows Socket.IO to attach properly
+const server: HTTPServer = new HTTPServer(app);
+
+// Initialize Socket.IO with the HTTP server
+const io = initSocket(server);
+
+// Example connection event
+io.on("connection", (socket) => {
+  logger.info("SOCKET_NEW_CONNECTION", { socketId: socket.id });
+
+  // Optional: handle disconnect
+  socket.on("disconnect", (reason) => {
+    logger.info("SOCKET_DISCONNECTED", { socketId: socket.id, reason });
+  });
+});
+
+// Start listening
+server.listen(port, () => {
   logStartup(port, process.env.NODE_ENV || "development", process.pid);
 });
 

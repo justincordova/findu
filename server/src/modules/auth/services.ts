@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { sendOTPEmail } from "@/modules/auth/emailService";
-import { redis } from "@/providers/redis";
+import { Redis } from "./redis";
 import logger from "@/config/logger";
 import { Request } from "express";
 import { AuthResult, PendingSignupResult } from "@/types/Auth";
@@ -9,7 +9,6 @@ import { generateOTP, extractBearerToken } from "@/utils/auth";
 const OTP_EXPIRATION = Number(process.env.OTP_EXPIRATION_SECONDS) || 600;
 
 export const OTPService = {
-  // Create pending signup with OTP
   createPendingSignup: async (
     email: string,
     password: string
@@ -21,14 +20,14 @@ export const OTPService = {
       );
       if (userExists) return { success: false, error: "User already exists" };
 
-      if (await redis.hasOTP(email)) await redis.removeOTP(email);
+      if (await Redis.hasOTP(email)) await Redis.removeOTP(email);
 
       const otp = generateOTP();
-      await redis.storeOTP(email, otp, password, OTP_EXPIRATION);
+      await Redis.storeOTP(email, otp, password, OTP_EXPIRATION);
 
       const emailResult = await sendOTPEmail({ email, otp });
       if (!emailResult.success) {
-        await redis.removeOTP(email);
+        await Redis.removeOTP(email);
         return { success: false, error: "Failed to send OTP email" };
       }
 
@@ -40,10 +39,9 @@ export const OTPService = {
     }
   },
 
-  // Verify OTP and create user
   verifyOTP: async (email: string, otp: string): Promise<AuthResult> => {
     try {
-      const otpResult = await redis.verifyOTP(email, otp);
+      const otpResult = await Redis.verifyOTP(email, otp);  // 👈 changed
       if (!otpResult.valid)
         return { success: false, error: otpResult.error || "Invalid OTP" };
 
@@ -80,6 +78,9 @@ export const OTPService = {
     }
   },
 };
+
+// ... AuthService stays same, just replace redis.hasOTP/removeOTP with OTPStore
+
 
 export const AuthService = {
   authenticate: async (
@@ -283,7 +284,7 @@ export const AuthService = {
 
       logger.info("USER_DELETED_SUCCESSFULLY", { userId });
 
-      if (await redis.hasOTP(userId)) await redis.removeOTP(userId);
+      if (await Redis.hasOTP(userId)) await Redis.removeOTP(userId);
 
       return { success: true };
     } catch (error) {
