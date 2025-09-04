@@ -9,6 +9,13 @@ import { generateOTP, extractBearerToken } from "@/utils/auth";
 const OTP_EXPIRATION = Number(process.env.OTP_EXPIRATION_SECONDS) || 600;
 
 export const OTPService = {
+  /**
+   * Creates a pending signup by generating and sending an OTP to the user's email.
+   *
+   * @param email - The email address of the user.
+   * @param password - The password for the pending account.
+   * @returns The result of the pending signup attempt.
+   */
   createPendingSignup: async (
     email: string,
     password: string
@@ -39,9 +46,16 @@ export const OTPService = {
     }
   },
 
+  /**
+   * Verifies the OTP sent to the user's email and creates a user account.
+   *
+   * @param email - The email address of the user.
+   * @param otp - The one-time password to verify.
+   * @returns The result of OTP verification and user creation.
+   */
   verifyOTP: async (email: string, otp: string): Promise<AuthResult> => {
     try {
-      const otpResult = await Redis.verifyOTP(email, otp);  // 👈 changed
+      const otpResult = await Redis.verifyOTP(email, otp);
       if (!otpResult.valid)
         return { success: false, error: otpResult.error || "Invalid OTP" };
 
@@ -79,14 +93,15 @@ export const OTPService = {
   },
 };
 
-// ... AuthService stays same, just replace redis.hasOTP/removeOTP with OTPStore
-
-
 export const AuthService = {
-  authenticate: async (
-    email: string,
-    password: string
-  ): Promise<AuthResult> => {
+  /**
+   * Authenticates a user with email and password.
+   *
+   * @param email - The user's email address.
+   * @param password - The user's password.
+   * @returns The result of the authentication attempt.
+   */
+  authenticate: async (email: string, password: string): Promise<AuthResult> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -111,6 +126,12 @@ export const AuthService = {
     }
   },
 
+  /**
+   * Requests a password reset email for the user.
+   *
+   * @param email - The user's email address.
+   * @returns The result of the password reset request.
+   */
   requestPasswordReset: async (email: string): Promise<AuthResult> => {
     try {
       const { data: users } = await supabase.auth.admin.listUsers();
@@ -118,9 +139,7 @@ export const AuthService = {
       if (!userExists) return { success: true };
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${
-          process.env.FRONTEND_URL || "http://localhost:8081"
-        }/auth/reset-password`,
+        redirectTo: `${process.env.FRONTEND_URL || "http://localhost:8081"}/auth/reset-password`,
       });
 
       if (error) {
@@ -136,6 +155,13 @@ export const AuthService = {
     }
   },
 
+  /**
+   * Resets the user's password using a valid token.
+   *
+   * @param token - The password reset token.
+   * @param newPassword - The new password to set.
+   * @returns The result of the password reset.
+   */
   resetPassword: async (
     token: string,
     newPassword: string
@@ -160,6 +186,12 @@ export const AuthService = {
     }
   },
 
+  /**
+   * Logs out the user by invalidating their session token.
+   *
+   * @param req - The Express request containing the authorization header.
+   * @returns The result of the logout attempt.
+   */
   logout: async (req: Request): Promise<AuthResult> => {
     try {
       const token = extractBearerToken(req.headers.authorization);
@@ -185,12 +217,15 @@ export const AuthService = {
     }
   },
 
-  verifySession: async (token: string): Promise<any> => {
+  /**
+   * Verifies a session token and returns the associated user info.
+   *
+   * @param token - The session token to verify.
+   * @returns The user info if valid, otherwise `null`.
+   */
+  verifySession: async (token: string): Promise<any | null> => {
     try {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser(token);
+      const { data: { user }, error } = await supabase.auth.getUser(token);
       if (error || !user) return null;
 
       return {
@@ -206,18 +241,20 @@ export const AuthService = {
     }
   },
 
+  /**
+   * Gets the currently authenticated user from the request.
+   *
+   * @param req - The Express request containing the authorization header.
+   * @returns The current user info and session, or an error result.
+   */
   getCurrentUser: async (req: Request): Promise<AuthResult> => {
     try {
       const token = extractBearerToken(req.headers.authorization);
       if (!token) return { success: false, error: "No valid session found" };
 
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser(token);
+      const { data: { user }, error } = await supabase.auth.getUser(token);
       if (error || !user) return { success: false, error: "Invalid session" };
 
-      // Return user and session info
       return {
         success: true,
         user: {
@@ -227,9 +264,7 @@ export const AuthService = {
           created_at: user.created_at,
           updated_at: user.updated_at,
         },
-        session: {
-          access_token: token,
-        },
+        session: { access_token: token },
       };
     } catch (error) {
       logger.error("GET_CURRENT_USER_DATA_ERROR", { error });
@@ -237,6 +272,12 @@ export const AuthService = {
     }
   },
 
+  /**
+   * Refreshes a user's session using a refresh token.
+   *
+   * @param refreshToken - The refresh token.
+   * @returns The refreshed session and user info, or an error result.
+   */
   refreshSession: async (refreshToken: string): Promise<AuthResult> => {
     try {
       const { data, error } = await supabase.auth.refreshSession({
@@ -262,6 +303,12 @@ export const AuthService = {
     }
   },
 
+  /**
+   * Deletes a user by their user ID.
+   *
+   * @param userId - The ID of the user to delete.
+   * @returns The result of the deletion attempt.
+   */
   deleteUser: async (userId: string): Promise<AuthResult> => {
     try {
       const { data: usersData, error: listError } =
@@ -274,9 +321,8 @@ export const AuthService = {
       const userExists = usersData.users?.some((user) => user.id === userId);
       if (!userExists) return { success: false, error: "User not found" };
 
-      const { error: deleteError } = await supabase.auth.admin.deleteUser(
-        userId
-      );
+      const { error: deleteError } =
+        await supabase.auth.admin.deleteUser(userId);
       if (deleteError) {
         logger.error("DELETE_USER_ERROR", { error: deleteError, userId });
         return { success: false, error: "Failed to delete user" };

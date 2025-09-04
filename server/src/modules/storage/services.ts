@@ -1,7 +1,22 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import logger from "@/config/logger";
 
-export const generateSignedUploadUrl = async (userId: string, filename: string) => {
+/**
+ * Generates a signed Supabase Storage upload URL for a user.
+ *
+ * The generated URL allows the client to upload a file directly to the
+ * `profiles` bucket under the user's folder with a timestamped filename.
+ *
+ * @param userId - The ID of the user uploading the file.
+ * @param filename - The original name of the file to be uploaded.
+ * @returns A promise that resolves to an object containing either:
+ * - `uploadUrl` and `path` if successful, or
+ * - `error` if the operation fails.
+ */
+export const generateSignedUploadUrl = async (
+  userId: string,
+  filename: string
+): Promise<{ uploadUrl: string; path: string } | { error: string }> => {
   try {
     logger.info("[generateSignedUploadUrl] Start", { userId, filename });
 

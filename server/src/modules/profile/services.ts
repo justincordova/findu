@@ -8,10 +8,16 @@ const sanitizeData = <T extends object>(data: T): Partial<T> => {
   ) as Partial<T>;
 };
 
-export const createProfile = async (profileData: Profile) => {
+/**
+ * Creates a new profile for a user.
+ *
+ * @param profileData - The profile data to create.
+ * @returns The newly created profile.
+ * @throws If the database operation fails.
+ */
+export const createProfile = async (profileData: Profile): Promise<Profile> => {
   try {
     const profile = await prisma.profiles.create({
-      // plural "profiles"
       data: {
         ...profileData,
         updated_at: new Date(),
@@ -26,14 +32,21 @@ export const createProfile = async (profileData: Profile) => {
   }
 };
 
+/**
+ * Updates an existing profile for a user.
+ *
+ * @param userId - The ID of the user whose profile to update.
+ * @param profileData - The profile fields to update.
+ * @returns The updated profile, or `null` if no profile exists for the given user.
+ * @throws If the database operation fails.
+ */
 export const updateProfile = async (
   userId: string,
   profileData: Partial<Profile> = {}
-) => {
+): Promise<Profile | null> => {
   try {
     const sanitized = sanitizeData(profileData);
 
-    // Convert birthdate to Date if present
     if (sanitized.birthdate)
       sanitized.birthdate = new Date(sanitized.birthdate);
 
@@ -59,7 +72,16 @@ export const updateProfile = async (
   }
 };
 
-export const getProfileByUserId = async (userId: string) => {
+/**
+ * Fetches a profile by user ID.
+ *
+ * @param userId - The ID of the user whose profile to fetch.
+ * @returns The profile, or `null` if not found.
+ * @throws If the database operation fails.
+ */
+export const getProfileByUserId = async (
+  userId: string
+): Promise<Profile | null> => {
   try {
     const profile = await prisma.profiles.findUnique({
       where: { user_id: userId },
@@ -75,7 +97,14 @@ export const getProfileByUserId = async (userId: string) => {
   }
 };
 
-export const deleteProfile = async (userId: string) => {
+/**
+ * Deletes a profile by user ID.
+ *
+ * @param userId - The ID of the user whose profile to delete.
+ * @returns A promise that resolves when the profile is deleted.
+ * @throws If the database operation fails.
+ */
+export const deleteProfile = async (userId: string): Promise<void> => {
   try {
     await prisma.profiles.delete({
       where: { user_id: userId },
