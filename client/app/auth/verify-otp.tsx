@@ -9,7 +9,13 @@ import {
   Platform,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { PRIMARY, DARK, MUTED, BACKGROUND, DANGER } from "../../constants/theme";
+import {
+  PRIMARY,
+  DARK,
+  MUTED,
+  BACKGROUND,
+  DANGER,
+} from "../../constants/theme";
 import Button from "@/components/shared/Button";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -35,9 +41,11 @@ export default function VerifyOTPScreen() {
     // Start OTP expiration timer
     const timer = setTimeout(() => {
       setExpired(true);
-      Alert.alert("OTP Expired", "Your verification code has expired. Please request a new one.", [
-        { text: "OK", onPress: () => router.replace("/auth") },
-      ]);
+      Alert.alert(
+        "OTP Expired",
+        "Your verification code has expired. Please request a new one.",
+        [{ text: "OK", onPress: () => router.replace("/auth") }]
+      );
     }, OTP_EXPIRATION * 1000);
 
     return () => clearTimeout(timer);
@@ -88,7 +96,7 @@ export default function VerifyOTPScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.content}>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error && <Text style={styles.error}>{error}</Text>}
 
         <Text style={styles.title}>Verify Your Email</Text>
         <Text style={styles.subtitle}>Code sent to:</Text>
@@ -133,9 +141,26 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
   },
-  title: { fontSize: 26, fontWeight: "bold", color: DARK, marginBottom: 10, textAlign: "center" },
-  subtitle: { fontSize: 16, color: MUTED, marginBottom: 6, textAlign: "center" },
-  email: { fontSize: 18, fontWeight: "600", color: PRIMARY, marginBottom: 16, textAlign: "center" },
+  title: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: DARK,
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 16,
+    color: MUTED,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  email: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: PRIMARY,
+    marginBottom: 16,
+    textAlign: "center",
+  },
   input: {
     width: 180,
     borderWidth: 1,
@@ -151,5 +176,11 @@ const styles = StyleSheet.create({
   },
   buttonWrapper: { width: 180, marginBottom: 10 },
   error: { color: DANGER, textAlign: "center", marginBottom: 10, fontSize: 15 },
-  resend: { color: PRIMARY, textAlign: "center", textDecorationLine: "underline", fontSize: 15, marginTop: 8 },
+  resend: {
+    color: PRIMARY,
+    textAlign: "center",
+    textDecorationLine: "underline",
+    fontSize: 15,
+    marginTop: 8,
+  },
 });

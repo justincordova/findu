@@ -15,9 +15,9 @@ export const useProfileSetupStore = create<ProfileSetupState>((set) => ({
     set((state) => {
       const currentData = state.data || {};
       const newData = { ...currentData, [key]: value };
-      
-      logger.debug(`Store updated: "${key}" =`, value);
-      logger.debug("Current state:", newData);
+
+      logger.debug(`Store updated: "${key}" = ${String(value)}`);
+      logger.debug(`Current state keys: ${Object.keys(newData).join(", ")}`);
 
       return { data: newData };
     });

@@ -32,7 +32,7 @@ export default function LoginForm() {
 
   return (
     <View style={styles.container}>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error && <Text style={styles.error}>{error}</Text>}
 
       <TextInput
         style={styles.input}

@@ -89,7 +89,7 @@ export default function CustomTabBar({
                     { color: isFocused ? PRIMARY : "gray" },
                   ]}
                 >
-                  {typeof label === "string" ? label : ""}
+                  {typeof label === "string" ? label : String(label || "")}
                 </Text>
               </View>
             </TouchableOpacity>

@@ -1,19 +1,38 @@
 import React from "react";
 import { View, Text, StyleSheet, FlatList } from "react-native";
 import { DARK, MUTED, PRIMARY } from "@/constants/theme";
+import { useProfileSetupStore } from "@/store/profileStore";
 
-interface AboutSectionProps {
-  bio?: string;
-  interests?: string[];
-}
+export default function AboutSection() {
+  const { data: profile } = useProfileSetupStore();
 
-export default function AboutSection({
-  bio = "",
-  interests = [],
-}: AboutSectionProps) {
-  const safeInterests = Array.isArray(interests)
-    ? interests.map((i) => String(i))
+  const bio = profile?.bio || "";
+  const interests = Array.isArray(profile?.interests)
+    ? profile.interests.filter(Boolean).map(String)
     : [];
+
+  const renderInterest = ({ item, index }: { item: string; index: number }) => (
+    <View style={styles.interestBadge}>
+      <Text style={styles.interestText}>{item}</Text>
+    </View>
+  );
+
+  const renderInterests = () => {
+    if (interests.length === 0) {
+      return <Text style={styles.content}>No interests added.</Text>;
+    }
+
+    return (
+      <FlatList
+        data={interests}
+        keyExtractor={(item, index) => `interest-${index}`}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.interestsContainer}
+        renderItem={renderInterest}
+      />
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -23,22 +42,7 @@ export default function AboutSection({
       <Text style={styles.content}>{bio || "No bio provided."}</Text>
 
       <Text style={styles.subtitle}>Interests</Text>
-      {safeInterests.length > 0 ? (
-        <FlatList
-          data={safeInterests}
-          keyExtractor={(item, index) => `${item}-${index}`}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.interestsContainer}
-          renderItem={({ item }) => (
-            <View style={styles.interestBadge}>
-              <Text style={styles.interestText}>{item}</Text>
-            </View>
-          )}
-        />
-      ) : (
-        <Text style={styles.content}>No interests added.</Text>
-      )}
+      {renderInterests()}
     </View>
   );
 }
@@ -70,6 +74,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: DARK,
     marginBottom: 12,
+    lineHeight: 22,
   },
   interestsContainer: {
     flexDirection: "row",

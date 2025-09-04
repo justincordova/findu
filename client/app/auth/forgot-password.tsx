@@ -99,7 +99,7 @@ export default function ForgotPasswordScreen() {
           Didn&apos;t receive the code? Check your spam folder or try again.
         </Text>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error && <Text style={styles.error}>{error}</Text>}
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity

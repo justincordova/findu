@@ -1,43 +1,77 @@
 import React from "react";
 import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
 import { DARK, MUTED } from "@/constants/theme";
-
-interface HeaderSectionProps {
-  avatar_url?: string;
-  name?: string;
-  age?: number | null;
-  gender?: string;
-  intent?: string;
-}
+import { useProfileSetupStore } from "@/store/profileStore";
 
 const AVATAR_SIZE = 120;
 const { width } = Dimensions.get("window");
 
-export default function HeaderSection({
-  avatar_url,
-  name = "",
-  age,
-  gender,
-  intent,
-}: HeaderSectionProps) {
+/** Calculate age from birthdate */
+function calculateAge(birthdate: string | undefined): number | null {
+  if (!birthdate) return null;
+
+  try {
+    const birth = new Date(birthdate);
+    const today = new Date();
+    const age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
+      return age - 1;
+    }
+
+    return age;
+  } catch {
+    return null;
+  }
+}
+
+export default function HeaderSection() {
+  const { data: profile } = useProfileSetupStore();
+
+  const avatarUrl = profile?.avatar_url;
+  const name = profile?.name || "";
+  const gender = profile?.gender || "";
+  const intent = profile?.intent || "";
+  const age = calculateAge(profile?.birthdate);
+
+  // Build display name safely
+  const getDisplayName = (): string => {
+    if (name && age !== null) {
+      return `${name}, ${age}`;
+    }
+    if (name) {
+      return name;
+    }
+    if (age !== null) {
+      return `${age}`;
+    }
+    return "";
+  };
+
+  const displayName = getDisplayName();
+
   return (
     <View style={styles.container}>
-      {avatar_url ? (
-        <Image source={{ uri: avatar_url }} style={styles.avatar} />
+      {avatarUrl ? (
+        <Image
+          source={{ uri: avatarUrl }}
+          style={styles.avatar}
+          resizeMode="cover"
+        />
       ) : (
         <View style={[styles.avatar, styles.avatarPlaceholder]}>
           <Text style={styles.avatarPlaceholderText}>No Avatar</Text>
         </View>
       )}
 
-      {name ? (
-        <Text style={styles.name}>
-          {name}
-          {age != null ? `, ${age}` : ""}
-        </Text>
-      ) : null}
+      {displayName ? <Text style={styles.name}>{displayName}</Text> : null}
 
       {gender ? <Text style={styles.subText}>{gender}</Text> : null}
+
       {intent ? <Text style={styles.subText}>{intent}</Text> : null}
     </View>
   );
@@ -63,6 +97,7 @@ const styles = StyleSheet.create({
   },
   avatarPlaceholderText: {
     color: MUTED,
+    fontSize: 14,
   },
   name: {
     fontSize: 24,
@@ -75,5 +110,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: MUTED,
     textAlign: "center",
+    marginBottom: 2,
   },
 });
