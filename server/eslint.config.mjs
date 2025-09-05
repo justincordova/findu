@@ -1,26 +1,52 @@
-import tsPlugin from "@typescript-eslint/eslint-plugin";
+// eslint.config.mjs
 import tsParser from "@typescript-eslint/parser";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
 
-export default {
-  parser: tsParser,
-  parserOptions: {
-    ecmaVersion: 2020,
-    sourceType: "module",
-    project: "./tsconfig.json",  // ensure ESLint can read tsconfig for path aliases
+export default [
+  {
+    ignores: [
+      "node_modules",
+      "dist",
+      "build",
+      "src/generated/**", // ⬅️ ignore Prisma's generated client/runtime
+    ],
   },
-  plugins: ["@typescript-eslint"],
-  extends: [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-  ],
-  settings: {
-    "import/resolver": {
-      typescript: {
-        alwaysTryTypes: true, // always try to resolve types under <root>@types directory
+  {
+    files: ["**/*.ts", "**/*.tsx"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: "module",
+        project: "./tsconfig.json",
       },
     },
+    plugins: {
+      "@typescript-eslint": tsPlugin,
+    },
+    rules: {
+      "no-unused-vars": "off",
+      "no-shadow": "off",
+      "no-redeclare": "off",
+      "no-use-before-define": "off",
+
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+      "@typescript-eslint/no-shadow": "error",
+      "@typescript-eslint/no-redeclare": "error",
+      "@typescript-eslint/no-use-before-define": "error",
+    },
   },
-  rules: {
-    // your custom rules here
+  {
+    files: ["**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2020,
+      sourceType: "module",
+    },
+    rules: {
+      "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+    },
   },
-};
+];
