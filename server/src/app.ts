@@ -13,8 +13,11 @@ import logger from "@/config/logger";
 
 // Route Imports
 import authRoutes from "@/modules/auth/routes";
-import profileRoutes from "@/modules/profile/routes";
 import storageRoutes from "@/modules/storage/routes";
+import profileRoutes from "@/modules/profile/routes";
+import likesRoutes from "@/modules/profile/routes";
+import matchesRoutes from "@/modules/matches/routes";
+import discoverRoutes from "@/modules/discover/routes";
 
 const app = express();
 
@@ -44,9 +47,11 @@ if (!isDev) {
 
 // Application Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/profile", profileRoutes);
 app.use("/api/storage", storageRoutes);
-
+app.use("/api/profile", profileRoutes);
+app.use("/api/likes", likesRoutes);
+app.use("/api/matches", matchesRoutes);
+app.use("/api/discover", discoverRoutes);
 
 // Health Check Route
 // Simple endpoint to verify server status
