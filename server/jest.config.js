@@ -11,4 +11,16 @@ module.exports = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
+  collectCoverage: true,
+  collectCoverageFrom: [
+    "src/modules/**/*.ts",
+    "src/lib/**/*.ts",
+    "src/providers/**/*.ts",
+    "src/utils/**/*.ts",
+    "src/middleware/**/*.ts",
+    "!src/**/*.d.ts",           // ignore type declarations
+    "!src/generated/**",        // ignore generated prisma code
+  ],
+  coverageDirectory: "coverage",
+  coverageReporters: ["text", "lcov", "html"],
 };
