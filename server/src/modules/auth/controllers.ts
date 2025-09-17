@@ -78,7 +78,12 @@ export const requestPasswordResetController = async (req: Request, res: Response
     const { email } = req.body;
     const result = await AuthService.AuthService.requestPasswordReset(email);
 
-    if (!result.success) return res.status(400).json({ success: false, message: result.error });
+    if (!result.success) {
+      if (result.error === "User not found") {
+        return res.status(404).json({ success: false, message: result.error });
+      }
+      return res.status(400).json({ success: false, message: result.error });
+    }
 
     return res.status(200).json({
       success: true,
@@ -114,6 +119,11 @@ export const resetPasswordController = async (req: Request, res: Response) => {
 // POST /auth/logout
 export const logoutController = async (req: Request, res: Response) => {
   try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "Missing Authorization header" });
+    }
+
     const result = await AuthService.AuthService.logout(req);
 
     if (!result.success) return res.status(400).json({ success: false, message: result.error });
@@ -150,6 +160,11 @@ export const refreshSessionController = async (req: Request, res: Response) => {
 // GET /auth/me (updated to include session info)
 export const getCurrentUserController = async (req: Request, res: Response) => {
   try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "Missing Authorization header" });
+    }
+
     const result = await AuthService.AuthService.getCurrentUser(req);
 
     if (!result.success) return res.status(401).json({ success: false, message: result.error });
@@ -158,7 +173,7 @@ export const getCurrentUserController = async (req: Request, res: Response) => {
     return res.status(200).json({
       success: true,
       user: result.user,
-      session: result.session, // <- this is the update
+      session: result.session,
     });
   } catch (error) {
     logger.error("GET_CURRENT_USER_ERROR", { error });
