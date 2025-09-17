@@ -1,4 +1,4 @@
-import * as ProfileService from "@/modules/profile/services";
+import * as ProfileService from "@/modules/profiles/services";
 import { Profile } from "@/types/Profile";
 import prisma from "@/lib/prismaClient";
 import logger from "@/config/logger";
@@ -46,7 +46,7 @@ const sampleProfile: Profile = {
   updated_at: new Date(),
 };
 
-describe("Profile Service happy path cases", () => {
+describe("Profiles API happy path cases", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -106,7 +106,7 @@ describe("Profile Service happy path cases", () => {
   });
 });
 
-describe("Profile Service edge & failure cases", () => {
+describe("Profiles API edge & failure cases", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
