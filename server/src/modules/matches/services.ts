@@ -1,71 +1,156 @@
 import prisma from "@/lib/prismaClient";
+import { Match } from "@/types/Match";
 
 /**
  * Creates a new match between two users.
  *
- * @param user1 - First user's ID.
- * @param user2 - Second user's ID.
- * @returns The created match with profiles included.
+ * @param user1Id - First user's ID
+ * @param user2Id - Second user's ID
+ * @returns Minimal match info: matchId, user1Id, user2Id, matchedAt
+ * @throws Error if match already exists or users are invalid
  */
-export const createMatch = async (user1: string, user2: string) => {
-  return prisma.matches.create({
-    data: {
-      user1,
-      user2,
-      matched_at: new Date(),
-    },
-    include: {
-      users_matches_user1Tousers: { include: { profiles: true } },
-      users_matches_user2Tousers: { include: { profiles: true } },
+export const createMatch = async (user1Id: string, user2Id: string): Promise<Match> => {
+  if (!user1Id || !user2Id || user1Id === user2Id) {
+    throw new Error('Valid user IDs required and users cannot match themselves');
+  }
+
+  // Check if match already exists to prevent duplicates
+  const existingMatch = await prisma.matches.findFirst({
+    where: {
+      OR: [
+        { user1: user1Id, user2: user2Id },
+        { user1: user2Id, user2: user1Id },
+      ],
     },
   });
+
+  if (existingMatch) {
+    throw new Error('Match already exists between these users');
+  }
+
+  const match = await prisma.matches.create({
+    data: {
+      user1: user1Id,
+      user2: user2Id,
+      matched_at: new Date(),
+    },
+    select: {
+      id: true,
+      user1: true,
+      user2: true,
+      matched_at: true,
+    },
+  });
+
+  return {
+    ...match,
+    matched_at: match.matched_at!,
+  };
 };
 
 /**
- * Retrieves all matches for a given user, including related profiles and chats.
+ * Returns all matches for a given user.
+ * Only returns user IDs + match metadata.
  *
- * @param userId - The ID of the user whose matches should be retrieved.
- * @returns List of matches sorted by most recent.
+ * @param userId - The ID of the user whose matches to retrieve
+ * @returns Array of match info with just user IDs and metadata
  */
-export const getMatches = async (userId: string) => {
-  return prisma.matches.findMany({
+export const getMatchesForUser = async (userId: string): Promise<Match[]> => {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+
+  const matches = await prisma.matches.findMany({
     where: {
       OR: [{ user1: userId }, { user2: userId }],
     },
-    include: {
-      users_matches_user1Tousers: { include: { profiles: true } },
-      users_matches_user2Tousers: { include: { profiles: true } },
-      chats: true,
+    select: {
+      id: true,
+      user1: true,
+      user2: true,
+      matched_at: true,
     },
-    orderBy: { matched_at: "desc" },
+    orderBy: { matched_at: 'desc' },
+  });
+
+  return matches.map(match => ({
+    ...match,
+    matched_at: match.matched_at!,
+  }));
+};
+
+/**
+ * Quick check if two users are already matched.
+ *
+ * @param user1Id - First user ID
+ * @param user2Id - Second user ID
+ * @returns Boolean indicating if users are matched
+ */
+export const areUsersMatched = async (user1Id: string, user2Id: string): Promise<boolean> => {
+  if (!user1Id || !user2Id || user1Id === user2Id) {
+    return false;
+  }
+
+  const match = await prisma.matches.findFirst({
+    where: {
+      OR: [
+        { user1: user1Id, user2: user2Id },
+        { user1: user2Id, user2: user1Id },
+      ],
+    },
+  });
+
+  return !!match;
+};
+
+/**
+ * Removes a match record from the DB.
+ *
+ * @param matchId - The ID of the match to delete
+ * @returns void
+ */
+export const deleteMatch = async (matchId: string): Promise<void> => {
+  if (!matchId) {
+    throw new Error('Match ID is required');
+  }
+
+  await prisma.matches.delete({
+    where: { id: matchId },
   });
 };
 
 /**
- * Retrieves a single match by ID, including user profiles and chats.
+ * Returns match info if two users are mutually matched.
+ * Useful for admin or debugging.
  *
- * @param matchId - The ID of the match to retrieve.
- * @returns The match or null if not found.
+ * @param user1Id - First user ID
+ * @param user2Id - Second user ID
+ * @returns Match info or null if not matched
  */
-export const getMatchById = async (matchId: string) => {
-  return prisma.matches.findUnique({
-    where: { id: matchId },
-    include: {
-      users_matches_user1Tousers: { include: { profiles: true } },
-      users_matches_user2Tousers: { include: { profiles: true } },
-      chats: true,
+export const getMutualMatch = async (user1Id: string, user2Id: string): Promise<Match | null> => {
+  if (!user1Id || !user2Id || user1Id === user2Id) {
+    return null;
+  }
+
+  const match = await prisma.matches.findFirst({
+    where: {
+      OR: [
+        { user1: user1Id, user2: user2Id },
+        { user1: user2Id, user2: user1Id },
+      ],
+    },
+    select: {
+      id: true,
+      user1: true,
+      user2: true,
+      matched_at: true,
     },
   });
-};
 
-/**
- * Deletes a match by ID.
- *
- * @param matchId - The ID of the match to delete.
- * @returns The deleted match record.
- */
-export const deleteMatch = async (matchId: string) => {
-  return prisma.matches.delete({
-    where: { id: matchId },
-  });
+  if (!match) return null;
+
+  return {
+    ...match,
+    matched_at: match.matched_at!,
+  };
 };

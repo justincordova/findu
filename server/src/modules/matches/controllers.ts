@@ -6,10 +6,10 @@ import * as matchesService from "./services";
  */
 export const getMatchesController = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
-    const matches = await matchesService.getMatches(userId);
+    const userId = (req as any).user.id; // auth middleware sets req.user
+    const matches = await matchesService.getMatchesForUser(userId);
     res.json(matches);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching matches:", error);
     res.status(500).json({ error: "Failed to fetch matches" });
   }
@@ -21,14 +21,14 @@ export const getMatchesController = async (req: Request, res: Response) => {
 export const getMatchByIdController = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const match = await matchesService.getMatchById(id);
+    const match = await matchesService.getMutualMatch(id, id); // Adjust if you want a different endpoint for pair check
 
     if (!match) {
       return res.status(404).json({ error: "Match not found" });
     }
 
     res.json(match);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching match:", error);
     res.status(500).json({ error: "Failed to fetch match" });
   }
@@ -47,8 +47,11 @@ export const createMatchController = async (req: Request, res: Response) => {
 
     const match = await matchesService.createMatch(user1, user2);
     res.status(201).json(match);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating match:", error);
+    if (error.message.includes("already exists")) {
+      return res.status(400).json({ error: error.message });
+    }
     res.status(500).json({ error: "Failed to create match" });
   }
 };
@@ -61,8 +64,27 @@ export const deleteMatchController = async (req: Request, res: Response) => {
     const { id } = req.params;
     await matchesService.deleteMatch(id);
     res.json({ message: "Match deleted successfully" });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error deleting match:", error);
     res.status(500).json({ error: "Failed to delete match" });
+  }
+};
+
+/**
+ * Check if two users are matched
+ */
+export const areUsersMatchedController = async (req: Request, res: Response) => {
+  try {
+    const { user1Id, user2Id } = req.params;
+
+    if (!user1Id || !user2Id) {
+      return res.status(400).json({ error: "user1Id and user2Id are required" });
+    }
+
+    const matched = await matchesService.areUsersMatched(user1Id, user2Id);
+    res.json({ matched });
+  } catch (error: any) {
+    console.error("Error checking match:", error);
+    res.status(500).json({ error: "Failed to check match" });
   }
 };

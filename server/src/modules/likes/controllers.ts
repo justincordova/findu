@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import * as LikesService from "./services";
-import prisma from "@/lib/prismaClient";
 
 /**
  * Create a like or superlike from one user to another
@@ -8,26 +7,22 @@ import prisma from "@/lib/prismaClient";
  */
 export const createLike = async (req: Request, res: Response) => {
   try {
-    const like = await LikesService.createLike(req.body);
-
-    // Check if a match was created for this like
-    const match = await prisma.matches.findFirst({
-      where: {
-        OR: [
-          { user1: req.body.from_user, user2: req.body.to_user },
-          { user1: req.body.to_user, user2: req.body.from_user },
-        ],
-      },
-    });
+    const result = await LikesService.createLike(req.body);
 
     return res.status(201).json({
-      like,
-      matchCreated: !!match,
+      like: result.like,
+      matched: result.matched,
+      matchId: result.matchId,
     });
   } catch (err: any) {
-    if (err.code === "P2002") {
-      // Unique constraint failed (user already liked this target)
-      return res.status(400).json({ message: "You already liked this user." });
+    if (err.message.includes("Users cannot like themselves") ||
+        err.message.includes("Both from_user and to_user are required") ||
+        err.message.includes("User profiles not found") ||
+        err.message.includes("Users must be from the same university") ||
+        err.message.includes("Cannot like blocked user") ||
+        err.message.includes("Like already exists") ||
+        err.message.includes("Daily superlike limit")) {
+      return res.status(400).json({ message: err.message });
     }
     return res.status(500).json({ message: err.message });
   }
@@ -41,7 +36,7 @@ export const getSentLikes = async (req: Request, res: Response) => {
   const { userId } = req.params;
   try {
     const likes = await LikesService.getSentLikes(userId);
-    return res.json(likes);
+    return res.status(200).json(likes);
   } catch (err: any) {
     return res.status(500).json({ message: err.message });
   }
@@ -55,7 +50,7 @@ export const getReceivedLikes = async (req: Request, res: Response) => {
   const { userId } = req.params;
   try {
     const likes = await LikesService.getReceivedLikes(userId);
-    return res.json(likes);
+    return res.status(200).json(likes);
   } catch (err: any) {
     return res.status(500).json({ message: err.message });
   }
@@ -67,10 +62,14 @@ export const getReceivedLikes = async (req: Request, res: Response) => {
  */
 export const deleteLike = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const userId = req.body.userId; // ensure front-end passes userId for auth
   try {
-    await LikesService.deleteLike(id);
+    await LikesService.removeLike(id, userId);
     return res.status(204).send();
   } catch (err: any) {
+    if (err.message === "Like not found or unauthorized") {
+      return res.status(403).json({ message: err.message });
+    }
     return res.status(500).json({ message: err.message });
   }
 };
