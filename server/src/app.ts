@@ -1,8 +1,13 @@
-import express, { Request, Response, NextFunction, RequestHandler } from "express";
+import express, {
+  Request,
+  Response,
+  NextFunction,
+  RequestHandler,
+} from "express";
 import cors from "@/middleware/security/corsConfig";
 import helmet from "@/middleware/security/helmetConfig";
 import compression from "@/middleware/security/compressionConfig";
-import limiter from '@/middleware/security/rateLimiterConfig';
+import limiter from "@/middleware/security/rateLimiterConfig";
 import morgan from "@/middleware/security/morganConfig";
 
 // Custom Middleware
@@ -14,8 +19,8 @@ import logger from "@/config/logger";
 // Route Imports
 import authRoutes from "@/modules/auth/routes";
 import storageRoutes from "@/modules/storage/routes";
-import profileRoutes from "@/modules/profile/routes";
-import likesRoutes from "@/modules/profile/routes";
+import profileRoutes from "@/modules/profiles/routes";
+import likesRoutes from "@/modules/profiles/routes";
 import matchesRoutes from "@/modules/matches/routes";
 import discoverRoutes from "@/modules/discover/routes";
 
