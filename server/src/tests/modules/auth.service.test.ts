@@ -1,6 +1,7 @@
 import app from "@/app";
 import request from "supertest";
 
+// Mock the auth services
 jest.mock("@/modules/auth/services", () => ({
   OTPService: {
     createPendingSignup: jest.fn().mockResolvedValue({ success: true }),
@@ -25,10 +26,12 @@ jest.mock("@/modules/auth/services", () => ({
   },
 }));
 
+// Mock the email service so no real emails are sent
 jest.mock("@/modules/auth/emailService", () => ({
   sendOTPEmail: jest.fn().mockResolvedValue({ success: true }),
 }));
 
+// Mock logger so it doesn’t write to console during tests
 jest.mock("@/config/logger", () => ({
   info: jest.fn(),
   error: jest.fn(),
@@ -36,8 +39,49 @@ jest.mock("@/config/logger", () => ({
   debug: jest.fn(),
 }));
 
+// Mock Supabase Admin client to avoid needing real env variables
+jest.mock("@/lib/supabaseAdmin", () => ({
+  supabaseAdmin: {
+    auth: {
+      admin: {
+        createUser: jest.fn().mockResolvedValue({
+          data: { user: { id: "user-id", email: "student@school.edu" } },
+          error: null,
+        }),
+        listUsers: jest.fn().mockResolvedValue({
+          data: { users: [{ id: "user-id", email: "student@school.edu" }] },
+          error: null,
+        }),
+        deleteUser: jest.fn().mockResolvedValue({ error: null }),
+        signOut: jest.fn().mockResolvedValue({ error: null }),
+      },
+      signInWithPassword: jest.fn().mockResolvedValue({
+        data: {
+          user: { id: "user-id", email: "student@school.edu" },
+          session: { access_token: "fake-token" },
+        },
+        error: null,
+      }),
+      getUser: jest.fn().mockResolvedValue({
+        data: { user: { id: "user-id", email: "student@school.edu" } },
+        error: null,
+      }),
+      refreshSession: jest.fn().mockResolvedValue({
+        data: {
+          user: { id: "user-id", email: "student@school.edu" },
+          session: { access_token: "fake-token" },
+        },
+        error: null,
+      }),
+      updateUser: jest.fn().mockResolvedValue({
+        data: { user: { id: "user-id", email: "student@school.edu" } },
+        error: null,
+      }),
+    },
+  },
+}));
 
-describe("Minimal Auth API tests (.edu emails)", () => {
+describe("Auth API tests (.edu emails)", () => {
   const eduEmail = "student@school.edu";
   const password = "Password123!";
 
@@ -46,6 +90,7 @@ describe("Minimal Auth API tests (.edu emails)", () => {
       .post("/api/auth/signup")
       .send({ email: eduEmail, password });
     expect([200, 201]).toContain(res.status);
+    expect(res.body.success).toBe(true);
   });
 
   it("POST /api/auth/login", async () => {
@@ -69,6 +114,7 @@ describe("Minimal Auth API tests (.edu emails)", () => {
       .post("/api/auth/forgot-password")
       .send({ email: eduEmail });
     expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
   });
 
   it("POST /api/auth/reset-password", async () => {
@@ -76,6 +122,7 @@ describe("Minimal Auth API tests (.edu emails)", () => {
       .post("/api/auth/reset-password")
       .send({ token: "fake-token", password });
     expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
   });
 
   it("POST /api/auth/logout", async () => {
@@ -83,6 +130,7 @@ describe("Minimal Auth API tests (.edu emails)", () => {
       .post("/api/auth/logout")
       .set("Authorization", "Bearer fake-token");
     expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
   });
 
   it("GET /api/auth/me", async () => {
