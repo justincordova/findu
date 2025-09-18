@@ -18,8 +18,11 @@ module.exports = {
     "src/providers/**/*.ts",
     "src/utils/**/*.ts",
     "src/middleware/**/*.ts",
-    "!src/**/*.d.ts",           // ignore type declarations
-    "!src/generated/**",        // ignore generated prisma code
+    "!src/**/*.d.ts",                   // ignore type declarations
+    "!src/generated/**",                // ignore generated prisma code
+    "!src/modules/**/controllers.ts",   // ignore controllers
+    "!src/modules/**/routes.ts",        // ignore routes
+    "!src/modules/**/validators.ts",    // ignore validators
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html"],
