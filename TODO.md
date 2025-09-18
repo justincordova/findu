@@ -8,6 +8,11 @@
 - [x] Storage API implemented for file uploads
 
 ## To Do
+- [ ] Implement college/email domain mapping  
+  - Start with: NJIT, Rutgers, Northeastern, Boston  
+  - Ensure users are locked to colleges based on email domain  
+  - Support multiple campuses per college (user selects campus if applicable)  
+  - Make mapping scalable for future colleges  
 - [ ] Implement working discover algorithm based on profile preferences
 - [ ] Create minimum 10 sample users (auth + profiles)
 - [ ] Create unit tests for:
