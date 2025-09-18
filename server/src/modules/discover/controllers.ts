@@ -1,42 +1,161 @@
 import { Request, Response } from "express";
 import * as DiscoverService from "./services";
+import prisma from "@/lib/prismaClient";
 
 /**
- * GET /discover
- * Returns a list of potential matches for the logged-in user based on preferences.
+ * Get discovery feed for a user - potential matches with compatibility scores
+ * GET /discover/:userId?limit=10&offset=0
  */
-export const getDiscoverableUsers = async (req: Request, res: Response) => {
-  try {
-    const userId = req.params.userId; // auth middleware sets req.user
-    const { minAge, maxAge, gender, interests, limit, cursor } = req.query;
+export const getDiscoverFeed = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const offset = parseInt(req.query.offset as string) || 0;
 
-    const users = await DiscoverService.discoverUsers(userId, {
-      minAge: minAge ? Number(minAge) : undefined,
-      maxAge: maxAge ? Number(maxAge) : undefined,
-      gender: gender as string,
-      interests: interests ? (interests as string).split(",") : undefined,
-      limit: limit ? Number(limit) : undefined,
-      cursor: cursor as string | undefined,
+  try {
+    const profiles = await DiscoverService.getDiscoverProfiles(userId, limit, offset);
+    
+    return res.status(200).json({
+      profiles,
+      count: profiles.length,
+      limit,
+      offset,
+      hasMore: profiles.length === limit, // Simple check - could be improved with total count
+    });
+  } catch (err: any) {
+    if (err.message.includes("User ID is required") ||
+        err.message.includes("User profile not found") ||
+        err.message.includes("User must have at least one gender preference set")) {
+      return res.status(400).json({ message: err.message });
+    }
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * Get eligible candidates for a user (for debugging/admin purposes)
+ * GET /discover/:userId/candidates
+ */
+export const getEligibleCandidates = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+
+  try {
+    // First get user profile
+    const userProfile = await prisma.profiles.findUnique({
+      where: { user_id: userId }
     });
 
-    return res.json(users);
+    if (!userProfile) {
+      return res.status(404).json({ message: "User profile not found" });
+    }
+
+    const candidates = await DiscoverService.getEligibleCandidates(userId, userProfile);
+    
+    return res.status(200).json({
+      candidates,
+      count: candidates.length,
+    });
+  } catch (err: any) {
+    if (err.message.includes("User ID is required") ||
+        err.message.includes("User must have at least one gender preference set")) {
+      return res.status(400).json({ message: err.message });
+    }
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * Calculate compatibility score between two users
+ * POST /discover/compatibility
+ * Body: { userId: string, candidateId: string }
+ */
+export const calculateCompatibility = async (req: Request, res: Response) => {
+  const { userId, candidateId } = req.body;
+
+  if (!userId || !candidateId) {
+    return res.status(400).json({ 
+      message: "Both userId and candidateId are required" 
+    });
+  }
+
+  if (userId === candidateId) {
+    return res.status(400).json({ 
+      message: "Cannot calculate compatibility with yourself" 
+    });
+  }
+
+  try {
+    // Get both user profiles
+    const [userProfile, candidateProfile] = await Promise.all([
+      prisma.profiles.findUnique({ where: { user_id: userId } }),
+      prisma.profiles.findUnique({ where: { user_id: candidateId } })
+    ]);
+
+    if (!userProfile) {
+      return res.status(404).json({ message: "User profile not found" });
+    }
+
+    if (!candidateProfile) {
+      return res.status(404).json({ message: "Candidate profile not found" });
+    }
+
+    // Calculate compatibility using existing service function
+    const compatibilityScore = DiscoverService.calculateCompatibilityScore(userProfile, candidateProfile);
+    
+    // Get detailed breakdown
+    const sharedInterests = DiscoverService.getSharedInterests(userProfile.interests, candidateProfile.interests);
+    const sharedInterestsScore = DiscoverService.calculateSharedInterestsScore(userProfile.interests, candidateProfile.interests);
+    const intentScore = DiscoverService.calculateIntentCompatibilityScore(userProfile.intent, candidateProfile.intent);
+    const orientationScore = DiscoverService.calculateOrientationCompatibilityScore(
+      userProfile.sexual_orientation,
+      candidateProfile.sexual_orientation,
+      userProfile.gender,
+      candidateProfile.gender,
+      userProfile.gender_preference,
+      candidateProfile.gender_preference
+    );
+
+    return res.status(200).json({
+      compatibilityScore,
+      breakdown: {
+        sharedInterestsScore: Math.round(sharedInterestsScore * 100),
+        intentCompatibilityScore: Math.round(intentScore * 100),
+        orientationCompatibilityScore: Math.round(orientationScore * 100),
+      },
+      sharedInterests,
+      details: {
+        userAge: DiscoverService.calculateAge(userProfile.birthdate),
+        candidateAge: DiscoverService.calculateAge(candidateProfile.birthdate),
+        ageCompatible: DiscoverService.isWithinAgePreference(
+          DiscoverService.calculateAge(userProfile.birthdate),
+          DiscoverService.calculateAge(candidateProfile.birthdate),
+          userProfile.min_age,
+          userProfile.max_age
+        ),
+      }
+    });
   } catch (err: any) {
     return res.status(500).json({ message: err.message });
   }
 };
 
 /**
- * GET /discover/:userId
- * Returns a single user profile by ID.
+ * Refresh/reset discovery feed for a user
+ * POST /discover/:userId/refresh
  */
-export const getProfile = async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.params;
-    const profile = await DiscoverService.getProfileByUserId(userId);
+export const refreshDiscoverFeed = async (req: Request, res: Response) => {
+  const { userId } = req.params;
 
-    if (!profile) return res.status(404).json({ message: "User not found" });
-    return res.json(profile);
+  try {
+    await DiscoverService.refreshDiscoverFeed(userId);
+    
+    return res.status(200).json({ 
+      message: "Discovery feed refreshed successfully" 
+    });
   } catch (err: any) {
+    if (err.message.includes("User ID is required") ||
+        err.message.includes("User not found")) {
+      return res.status(400).json({ message: err.message });
+    }
     return res.status(500).json({ message: err.message });
   }
 };
