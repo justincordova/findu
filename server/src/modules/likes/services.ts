@@ -26,11 +26,11 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
   const [fromProfile, toProfile] = await Promise.all([
     prisma.profiles.findUnique({
       where: { user_id: data.from_user },
-      select: { university: true, user_id: true }
+      select: { university_id: true, user_id: true }
     }),
     prisma.profiles.findUnique({
       where: { user_id: data.to_user },
-      select: { university: true, user_id: true }
+      select: { university_id: true, user_id: true }
     }),
   ]);
 
@@ -39,7 +39,7 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
   }
 
   // Enforce campus-only matching
-  if (fromProfile.university !== toProfile.university) {
+  if (fromProfile.university_id !== toProfile.university_id) {
     throw new Error('Users must be from the same university');
   }
 
@@ -160,7 +160,7 @@ export const getSentLikes = async (userId: string, limit: number = 50, offset: n
             select: {
               name: true,
               avatar_url: true,
-              university: true,
+              university_id: true,
               bio: true,
               birthdate: true, // For age calculation
             }
@@ -197,7 +197,7 @@ export const getReceivedLikes = async (userId: string, limit: number = 50, offse
             select: {
               name: true,
               avatar_url: true,
-              university: true,
+              university_id: true,
               bio: true,
               birthdate: true, // For age calculation
             }

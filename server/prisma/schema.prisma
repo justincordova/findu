@@ -416,29 +416,31 @@ model matches {
 }
 
 model profiles {
-  user_id            String   @id @db.Uuid
-  name               String   @db.VarChar(100)
+  user_id            String       @id @db.Uuid
+  name               String       @db.VarChar(100)
   avatar_url         String
-  birthdate          DateTime @db.Date
-  gender             String   @db.VarChar(20)
-  pronouns           String   @db.VarChar(20)
+  birthdate          DateTime     @db.Date
+  gender             String       @db.VarChar(20)
+  pronouns           String       @db.VarChar(20)
   bio                String
-  university         String   @db.VarChar(100)
   university_year    Int
-  major              String   @db.VarChar(100)
+  major              String       @db.VarChar(100)
   grad_year          Int
-  interests          String[] @db.VarChar(50)
-  intent             String   @db.VarChar(50)
-  gender_preference  String[] @db.VarChar(20)
-  sexual_orientation String   @db.VarChar(50)
+  interests          String[]
+  intent             String       @db.VarChar(50)
+  gender_preference  String[]
+  sexual_orientation String       @db.VarChar(50)
   min_age            Int
   max_age            Int
-  photos             String[] @default([])
-  created_at         DateTime @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime @default(now()) @db.Timestamptz(6)
-  users              users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  photos             String[]     @default([])
+  created_at         DateTime?    @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?    @default(now()) @db.Timestamptz(6)
+  university_id      String       @db.Uuid
+  campus_id          String?      @db.Uuid
+  campuses           campuses?    @relation(fields: [campus_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  universities       universities @relation(fields: [university_id], references: [id], onUpdate: NoAction)
+  users              users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([university], map: "idx_profiles_university")
   @@schema("public")
 }
 
@@ -457,15 +459,15 @@ model subscriptions {
 }
 
 model universities {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  unitid     BigInt?   @unique
-  name       String
-  city       String?
-  state      String?
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  slug               String               @unique
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  campuses           campuses[]
+  profiles           profiles[]
+  university_domains university_domains[]
 
-  @@unique([name, city, state], map: "universities_name_city_state_unique")
   @@schema("public")
 }
 
@@ -501,6 +503,34 @@ model oauth_clients {
   @@index([client_id])
   @@index([deleted_at])
   @@schema("auth")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model campuses {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  university_id String       @db.Uuid
+  name          String
+  slug          String
+  created_at    DateTime?    @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime?    @default(now()) @db.Timestamptz(6)
+  universities  universities @relation(fields: [university_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles      profiles[]
+
+  @@unique([university_id, slug], map: "campus_unique_per_university")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model university_domains {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  university_id String       @db.Uuid
+  domain        String
+  created_at    DateTime?    @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime?    @default(now()) @db.Timestamptz(6)
+  universities  universities @relation(fields: [university_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([university_id, domain], map: "university_domain_unique")
+  @@schema("public")
 }
 
 enum aal_level {

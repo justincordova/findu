@@ -270,7 +270,7 @@ export const rankCandidatesWithRandomization = (candidates: ProfileWithScore[]):
 
 /**
  * Gets all eligible candidates for a user based on hard filters.
- * Hard filters: same university, age range, gender preference, not already liked/matched/blocked.
+ * Hard filters: same university_id, campus_id, age range, gender preference, not already liked/matched/blocked.
  *
  * @param userId - Current user ID
  * @param userProfile - Current user's profile
@@ -315,11 +315,12 @@ export const getEligibleCandidates = async (userId: string, userProfile: Profile
   // Get precise birthdate range for age filtering using date-fns
   const { minBirthdate, maxBirthdate } = getBirthdateRangeForAge(userProfile.min_age, userProfile.max_age);
 
-  return prisma.profiles.findMany({
+  const profiles = await prisma.profiles.findMany({
     where: {
       // Hard filters - ALL must match
       user_id: { notIn: excludedUserIds },
-      university: userProfile.university, // SAME EXACT UNIVERSITY ONLY - enforced strictly
+      university_id: userProfile.university_id, // SAME EXACT UNIVERSITY ONLY - enforced strictly
+      campus_id: userProfile.campus_id, // SAME CAMPUS if specified
       gender: { in: userProfile.gender_preference }, // Must match gender preference
       birthdate: {
         gte: maxBirthdate, // Born after this date (older than min_age)
@@ -328,19 +329,20 @@ export const getEligibleCandidates = async (userId: string, userProfile: Profile
       // Ensure candidate's age preference includes current user
       min_age: { lte: userAge },
       max_age: { gte: userAge },
-      // Ensure candidate's gender preference includes current user AND is not empty
+      // Ensure candidate's gender preference includes current user
       gender_preference: { 
         has: userProfile.gender,
-        isEmpty: false // Ensure array is not empty
       },
-      // Ensure candidate has interests (protect against null/empty)
-      interests: {
-        isEmpty: false
-      }
     },
     // Get a larger pool to score and rank
     take: 200,
   });
+
+  // Filter out profiles with empty interests or gender_preference after the query
+  return profiles.filter(profile => 
+    profile.interests && profile.interests.length > 0 &&
+    profile.gender_preference && profile.gender_preference.length > 0
+  );
 };
 
 /**
