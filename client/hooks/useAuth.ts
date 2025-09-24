@@ -3,7 +3,7 @@ import { useAuthStore } from "@/store/authStore";
 import * as AuthService from "@/services/authService";
 
 export function useAuth() {
-  const { user, token, isLoggedIn, isLoading } = useAuthStore();
+  const { userId, email, token, isLoggedIn, isLoading } = useAuthStore();
 
   // On mount, restore session and auto-refresh if needed
   useEffect(() => {
@@ -15,7 +15,8 @@ export function useAuth() {
   }, []);
 
   return {
-    user,
+    userId,
+    email,
     token,
     isLoggedIn,
     isLoading,

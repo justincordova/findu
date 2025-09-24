@@ -8,8 +8,7 @@ const ACCESS_TOKEN_EXPIRY = parseInt(process.env.EXPO_PUBLIC_ACCESS_TOKEN_EXPIRY
 const AUTO_REFRESH_THRESHOLD = parseInt(process.env.EXPO_PUBLIC_AUTO_REFRESH_THRESHOLD || "300"); // seconds
 const AUTO_REFRESH_ENABLED = process.env.EXPO_PUBLIC_AUTO_REFRESH_ENABLED === "true";
 
-// ------------------- Helpers -------------------
-
+// Helpers
 async function storeToken(token: string, refreshToken?: string) {
   const expiryTime = Date.now() + ACCESS_TOKEN_EXPIRY * 1000;
   await saveSecureItem("accessToken", token);
@@ -38,14 +37,14 @@ export async function autoRefreshIfNeeded() {
   }
 }
 
-// ------------------- Auth Methods -------------------
-
+// Auth Methods
 export async function login(email: string, password: string) {
-  const { setUserId, setToken, setLoggedIn, setLoading } = useAuthStore.getState();
+  const { setUserId, setEmail, setToken, setLoggedIn, setLoading } = useAuthStore.getState();
   setLoading(true);
 
   try {
     if (!ENABLE_AUTH) {
+      setEmail(email);
       setLoggedIn(true);
       return { success: true };
     }
@@ -57,6 +56,7 @@ export async function login(email: string, password: string) {
       await storeToken(token, res.session.refresh_token);
 
       setUserId(res.user.id);
+      setEmail(res.user.email || email);
       setToken(token);
       setLoggedIn(true);
 
@@ -75,7 +75,7 @@ export async function login(email: string, password: string) {
 }
 
 export async function signup(email: string, password: string) {
-  const { setLoading } = useAuthStore.getState();
+  const { setLoading, setEmail } = useAuthStore.getState();
   setLoading(true);
 
   try {
@@ -86,6 +86,7 @@ export async function signup(email: string, password: string) {
       return { success: false, error: res?.error || "Signup failed" };
     }
 
+    setEmail(email);
     logger.info("AuthService: signup success", { email });
     return { success: true };
   } catch (err) {
@@ -97,7 +98,7 @@ export async function signup(email: string, password: string) {
 }
 
 export async function verifyOTP(email: string, otp: string) {
-  const { setLoading } = useAuthStore.getState();
+  const { setLoading, setEmail } = useAuthStore.getState();
   setLoading(true);
 
   try {
@@ -108,6 +109,7 @@ export async function verifyOTP(email: string, otp: string) {
       return { success: false, error: res?.error || "OTP verification failed" };
     }
 
+    setEmail(res.user.email || email);
     logger.info("AuthService: OTP verified successfully", { userId: res.user.id });
     return { success: true, userId: res.user.id };
   } catch (err) {
@@ -117,7 +119,6 @@ export async function verifyOTP(email: string, otp: string) {
     setLoading(false);
   }
 }
-
 
 export async function logout() {
   const { token, reset, setLoading } = useAuthStore.getState();
@@ -131,7 +132,7 @@ export async function logout() {
     await deleteSecureItem("accessToken");
     await deleteSecureItem("accessTokenExpiry");
     await deleteSecureItem("refreshToken");
-    // Reset clears isloggedin, userId, token
+    // Reset clears isLoggedIn, userId, email, token
     reset();
 
     logger.info("AuthService: logout success");
@@ -143,7 +144,7 @@ export async function logout() {
 }
 
 export async function restoreSession() {
-  const { setUserId, setToken, setLoggedIn, setLoading, reset } = useAuthStore.getState();
+  const { setUserId, setEmail, setToken, setLoggedIn, setLoading, reset } = useAuthStore.getState();
   setLoading(true);
 
   try {
@@ -163,6 +164,7 @@ export async function restoreSession() {
     const res = await AuthAPI.getCurrentUser(token);
     if (res?.success && res.user?.id) {
       setUserId(res.user.id);
+      setEmail(res.user.email || null);
       setToken(token);
       setLoggedIn(true);
       logger.info("AuthService: session restored", { userId: res.user.id });
