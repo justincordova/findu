@@ -13,16 +13,11 @@ function calculateAge(birthdate: string | undefined): number | null {
   try {
     const birth = new Date(birthdate);
     const today = new Date();
-    const age = today.getFullYear() - birth.getFullYear();
+    let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birth.getDate())
-    ) {
-      return age - 1;
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age -= 1;
     }
-
     return age;
   } catch {
     return null;
@@ -38,21 +33,7 @@ export default function HeaderSection() {
   const intent = profile?.intent || "";
   const age = calculateAge(profile?.birthdate);
 
-  // Build display name safely
-  const getDisplayName = (): string => {
-    if (name && age !== null) {
-      return `${name}, ${age}`;
-    }
-    if (name) {
-      return name;
-    }
-    if (age !== null) {
-      return `${age}`;
-    }
-    return "";
-  };
-
-  const displayName = getDisplayName();
+  const displayName = name ? (age !== null ? `${name}, ${age}` : name) : age !== null ? `${age}` : "";
 
   return (
     <View style={styles.container}>
@@ -69,9 +50,7 @@ export default function HeaderSection() {
       )}
 
       {displayName ? <Text style={styles.name}>{displayName}</Text> : null}
-
       {gender ? <Text style={styles.subText}>{gender}</Text> : null}
-
       {intent ? <Text style={styles.subText}>{intent}</Text> : null}
     </View>
   );
@@ -79,10 +58,12 @@ export default function HeaderSection() {
 
 const styles = StyleSheet.create({
   container: {
-    width,
+    width: "100%",
     alignItems: "center",
-    marginTop: 16,
+    justifyContent: "center",
+    marginTop: 24,
     marginBottom: 24,
+    paddingHorizontal: 16,
   },
   avatar: {
     width: AVATAR_SIZE,
@@ -98,6 +79,7 @@ const styles = StyleSheet.create({
   avatarPlaceholderText: {
     color: MUTED,
     fontSize: 14,
+    textAlign: "center",
   },
   name: {
     fontSize: 24,
