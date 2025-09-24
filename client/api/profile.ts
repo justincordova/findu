@@ -2,12 +2,25 @@ import axios from "axios";
 import { Profile } from "@/types/Profile";
 import { useAuthStore } from "@/store/authStore";
 
-const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/profile`;
+const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/profiles`;
 
 const getAuthHeaders = () => {
   const token = useAuthStore.getState().token;
   return { Authorization: token ? `Bearer ${token}` : "" };
 };
+
+export interface DomainMapResponse {
+  university: {
+    id: string;
+    name: string;
+    slug?: string;
+  };
+  campuses: {
+    id: string;
+    name: string;
+    slug?: string;
+  }[];
+}
 
 export const profileApi = {
   create: async (data: Profile) => {
@@ -18,7 +31,9 @@ export const profileApi = {
 
   update: async (userId: string, data: Partial<Profile>) => {
     const headers = getAuthHeaders();
-    const response = await axios.patch(`${API_BASE}/${userId}`, data, { headers });
+    const response = await axios.patch(`${API_BASE}/${userId}`, data, {
+      headers,
+    });
     return response.data;
   },
 
@@ -37,6 +52,16 @@ export const profileApi = {
   me: async () => {
     const headers = getAuthHeaders();
     const response = await axios.get(`${API_BASE}/me`, { headers });
+    return response.data;
+  },
+
+  domainMap: async (email: string): Promise<DomainMapResponse> => {
+    const headers = getAuthHeaders();
+    const response = await axios.post<DomainMapResponse>(
+      `${API_BASE}/domain-map`,
+      { email },
+      { headers }
+    );
     return response.data;
   },
 };
