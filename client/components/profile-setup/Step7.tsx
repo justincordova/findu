@@ -15,9 +15,12 @@ import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
 import { useProfileSetupStore } from "../../store/profileStore";
 import { handleSubmitProfile } from "./handleSubmitProfile";
 import { Profile } from "@/types/Profile";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "../../store/authStore";
 
-type ProfileData = Partial<Profile>;
+type ProfileData = Partial<Profile> & {
+  university_name?: string;
+  campus_name?: string;
+};
 
 /** Format birthdate into readable string */
 function formatBirthdate(birthdate: string | Date | undefined) {
@@ -28,6 +31,14 @@ function formatBirthdate(birthdate: string | Date | undefined) {
     month: "long",
     day: "numeric",
   });
+}
+
+/** Format labels to remove underscores and capitalize */
+function formatLabel(field: string): string {
+  return field
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 export default function Step7({
@@ -59,6 +70,11 @@ export default function Step7({
     bio: "step5",
     avatar_url: "step5",
     photos: "step6",
+    university_name: "step2",
+    campus_name: "step2",
+    major: "step2",
+    university_year: "step2",
+    grad_year: "step2",
   };
 
   const goBackToStep = useCallback(
@@ -71,11 +87,11 @@ export default function Step7({
   const renderValue = useCallback(
     (field: keyof ProfileData) => {
       if (field === "birthdate") return formatBirthdate(profileData?.birthdate);
-      if (field === "university_id") return profileData?.university_id || "Not set";
+      if (field === "university_name") return profileData?.university_name || "Not set";
+      if (field === "campus_name") return profileData?.campus_name || "Not set";
       const value = profileData?.[field];
       if (Array.isArray(value)) return value.join(", ");
-      if (value === null || value === undefined || value === "")
-        return "Not set";
+      if (value === null || value === undefined || value === "") return "Not set";
       return String(value);
     },
     [profileData]
@@ -99,10 +115,7 @@ export default function Step7({
         return;
       }
 
-      // Submit profile using store
       await handleSubmitProfile(userId);
-
-      // Redirect after success
       router.replace("/home/(tabs)/discover");
     } catch (err) {
       console.error("Error submitting profile:", err);
@@ -124,6 +137,7 @@ export default function Step7({
       </View>
 
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+        {/* Basic Info */}
         <Text style={styles.sectionTitle}>Basic Info</Text>
         {["name", "birthdate", "gender", "pronouns"].map((field) => (
           <TouchableOpacity
@@ -131,48 +145,48 @@ export default function Step7({
             style={styles.infoRow}
             onPress={() => goBackToStep(fieldToStep[field])}
           >
-            <Text style={styles.infoLabel}>
-              {field.charAt(0).toUpperCase() + field.slice(1)}:
-            </Text>
+            <Text style={styles.infoLabel}>{formatLabel(field)}:</Text>
             <Text style={styles.infoValue}>
               {renderValue(field as keyof ProfileData)}
             </Text>
           </TouchableOpacity>
         ))}
 
-        <Text style={styles.sectionTitle}>University</Text>
-        <TouchableOpacity
-          style={styles.infoRow}
-          onPress={() => goBackToStep("step2")}
-        >
-          <Text style={styles.infoLabel}>University:</Text>
-          <Text style={styles.infoValue}>
-            {profileData?.university_id || "Not set"}
-          </Text>
-        </TouchableOpacity>
+        {/* Academic Info */}
+        <Text style={styles.sectionTitle}>Academic Info</Text>
+        {["university_name", "campus_name", "major", "university_year", "grad_year"].map(
+          (field) => (
+            <TouchableOpacity
+              key={field}
+              style={styles.infoRow}
+              onPress={() => goBackToStep(fieldToStep[field])}
+            >
+              <Text style={styles.infoLabel}>{formatLabel(field)}:</Text>
+              <Text style={styles.infoValue}>
+                {renderValue(field as keyof ProfileData)}
+              </Text>
+            </TouchableOpacity>
+          )
+        )}
 
+        {/* Preferences */}
         <Text style={styles.sectionTitle}>Preferences</Text>
-        {[
-          "intent",
-          "min_age",
-          "max_age",
-          "sexual_orientation",
-          "gender_preference",
-        ].map((field) => (
-          <TouchableOpacity
-            key={field}
-            style={styles.infoRow}
-            onPress={() => goBackToStep(fieldToStep[field])}
-          >
-            <Text style={styles.infoLabel}>
-              {field.charAt(0).toUpperCase() + field.slice(1)}:
-            </Text>
-            <Text style={styles.infoValue}>
-              {renderValue(field as keyof ProfileData)}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {["intent", "min_age", "max_age", "sexual_orientation", "gender_preference"].map(
+          (field) => (
+            <TouchableOpacity
+              key={field}
+              style={styles.infoRow}
+              onPress={() => goBackToStep(fieldToStep[field])}
+            >
+              <Text style={styles.infoLabel}>{formatLabel(field)}:</Text>
+              <Text style={styles.infoValue}>
+                {renderValue(field as keyof ProfileData)}
+              </Text>
+            </TouchableOpacity>
+          )
+        )}
 
+        {/* Bio */}
         <Text style={styles.sectionTitle}>Bio</Text>
         <TouchableOpacity
           style={styles.infoRow}
@@ -182,6 +196,7 @@ export default function Step7({
           <Text style={styles.infoValue}>{profileData?.bio || "Not set"}</Text>
         </TouchableOpacity>
 
+        {/* Avatar */}
         <Text style={styles.sectionTitle}>Profile Picture</Text>
         <TouchableOpacity
           style={styles.infoRow}
@@ -197,6 +212,7 @@ export default function Step7({
           )}
         </TouchableOpacity>
 
+        {/* Photos */}
         <Text style={styles.sectionTitle}>Photos</Text>
         <ScrollView
           horizontal
@@ -215,13 +231,11 @@ export default function Step7({
         </ScrollView>
       </ScrollView>
 
+      {/* Finish Button */}
       <TouchableOpacity
         onPress={handleFinish}
         disabled={submitting || !isValid}
-        style={[
-          styles.button,
-          (!isValid || submitting) && styles.buttonDisabled,
-        ]}
+        style={[styles.button, (!isValid || submitting) && styles.buttonDisabled]}
       >
         {submitting ? (
           <ActivityIndicator color="white" />

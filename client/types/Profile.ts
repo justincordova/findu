@@ -19,3 +19,9 @@ export interface Profile {
   max_age: number;
   photos: string[];
 }
+
+// For display purposes of uni name
+export interface ProfileSetupData extends Partial<Profile> {
+  university_name?: string;
+  campus_name?: string;
+}

@@ -5,14 +5,17 @@ import {
   StyleSheet,
   Dimensions,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
+import { Ionicons } from "@expo/vector-icons";
 import { DARK, MUTED, BACKGROUND } from "../../constants/theme";
 import { useProfileSetupStore } from "../../store/profileStore";
 import { useAuthStore } from "../../store/authStore";
 import { profileApi } from "@/api/profile";
 
 interface Step2Props {
+  onBack?: () => void;
   onValidityChange?: (isValid: boolean) => void;
 }
 
@@ -24,10 +27,12 @@ type DropdownKey =
   | "campus_id"
   | null;
 
-export default function Step2({ onValidityChange }: Step2Props) {
+export default function Step2({ onBack, onValidityChange }: Step2Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setField = useProfileSetupStore((state) => state.setField);
   const email = useAuthStore((state) => state.email);
+  const { data } = useProfileSetupStore();
+  const universityName = data?.university_name;
 
   const [activeDropdown, setActiveDropdown] = useState<DropdownKey>(null);
   const [campusItems, setCampusItems] = useState<ItemType<string>[]>([]);
@@ -49,8 +54,6 @@ export default function Step2({ onValidityChange }: Step2Props) {
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
-  const [universityName, setUniversityName] = useState<string>("");
-
   // Fetch university/campuses using auth email
   useEffect(() => {
     const fetchUniversityData = async () => {
@@ -59,23 +62,24 @@ export default function Step2({ onValidityChange }: Step2Props) {
       try {
         setLoadingCampus(true);
 
-        // Call the typed API helper instead of axios directly
         const { university, campuses } = await profileApi.domainMap(email);
 
-        // Store the university id for backend
+        // Store the university id and name
         setField("university_id", university.id);
-
-        // Keep name locally for display only
-        setUniversityName(university.name);
+        setField("university_name", university.name);
 
         if (campuses.length > 0) {
           // Prepare items for the dropdown
           setCampusItems(campuses.map((c) => ({ label: c.name, value: c.id })));
 
           // Set default campus if not already selected
+          const defaultCampus = campuses[0];
           if (!profileData?.campus_id) {
-            setField("campus_id", campuses[0].id);
+            setField("campus_id", defaultCampus.id);
           }
+
+          // Store campus name in the store
+          setField("campus_name", defaultCampus.name);
         }
       } catch (err) {
         console.error("Error fetching university data:", err);
@@ -121,6 +125,12 @@ export default function Step2({ onValidityChange }: Step2Props) {
 
   return (
     <View style={styles.container}>
+      {onBack && (
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={DARK} />
+        </TouchableOpacity>
+      )}
+
       <Text style={styles.title}>Education</Text>
       <Text style={styles.subtitle}>
         Tell us about your academic background
@@ -280,6 +290,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     backgroundColor: BACKGROUND,
   },
+  backButton: { marginBottom: 24 },
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -317,7 +328,7 @@ const styles = StyleSheet.create({
   universityDisplay: {
     paddingVertical: 14,
     paddingHorizontal: 20,
-    backgroundColor: "#eef2f5", // softer background
+    backgroundColor: "#eef2f5",
     borderRadius: 16,
     borderColor: "#d1d5db",
     borderWidth: 1,
@@ -326,7 +337,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2, // for Android shadow
+    elevation: 2,
   },
   universityText: {
     fontSize: 16,
