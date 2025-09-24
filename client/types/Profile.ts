@@ -6,7 +6,8 @@ export interface Profile {
   gender: string;
   pronouns: string;
   bio: string;
-  university: string;
+  university_id: string;
+  campus_id: string | null;
   university_year: number;
   major: string;
   grad_year: number;
