@@ -26,3 +26,10 @@ export const validateUpdateProfile = [
   body("university_year").isInt().optional(),
   body("major").isString().optional(),
 ];
+
+export const validateDomainMap = [
+  body("email")
+    .optional()
+    .isEmail()
+    .withMessage("If provided, email must be valid"),
+];

@@ -78,3 +78,23 @@ export const getMyProfileController = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch profile" });
   }
 };
+/**
+ * Map email domain to university and campuses
+ */
+
+export const domainMapController = async (req: Request, res: Response) => {
+  try {
+    const email = (req as any).user?.email || req.body.email;
+
+    if (!email) return res.status(400).json({ error: "Email is required" });
+
+    const result = await profileService.resolveUniversityAndCampuses(email);
+
+    if (!result) return res.status(404).json({ error: "No university found for this email domain" });
+
+    res.json(result);
+  } catch (error) {
+    console.error("Error mapping domain:", error);
+    res.status(500).json({ error: "Failed to map domain" });
+  }
+};

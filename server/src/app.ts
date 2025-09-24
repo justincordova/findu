@@ -53,7 +53,7 @@ if (!isDev) {
 // Application Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/storage", storageRoutes);
-app.use("/api/profile", profileRoutes);
+app.use("/api/profiles", profileRoutes);
 app.use("/api/likes", likesRoutes);
 app.use("/api/matches", matchesRoutes);
 app.use("/api/discover", discoverRoutes);

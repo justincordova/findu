@@ -31,4 +31,12 @@ router.patch(
 // Delete a user's profile by ID
 router.delete("/:userId", profileControllers.deleteProfileController);
 
+// Map email domain → university + campuses
+router.post(
+  "/domain-map",
+  profileValidators.validateDomainMap,
+  profileControllers.domainMapController
+);
+
+
 export default router;
