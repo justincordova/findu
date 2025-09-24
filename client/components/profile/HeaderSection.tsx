@@ -1,10 +1,9 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import { View, Text, Image, StyleSheet } from "react-native";
 import { DARK, MUTED } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
 
 const AVATAR_SIZE = 120;
-const { width } = Dimensions.get("window");
 
 /** Calculate age from birthdate */
 function calculateAge(birthdate: string | undefined): number | null {
