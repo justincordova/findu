@@ -30,7 +30,6 @@ function formatBirthdate(birthdate: string | Date | undefined) {
   });
 }
 
-/** ...imports remain the same... */
 export default function Step7({
   onBack,
   onNext,
@@ -42,10 +41,7 @@ export default function Step7({
 }) {
   const authState = useAuthStore.getState();
   const rawProfileData = useProfileSetupStore((state) => state.data);
-  const profileData: ProfileData = useMemo(
-    () => rawProfileData ?? {},
-    [rawProfileData]
-  );
+  const profileData: ProfileData = useMemo(() => rawProfileData ?? {}, [rawProfileData]);
 
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
@@ -75,6 +71,7 @@ export default function Step7({
   const renderValue = useCallback(
     (field: keyof ProfileData) => {
       if (field === "birthdate") return formatBirthdate(profileData?.birthdate);
+      if (field === "university_id") return profileData?.university_id || "Not set";
       const value = profileData?.[field];
       if (Array.isArray(value)) return value.join(", ");
       if (value === null || value === undefined || value === "")
@@ -93,7 +90,6 @@ export default function Step7({
   const handleFinish = useCallback(async () => {
     setSubmitting(true);
     try {
-      // ✅ Auth check using store
       const userId = authState.userId;
       const token = authState.token;
 
@@ -143,6 +139,17 @@ export default function Step7({
             </Text>
           </TouchableOpacity>
         ))}
+
+        <Text style={styles.sectionTitle}>University</Text>
+        <TouchableOpacity
+          style={styles.infoRow}
+          onPress={() => goBackToStep("step2")}
+        >
+          <Text style={styles.infoLabel}>University:</Text>
+          <Text style={styles.infoValue}>
+            {profileData?.university_id || "Not set"}
+          </Text>
+        </TouchableOpacity>
 
         <Text style={styles.sectionTitle}>Preferences</Text>
         {[

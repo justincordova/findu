@@ -47,7 +47,9 @@ export async function handleSubmitProfile(userId?: string) {
       gender: profileData.gender ?? "",
       pronouns: profileData.pronouns ?? "",
       bio: profileData.bio ?? "",
-      university: profileData.university ?? "",
+      // Store university name in university_id
+      university_id: profileData.university_id ?? "",
+      campus_id: profileData.campus_id ?? null,
       university_year: profileData.university_year ?? 0,
       major: profileData.major ?? "",
       grad_year: Number(profileData.grad_year) || 0,
