@@ -1,8 +1,8 @@
-# FindU - College Dating App MVP
+# FindU – College Dating & Social Discovery App
 
 ## **Project Overview**
 
-**FindU** is a mobile-first dating app exclusively for college students. Designed for authenticity and safety, it connects users based on their campus, interests, and goals—without the noise of generic dating apps.
+**FindU** is a mobile-first social discovery and dating app built exclusively for college students. Focused on authenticity and safety, it helps students connect through their campus community, shared interests, and personal goals without the distractions of generic dating platforms.
 
 ### **Core Mission**
 
@@ -19,6 +19,7 @@
 | **Backend**          | Node.js + Express     | API server                       |
 | **Authentication**   | Supabase Auth         | Email verification & magic links |
 | **Database**         | Supabase (PostgreSQL) | Primary data storage             |
+| **Cache / Queue**    | Redis                 | Caching, sessions, job queues    |
 | **Payments**         | Stripe                | Subscriptions, boosts, tips      |
 | **File Storage**     | Supabase Storage      | Profile pictures, chat images    |
 | **Hosting**          | Render                | Backend deployment               |
@@ -68,25 +69,12 @@
   - Campus engagement metrics
 
 ---
-
-## **Database Schema**
-
-### **Key Relationships**
-
-- Users can have one profile
-- Users can like multiple other users
-- Matches are created when likes are mutual
-- Chats are linked to matches
-- Blocks prevent interactions between users
-
----
-
 ## **User Journey**
 
 ### **1. Onboarding**
 
 ```
-Download App → Email Verification → Profile Setup → Campus Selection → Ready to Discover
+Download App → Sign Up via OTP → Login → Profile Setup → Campus Selection → Discover Matches
 ```
 
 ### **2. Discovery**
@@ -109,24 +97,14 @@ Report User → Admin Review → Action Taken → Community Guidelines Enforced
 
 ---
 
-## **Monetization Strategy**
+## **Monetization**
 
 | Revenue Stream            | Description                                      | Status         |
 | ------------------------- | ------------------------------------------------ | -------------- |
-| **Premium Subscriptions** | Bachelors ($4.99), Masters ($9.99), PhD ($14.99) | 🚧 In Progress |
+| **Premium Subscriptions** | Bachelors ($4.99), Masters ($9.99), PhD ($14.99) | 📋 Planned     |
 | **Campus Boosts**         | Pay to increase visibility to nearby users       | 📋 Planned     |
 | **SuperLikes**            | Stand out with premium like feature              | 📋 Planned     |
 | **Tips/Donations**        | Support the platform development                 | 📋 Planned     |
-
----
-
-## **Key Differentiators**
-
-1. **Campus-Exclusive** - Only verified college students
-2. **Safety-First** - Built-in moderation and reporting
-3. **Intent-Based** - Clear relationship goals and expectations
-4. **Community-Driven** - Campus-specific features and events
-5. **No Bots/Catfishing** - Email verification and photo requirements
 
 ---
 
@@ -141,7 +119,7 @@ See [SETUP.md](./SETUP.md) for detailed setup instructions.
 ---
 
 ## **Contact & Support**
-
+- **Email**: findu.team@gmail.com
 - **Project Status**: Active Development
 - **Platform**: iOS & Android
-- **Target Audience**: College students (18-25)
+- **Target Audience**: College students (18-26)
