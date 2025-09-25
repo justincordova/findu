@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   View,
@@ -8,6 +7,7 @@ import {
   StatusBar,
   Text,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { profileApi } from "@/api/profile";
 import { useProfileSetupStore } from "@/store/profileStore";
 import logger from "@/config/logger";
