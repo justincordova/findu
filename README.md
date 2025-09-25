@@ -30,22 +30,22 @@
 
 ### **App Screenshots**
 
-<div style="display: flex; flex-wrap: wrap; gap: 16px;">
-
-<div style="flex: 0 0 auto; text-align: center;">
-  <img src="./docs/images/startup.png" alt="Startup Page" width="200" />
-  <div>Startup Page</div>
-</div>
-
-<div style="flex: 0 0 auto; text-align: center;">
-  <img src="./docs/images/login.png" alt="Login Page" width="200" />
-  <div>Login Page</div>
-</div>
-
-<div style="flex: 0 0 auto; text-align: center;">
-  <img src="./docs/images/signup.png" alt="Signup Page" width="200" />
-  <div>Signup Page</div>
-</div>
+<table>
+  <tr>
+    <td align="center">
+      <img src="./docs/images/startup.png" alt="Startup Page" width="200"/><br/>
+      Startup Page
+    </td>
+    <td align="center">
+      <img src="./docs/images/login.png" alt="Login Page" width="200"/><br/>
+      Login Page
+    </td>
+    <td align="center">
+      <img src="./docs/images/signup.png" alt="Signup Page" width="200"/><br/>
+      Signup Page
+    </td>
+  </tr>
+</table>
 
 <!-- Add more images below as needed -->
 <!--
