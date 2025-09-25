@@ -26,6 +26,39 @@
 
 ---
 
+## **Preview Images**
+
+### **App Screenshots**
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px;">
+
+<div style="flex: 0 0 auto; text-align: center;">
+  <img src="./docs/images/startup.png" alt="Startup Page" width="200" />
+  <div>Startup Page</div>
+</div>
+
+<div style="flex: 0 0 auto; text-align: center;">
+  <img src="./docs/images/login.png" alt="Login Page" width="200" />
+  <div>Login Page</div>
+</div>
+
+<div style="flex: 0 0 auto; text-align: center;">
+  <img src="./docs/images/signup.png" alt="Signup Page" width="200" />
+  <div>Signup Page</div>
+</div>
+
+<!-- Add more images below as needed -->
+<!--
+<div style="flex: 0 0 auto; text-align: center;">
+  <img src="./docs/images/profile.png" alt="Profile Page" width="200" />
+  <div>Profile Page</div>
+</div>
+-->
+
+</div>
+
+---
+
 ## **Features**
 
 - **Authentication System**
@@ -69,6 +102,7 @@
   - Campus engagement metrics
 
 ---
+
 ## **User Journey**
 
 ### **1. Onboarding**
@@ -99,12 +133,12 @@ Report User → Admin Review → Action Taken → Community Guidelines Enforced
 
 ## **Monetization**
 
-| Revenue Stream            | Description                                      | Status         |
-| ------------------------- | ------------------------------------------------ | -------------- |
-| **Premium Subscriptions** | Bachelors ($4.99), Masters ($9.99), PhD ($14.99) | 📋 Planned     |
-| **Campus Boosts**         | Pay to increase visibility to nearby users       | 📋 Planned     |
-| **SuperLikes**            | Stand out with premium like feature              | 📋 Planned     |
-| **Tips/Donations**        | Support the platform development                 | 📋 Planned     |
+| Revenue Stream            | Description                                      | Status     |
+| ------------------------- | ------------------------------------------------ | ---------- |
+| **Premium Subscriptions** | Bachelors ($4.99), Masters ($9.99), PhD ($14.99) | Planned |
+| **Campus Boosts**         | Pay to increase visibility to nearby users       | Planned |
+| **SuperLikes**            | Stand out with premium like feature              | Planned |
+| **Tips/Donations**        | Support the platform development                 | Planned |
 
 ---
 
@@ -119,6 +153,7 @@ See [SETUP.md](./SETUP.md) for detailed setup instructions.
 ---
 
 ## **Contact & Support**
+
 - **Email**: findu.team@gmail.com
 - **Project Status**: Active Development
 - **Platform**: iOS & Android
