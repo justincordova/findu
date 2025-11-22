@@ -1,12 +1,21 @@
 import { AuthAPI } from "@/api/auth";
 import { useAuthStore } from "@/store/authStore";
-import { saveSecureItem, getSecureItem, deleteSecureItem } from "@/storage/secure";
+import {
+  saveSecureItem,
+  getSecureItem,
+  deleteSecureItem,
+} from "@/storage/secure";
 import logger from "@/config/logger";
 
 const ENABLE_AUTH = process.env.EXPO_PUBLIC_ENABLE_AUTH === "true";
-const ACCESS_TOKEN_EXPIRY = parseInt(process.env.EXPO_PUBLIC_ACCESS_TOKEN_EXPIRY || "3600"); // seconds
-const AUTO_REFRESH_THRESHOLD = parseInt(process.env.EXPO_PUBLIC_AUTO_REFRESH_THRESHOLD || "300"); // seconds
-const AUTO_REFRESH_ENABLED = process.env.EXPO_PUBLIC_AUTO_REFRESH_ENABLED === "true";
+const ACCESS_TOKEN_EXPIRY = parseInt(
+  process.env.EXPO_PUBLIC_ACCESS_TOKEN_EXPIRY || "3600"
+); // seconds
+const AUTO_REFRESH_THRESHOLD = parseInt(
+  process.env.EXPO_PUBLIC_AUTO_REFRESH_THRESHOLD || "300"
+); // seconds
+const AUTO_REFRESH_ENABLED =
+  process.env.EXPO_PUBLIC_AUTO_REFRESH_ENABLED === "true";
 
 // Helpers
 async function storeToken(token: string, refreshToken?: string) {
@@ -39,7 +48,8 @@ export async function autoRefreshIfNeeded() {
 
 // Auth Methods
 export async function login(email: string, password: string) {
-  const { setUserId, setEmail, setToken, setLoggedIn, setLoading } = useAuthStore.getState();
+  const { setUserId, setEmail, setToken, setLoggedIn, setLoading } =
+    useAuthStore.getState();
   setLoading(true);
 
   try {
@@ -52,8 +62,8 @@ export async function login(email: string, password: string) {
     const res = await AuthAPI.login(email, password);
 
     if (res?.success && res.session?.access_token && res.user?.id) {
-      const token = res.session.access_token;
-      await storeToken(token, res.session.refresh_token);
+      const { access_token: token, refresh_token } = res.session;
+      await storeToken(token, refresh_token);
 
       setUserId(res.user.id);
       setEmail(res.user.email || email);
@@ -110,7 +120,9 @@ export async function verifyOTP(email: string, otp: string) {
     }
 
     setEmail(res.user.email || email);
-    logger.info("AuthService: OTP verified successfully", { userId: res.user.id });
+    logger.info("AuthService: OTP verified successfully", {
+      userId: res.user.id,
+    });
     return { success: true, userId: res.user.id };
   } catch (err) {
     logger.error("AuthService: verifyOTP error", { err });
@@ -144,7 +156,8 @@ export async function logout() {
 }
 
 export async function restoreSession() {
-  const { setUserId, setEmail, setToken, setLoggedIn, setLoading, reset } = useAuthStore.getState();
+  const { setUserId, setEmail, setToken, setLoggedIn, setLoading, reset } =
+    useAuthStore.getState();
   setLoading(true);
 
   try {
@@ -190,8 +203,8 @@ export async function refreshSession(refreshToken: string) {
   try {
     const res = await AuthAPI.refreshSession(refreshToken);
     if (res?.success && res.session?.access_token) {
-      const token = res.session.access_token;
-      await storeToken(token, res.session.refresh_token);
+      const { access_token: token, refresh_token } = res.session;
+      await storeToken(token, refresh_token);
       setToken(token);
       setLoggedIn(true);
       logger.info("AuthService: session refreshed");

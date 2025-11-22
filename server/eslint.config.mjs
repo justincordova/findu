@@ -4,12 +4,7 @@ import tsPlugin from "@typescript-eslint/eslint-plugin";
 
 export default [
   {
-    ignores: [
-      "node_modules",
-      "dist",
-      "build",
-      "src/generated/**", // ⬅️ ignore Prisma's generated client/runtime
-    ],
+    ignores: ["node_modules", "dist", "build", "coverage", "src/generated/**"],
   },
   {
     files: ["**/*.ts", "**/*.tsx"],
