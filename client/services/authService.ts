@@ -7,19 +7,7 @@ import {
 } from "@/storage/secure";
 import logger from "@/config/logger";
 
-<<<<<<< HEAD
-const ENABLE_AUTH = process.env.EXPO_PUBLIC_ENABLE_AUTH === "true";
-const ACCESS_TOKEN_EXPIRY = parseInt(
-  process.env.EXPO_PUBLIC_ACCESS_TOKEN_EXPIRY || "3600"
-); // seconds
-const AUTO_REFRESH_THRESHOLD = parseInt(
-  process.env.EXPO_PUBLIC_AUTO_REFRESH_THRESHOLD || "300"
-); // seconds
-const AUTO_REFRESH_ENABLED =
-  process.env.EXPO_PUBLIC_AUTO_REFRESH_ENABLED === "true";
-=======
 const ACCESS_TOKEN_KEY = "accessToken";
->>>>>>> 22dc5cfc6311268736584268451cfa92ab4d02b7
 
 export async function login(email: string, password: string) {
   const { setUserId, setEmail, setToken, setLoggedIn, setLoading } =
@@ -29,17 +17,9 @@ export async function login(email: string, password: string) {
   try {
     const res = await AuthAPI.signin(email, password);
 
-<<<<<<< HEAD
-    const res = await AuthAPI.login(email, password);
-
-    if (res?.success && res.session?.access_token && res.user?.id) {
-      const { access_token: token, refresh_token } = res.session;
-      await storeToken(token, refresh_token);
-=======
     if (res?.success && res.token && res.user?.id) {
       const token = res.token;
       await saveSecureItem(ACCESS_TOKEN_KEY, token);
->>>>>>> 22dc5cfc6311268736584268451cfa92ab4d02b7
 
       setUserId(res.user.id);
       setEmail(res.user.email || email);
@@ -118,36 +98,7 @@ export async function verifyAndSignup(
   }
 }
 
-<<<<<<< HEAD
-export async function verifyOTP(email: string, otp: string) {
-  const { setLoading, setEmail } = useAuthStore.getState();
-  setLoading(true);
-
-  try {
-    const res = await AuthAPI.verifyOTP(email, otp);
-
-    if (!res?.success || !res.user?.id) {
-      logger.warn("AuthService: verifyOTP failed", { error: res?.error });
-      return { success: false, error: res?.error || "OTP verification failed" };
-    }
-
-    setEmail(res.user.email || email);
-    logger.info("AuthService: OTP verified successfully", {
-      userId: res.user.id,
-    });
-    return { success: true, userId: res.user.id };
-  } catch (err) {
-    logger.error("AuthService: verifyOTP error", { err });
-    return { success: false, error: "OTP verification failed" };
-  } finally {
-    setLoading(false);
-  }
-}
-
-export async function logout() {
-=======
 export async function signOut() {
->>>>>>> 22dc5cfc6311268736584268451cfa92ab4d02b7
   const { token, reset, setLoading } = useAuthStore.getState();
   setLoading(true);
 
@@ -213,33 +164,7 @@ export async function restoreSession() {
     }
   } catch (err) {
     logger.error("AuthService: restore session error", { err });
-<<<<<<< HEAD
-  } finally {
-    setLoading(false);
-  }
-}
-
-export async function refreshSession(refreshToken: string) {
-  const { setToken, setLoggedIn, setLoading } = useAuthStore.getState();
-  if (!ENABLE_AUTH) return;
-
-  setLoading(true);
-  try {
-    const res = await AuthAPI.refreshSession(refreshToken);
-    if (res?.success && res.session?.access_token) {
-      const { access_token: token, refresh_token } = res.session;
-      await storeToken(token, refresh_token);
-      setToken(token);
-      setLoggedIn(true);
-      logger.info("AuthService: session refreshed");
-    } else {
-      logger.warn("AuthService: refresh failed", { error: res?.error });
-    }
-  } catch (err) {
-    logger.error("AuthService: refresh error", { err });
-=======
     reset();
->>>>>>> 22dc5cfc6311268736584268451cfa92ab4d02b7
   } finally {
     setLoading(false);
   }

@@ -40,10 +40,7 @@ export const AuthAPI = {
 
   // Get current user info using a token
   getMe: async (token: string) => {
-    // This endpoint doesn't exist yet on the backend,
-    // but we'll add it. For now, this is a placeholder.
-    // The main Better Auth handler might expose a /session endpoint we can use.
-    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/auth/session`, {
+    const res = await fetch(`${API_BASE}/session`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return handleResponse(res);

@@ -59,6 +59,24 @@ app.use("/api/likes", likesRoutes);
 app.use("/api/matches", matchesRoutes);
 app.use("/api/discover", discoverRoutes);
 
+// Root Route
+// Simple endpoint to indicate this is an API server
+app.get("/", (_req: Request, res: Response) => {
+  res.status(200).json({
+    message: "Findu API Server",
+    version: "1.0.0",
+    endpoints: {
+      health: "/health",
+      auth: "/api/auth",
+      storage: "/api/storage",
+      profiles: "/api/profiles",
+      likes: "/api/likes",
+      matches: "/api/matches",
+      discover: "/api/discover",
+    },
+  });
+});
+
 // Health Check Route
 // Simple endpoint to verify server status
 app.get("/health", (_req: Request, res: Response) => {
