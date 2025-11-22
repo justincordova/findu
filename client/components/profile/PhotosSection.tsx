@@ -1,14 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
-  FlatList,
   Image,
   StyleSheet,
   Dimensions,
   TouchableOpacity,
   Modal,
   Alert,
+  FlatList,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useProfileSetupStore } from "@/store/profileStore";
@@ -16,8 +16,11 @@ import { useAuthStore } from "@/store/authStore";
 import { updatePhoto } from "@/services/uploadService";
 import logger from "@/config/logger";
 
-const { width, height } = Dimensions.get("window");
-const IMAGE_SIZE = width * 0.8;
+const { width } = Dimensions.get("window");
+const PADDING = 16;
+const GAP = 12;
+const PHOTO_WIDTH = (width - PADDING * 2 - GAP) / 2;
+const PHOTO_HEIGHT = PHOTO_WIDTH * 1.25; // 4:5 aspect ratio
 
 export default function PhotosSection() {
   const { data: profile } = useProfileSetupStore();
@@ -26,6 +29,7 @@ export default function PhotosSection() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
 
   const openModal = (index: number) => {
     setCurrentIndex(index);
@@ -35,6 +39,18 @@ export default function PhotosSection() {
   const closeModal = () => {
     setModalVisible(false);
   };
+
+  useEffect(() => {
+    if (modalVisible && flatListRef.current) {
+      // Scroll to the current index when modal opens
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index: currentIndex,
+          animated: false,
+        });
+      }, 100);
+    }
+  }, [modalVisible, currentIndex]);
 
   const handleReplacePhoto = async () => {
     if (!userId) {
@@ -71,30 +87,6 @@ export default function PhotosSection() {
     }
   };
 
-  const renderPhotoItem = ({
-    item,
-    index,
-  }: {
-    item: string;
-    index: number;
-  }) => (
-    <TouchableOpacity
-      onPress={() => openModal(index)}
-      activeOpacity={0.8}
-      style={styles.photoContainer}
-    >
-      <Image source={{ uri: item }} style={styles.photo} resizeMode="cover" />
-    </TouchableOpacity>
-  );
-
-  const renderModalPhoto = ({ item }: { item: string }) => (
-    <Image
-      source={{ uri: item }}
-      style={styles.fullscreenImage}
-      resizeMode="contain"
-    />
-  );
-
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>No photos added</Text>
@@ -105,35 +97,75 @@ export default function PhotosSection() {
     return renderEmptyState();
   }
 
+  // Create a 2x3 grid (6 photos max)
+  const renderGrid = () => {
+    const rows = [];
+    for (let i = 0; i < photos.length; i += 2) {
+      const rowPhotos = photos.slice(i, i + 2);
+      rows.push(
+        <View key={i} style={styles.row}>
+          {rowPhotos.map((photo, idx) => {
+            const photoIndex = i + idx;
+            return (
+              <TouchableOpacity
+                key={photoIndex}
+                onPress={() => openModal(photoIndex)}
+                activeOpacity={0.8}
+                style={styles.photoContainer}
+              >
+                <Image
+                  source={{ uri: photo }}
+                  style={styles.photo}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            );
+          })}
+          {/* Fill empty space if odd number of photos in last row */}
+          {rowPhotos.length === 1 && <View style={styles.photoContainer} />}
+        </View>
+      );
+    }
+    return rows;
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Photos</Text>
 
-      <FlatList
-        data={photos}
-        keyExtractor={(item, index) => `photo-${index}`}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
-        renderItem={renderPhotoItem}
-        snapToInterval={IMAGE_SIZE + 16}
-        decelerationRate="fast"
-      />
+      <View style={styles.gridContainer}>{renderGrid()}</View>
 
       <Modal visible={modalVisible} transparent={true} animationType="fade">
         <View style={styles.modalBackground}>
           <FlatList
+            ref={flatListRef}
             data={photos}
             horizontal
             pagingEnabled
-            initialScrollIndex={currentIndex}
+            showsHorizontalScrollIndicator={false}
             keyExtractor={(item, index) => `modal-photo-${index}`}
-            renderItem={renderModalPhoto}
+            initialScrollIndex={currentIndex}
             getItemLayout={(_, index) => ({
               length: width,
               offset: width * index,
               index,
             })}
+            renderItem={({ item }) => (
+              <Image
+                source={{ uri: item }}
+                style={styles.fullscreenImage}
+                resizeMode="contain"
+              />
+            )}
+            onScrollToIndexFailed={(info) => {
+              // Fallback if scroll fails
+              setTimeout(() => {
+                flatListRef.current?.scrollToOffset({
+                  offset: info.averageItemLength * info.index,
+                  animated: false,
+                });
+              }, 100);
+            }}
           />
 
           <View style={styles.modalActions}>
@@ -168,18 +200,24 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: "#1f2937",
   },
-  listContainer: {
-    paddingHorizontal: 16,
-    gap: 16,
+  gridContainer: {
+    paddingHorizontal: 0,
+  },
+  row: {
+    flexDirection: "row",
+    marginBottom: GAP,
+    gap: GAP,
   },
   photoContainer: {
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: "hidden",
+    backgroundColor: "#f3f4f6",
+    width: PHOTO_WIDTH,
+    height: PHOTO_HEIGHT,
   },
   photo: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
-    borderRadius: 16,
+    width: PHOTO_WIDTH,
+    height: PHOTO_HEIGHT,
   },
   emptyContainer: {
     padding: 16,
@@ -199,7 +237,7 @@ const styles = StyleSheet.create({
   },
   fullscreenImage: {
     width,
-    height,
+    height: "100%",
   },
   modalActions: {
     position: "absolute",

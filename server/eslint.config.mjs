@@ -1,4 +1,3 @@
-// eslint.config.mjs
 import tsParser from "@typescript-eslint/parser";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 
@@ -8,7 +7,8 @@ export default [
       "node_modules",
       "dist",
       "build",
-      "src/generated/**", // ⬅️ ignore Prisma's generated client/runtime
+      "src/generated/**",
+      "coverage", 
     ],
   },
   {

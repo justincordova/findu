@@ -1,52 +1,42 @@
 import { Router } from "express";
 import * as AuthValidators from "./validators";
 import * as AuthController from "./controllers";
-import { requireAuth } from "@/middleware/auth/requireAuth";
+import { rateLimitOTP } from "@/middleware/auth/rateLimitOTP";
 
 const router = Router();
 
-// Signup a new user
+// Request an OTP for signup (with rate limiting)
+router.post(
+  "/send-otp",
+  rateLimitOTP,
+  AuthValidators.validateEmail,
+  AuthController.sendOtpController
+);
+
+// Signup a new user with OTP
 router.post(
   "/signup",
-  AuthValidators.validateSignupRequest,
-  AuthController.signupRequestController
+  AuthValidators.validateSignup,
+  AuthController.signupController
 );
 
-// Verify OTP for signup or login
+// Signin a user
 router.post(
-  "/verify-otp",
-  AuthValidators.validateOTPVerification,
-  AuthController.verifyOTPController
-);
-
-// Login a user
-router.post(
-  "/login",
+  "/signin",
   AuthValidators.validateLogin,
-  AuthController.loginController
+  AuthController.signinController
 );
 
-// Request a password reset
-router.post(
-  "/forgot-password",
-  AuthValidators.validatePasswordResetRequest,
-  AuthController.requestPasswordResetController
-);
+// Refresh session token (token passed in Authorization header)
+router.post("/refresh-session", AuthController.refreshSessionController);
 
-// Reset password using token
-router.post(
-  "/reset-password",
-  AuthValidators.validatePasswordReset,
-  AuthController.resetPasswordController
-);
+// Get current session user
+router.get("/session", AuthController.sessionController);
 
-// Logout the current user
-router.post("/logout", requireAuth, AuthController.logoutController);
+// Sign out user
+router.post("/signout", AuthController.signoutController);
 
-// Get the currently authenticated user's profile
-router.get("/me", requireAuth, AuthController.getCurrentUserController);
-
-// Delete a user account
-router.delete("/user/:id", requireAuth, AuthController.deleteUserController);
+// All authentication routes are explicitly handled by the controllers above.
+// This includes custom OTP flow, session management, and signout.
 
 export default router;

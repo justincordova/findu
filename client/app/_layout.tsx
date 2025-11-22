@@ -31,26 +31,15 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  const { isLoading, restoreSession, autoRefreshIfNeeded } = useAuth();
+  const { isLoading, restoreSession } = useAuth();
 
   // Restore session on app start
   useEffect(() => {
     (async () => {
       logger.info("RootLayout: Restoring session...");
       await restoreSession();
-      logger.info("RootLayout: Triggering auto-refresh from hook...");
-      await autoRefreshIfNeeded();
     })();
-  }, [restoreSession, autoRefreshIfNeeded]);
-
-  // Periodically check for token refresh in background
-  useEffect(() => {
-    const interval = setInterval(() => {
-      logger.info("RootLayout: Periodic auto-refresh check via hook");
-      autoRefreshIfNeeded();
-    }, 60 * 1000);
-    return () => clearInterval(interval);
-  }, [autoRefreshIfNeeded]);
+  }, [restoreSession]);
 
   // Hide splash screen once fonts and auth check are ready
   useEffect(() => {
@@ -62,7 +51,38 @@ export default function RootLayout() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { flex: 1 } }} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { flex: 1 },
+        }}
+      >
+        <Stack.Screen
+          name="index"
+          options={{
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="auth/index"
+          options={{
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="home"
+          options={{
+            gestureEnabled: false,
+            headerBackVisible: false,
+          }}
+        />
+        <Stack.Screen
+          name="profile-setup/Welcome"
+          options={{
+            gestureEnabled: false,
+          }}
+        />
+      </Stack>
 
       {/* Loading overlay */}
       {(isLoading || !fontsLoaded) && (

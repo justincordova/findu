@@ -1,13 +1,15 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { DANGER } from "@/constants/theme";
-import { useAuth } from "@/hooks/useAuth"; // <-- Use the hook now
+import { useAuth } from "@/hooks/useAuth";
 import Button from "../shared/Button";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
@@ -44,15 +46,28 @@ export default function LoginForm() {
         placeholderTextColor="#A1A1A1"
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
-        placeholderTextColor="#A1A1A1"
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+          autoCapitalize="none"
+          placeholderTextColor="#A1A1A1"
+        />
+        <TouchableOpacity
+          style={styles.eyeButton}
+          onPress={() => setShowPassword(!showPassword)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={showPassword ? "eye-off" : "eye"}
+            size={20}
+            color="#6B7280"
+          />
+        </TouchableOpacity>
+      </View>
 
       <Button
         label={isLoading ? "Logging in..." : "Login"}
@@ -82,5 +97,26 @@ const styles = StyleSheet.create({
     color: DANGER,
     textAlign: "center",
     marginBottom: 16,
+  },
+  passwordContainer: {
+    position: "relative",
+    marginBottom: 16,
+  },
+  passwordInput: {
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingRight: 50,
+    paddingVertical: 14,
+    backgroundColor: "white",
+    fontSize: 16,
+  },
+  eyeButton: {
+    position: "absolute",
+    right: 16,
+    top: "50%",
+    transform: [{ translateY: -10 }],
+    padding: 4,
   },
 });

@@ -2,14 +2,12 @@ import nodemailer from "nodemailer";
 import logger from "@/config/logger";
 import "dotenv/config";
 
-// Create transporter for SendGrid SMTP
+// Gmail SMTP Transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_SMTP_HOST || "smtp.sendgrid.net",
-  port: parseInt(process.env.EMAIL_SMTP_PORT || "587"),
-  secure: false, // true for 465, false for other ports
+  service: "gmail",
   auth: {
-    user: process.env.EMAIL_SMTP_USER || "apikey",
-    pass: process.env.EMAIL_SMTP_PASS,
+    user: process.env.EMAIL_SMTP_USER,   // yourgmail@gmail.com
+    pass: process.env.EMAIL_SMTP_PASS,   // app password
   },
 });
 
@@ -39,49 +37,58 @@ export async function sendVerificationEmail(
       to: data.email,
       subject: "Create your FindU account",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">FindU</h1>
-            <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">Create your account</p>
-          </div>
-          
-          <div style="background: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-            <h2 style="color: #333; margin-bottom: 20px;">Welcome to FindU!</h2>
-            <p style="color: #666; line-height: 1.6; margin-bottom: 30px;">
-              Thanks for signing up! To create your account and start using FindU, 
-              please click the button below:
-            </p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${verificationUrl}" 
-                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                        color: white; 
-                        padding: 15px 30px; 
-                        text-decoration: none; 
-                        border-radius: 25px; 
-                        display: inline-block; 
-                        font-weight: bold;
-                        font-size: 16px;">
-                Create Account
-              </a>
-            </div>
-            
-            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-              If the button doesn't work, you can copy and paste this link into your browser:
-            </p>
-            <p style="color: #667eea; word-break: break-all; font-size: 14px;">
-              ${verificationUrl}
-            </p>
-            
-            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            
-            <p style="color: #999; font-size: 14px; text-align: center;">
-              This link will expire in 24 hours. If you didn't sign up for FindU, 
-              you can safely ignore this email.
-            </p>
-          </div>
-        </div>
-      `,
+<div style="font-family: 'Inter', Arial, sans-serif; max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 18px; overflow: hidden; box-shadow: 0 6px 30px rgba(0,0,0,0.08);">
+
+  <!-- Header -->
+  <div style="background: linear-gradient(135deg, #7b5cff 0%, #5ea0ff 100%); padding: 45px 30px; text-align: center;">
+    <h1 style="color: #fff; margin: 0; font-size: 30px; font-weight: 700;">FindU</h1>
+    <p style="color: rgba(255,255,255,0.9); margin-top: 8px; font-size: 16px;">Let's get your account set up</p>
+  </div>
+
+  <!-- Body -->
+  <div style="padding: 40px 35px;">
+    <h2 style="color: #1a1a1a; margin: 0 0 20px; font-size: 24px; font-weight: 600;">Welcome 👋</h2>
+    <p style="color: #444; font-size: 15px; line-height: 1.7; margin-bottom: 28px;">
+      Thanks for signing up for FindU! You're one step away from creating your account.
+      Click the button below to verify your email:
+    </p>
+
+    <!-- Button -->
+    <div style="text-align: center; margin: 34px 0;">
+      <a href="${verificationUrl}"
+        style="
+          background: linear-gradient(135deg, #7b5cff 0%, #5ea0ff 100%);
+          color: white;
+          padding: 15px 35px;
+          border-radius: 40px;
+          text-decoration: none;
+          font-size: 17px;
+          font-weight: 600;
+          display: inline-block;
+          box-shadow: 0 4px 15px rgba(125, 90, 255, 0.35);
+        ">
+        Verify Email
+      </a>
+    </div>
+
+    <p style="color: #555; font-size: 15px; line-height: 1.6;">
+      If the button doesn’t work, copy and paste this link into your browser:
+    </p>
+
+    <p style="color: #6a4fff; font-size: 14px; word-break: break-all; margin-top: 8px;">
+      ${verificationUrl}
+    </p>
+
+    <hr style="border: none; border-top: 1px solid #eee; margin: 40px 0;">
+
+    <p style="color: #888; font-size: 13px; text-align: center; line-height: 1.6;">
+      This link expires in 24 hours.<br>
+      If you didn’t create a FindU account, just ignore this email.
+    </p>
+  </div>
+
+</div>
+`,
     };
 
     const info = await transporter.sendMail(mailOptions);
@@ -117,40 +124,44 @@ export async function sendOTPEmail(
       to: data.email,
       subject: "Your FindU verification code",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">FindU</h1>
-            <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">Verify your account</p>
-          </div>
-          
-          <div style="background: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-            <h2 style="color: #333; margin-bottom: 20px;">Your verification code</h2>
-            <p style="color: #666; line-height: 1.6; margin-bottom: 30px;">
-              Thanks for signing up! To complete your account creation, 
-              please enter this verification code in the app:
-            </p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <div style="background: #f8f9fa; border: 2px solid #667eea; border-radius: 10px; padding: 20px; display: inline-block;">
-                <span style="font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 5px; font-family: monospace;">
-                  ${data.otp}
-                </span>
-              </div>
-            </div>
-            
-            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-              Enter this code in the verification screen to complete your signup.
-            </p>
-            
-            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            
-            <p style="color: #999; font-size: 14px; text-align: center;">
-              This code will expire in 10 minutes. If you didn't sign up for FindU, 
-              you can safely ignore this email.
-            </p>
-          </div>
-        </div>
-      `,
+<div style="font-family: 'Inter', Arial, sans-serif; max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 18px; overflow: hidden; box-shadow: 0 6px 30px rgba(0,0,0,0.08);">
+
+  <!-- Header -->
+  <div style="background: linear-gradient(135deg, #7b5cff 0%, #5ea0ff 100%); padding: 45px 30px; text-align: center;">
+    <h1 style="color: #fff; margin: 0; font-size: 30px; font-weight: 700;">FindU</h1>
+    <p style="color: rgba(255,255,255,0.9); margin-top: 8px; font-size: 16px;">Verify your account</p>
+  </div>
+
+  <!-- Body -->
+  <div style="padding: 40px 35px;">
+    <h2 style="color: #1a1a1a; margin: 0 0 20px; font-size: 24px; font-weight: 600;">Your verification code</h2>
+    <p style="color: #444; font-size: 15px; line-height: 1.7; margin-bottom: 28px;">
+      Enter the 6-digit code below to continue setting up your FindU account:
+    </p>
+
+    <div style="text-align: center; margin: 34px 0;">
+      <div style="
+        background: #f4f7ff;
+        border: 2px solid #7b5cff;
+        padding: 22px 35px;
+        border-radius: 14px;
+        display: inline-block;
+        box-shadow: 0 4px 15px rgba(125, 90, 255, 0.15);
+      ">
+        <span style="font-size: 34px; font-weight: 700; letter-spacing: 6px; color: #6a4fff; font-family: monospace;">
+          ${data.otp}
+        </span>
+      </div>
+    </div>
+
+    <p style="color: #555; font-size: 15px; line-height: 1.6;">
+      This code expires in 10 minutes. If you didn’t request it, you can ignore this email.
+    </p>
+
+  </div>
+
+</div>
+`,
     };
 
     const info = await transporter.sendMail(mailOptions);
