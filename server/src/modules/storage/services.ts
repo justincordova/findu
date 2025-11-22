@@ -1,17 +1,24 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import logger from "@/config/logger";
 
-// Delete all files for a user, typically during profile setup.
-const deleteAllUserFiles = async (userId: string) => {
+/**
+ * Delete all files for a user from the "profiles" bucket.
+ * Typically used during profile setup or account reset.
+ *
+ * @param userId - ID of the user whose files should be deleted.
+ */
+const deleteAllUserFiles = async (userId: string): Promise<void> => {
   try {
     const { data: files, error } = await supabaseAdmin.storage.from("profiles").list(userId);
     if (error) {
       logger.error("[deleteAllUserFiles] Error listing files", { userId, error });
       throw new Error(error.message);
     }
+
     if (files && files.length > 0) {
       const paths = files.map(f => `${userId}/${f.name}`);
       logger.info("[deleteAllUserFiles] Deleting files", { userId, paths });
+
       const { error: removeError } = await supabaseAdmin.storage.from("profiles").remove(paths);
       if (removeError) {
         logger.error("[deleteAllUserFiles] Error removing files", { userId, removeError });
@@ -20,37 +27,46 @@ const deleteAllUserFiles = async (userId: string) => {
     }
   } catch (err: any) {
     logger.error("[deleteAllUserFiles] Exception", { error: err });
-    // Decide if you want to re-throw or handle it silently
+    // Optional: re-throw or handle silently depending on business logic
   }
 };
 
-// Delete a single file for a user, typically during a profile update.
-const deleteSingleUserFile = async (userId: string, filename: string) => {
+/**
+ * Delete a single file for a user from the "profiles" bucket.
+ * Typically used when replacing an existing file (e.g., avatar update).
+ *
+ * @param userId - ID of the user.
+ * @param filename - Name of the file to delete.
+ */
+const deleteSingleUserFile = async (userId: string, filename: string): Promise<void> => {
   try {
     const path = `${userId}/${filename}`;
     logger.info("[deleteSingleUserFile] Deleting file", { path });
+
     const { error } = await supabaseAdmin.storage.from("profiles").remove([path]);
     if (error) {
-      // It might not be an error if the file doesn't exist, so we can log it and continue
-      logger.warn("[deleteSingleUserFile] Could not delete file (it may not exist)", { path, error });
+      logger.warn("[deleteSingleUserFile] Could not delete file (may not exist)", { path, error });
     }
   } catch (err: any) {
     logger.error("[deleteSingleUserFile] Exception", { error: err });
   }
 };
 
-
 /**
  * Generates a signed Supabase Storage upload URL for a user.
  *
  * This function supports two modes:
- * - `setup`: Deletes all existing files for the user before creating a new signed URL.
- * - `update`: Deletes only the specific file being replaced before creating a new signed URL.
+ * - `setup`: Deletes all existing files for the user before generating a new signed URL.
+ * - `update`: Deletes only the specific file being replaced before generating a new signed URL.
  *
- * @param userId - The ID of the user uploading the file.
- * @param filename - The fixed name of the file (e.g., 'avatar.jpg').
- * @param mode - The upload mode: 'setup' or 'update'.
- * @returns A promise that resolves to an object with `uploadUrl` and `path`, or an `error`.
+ * @param userId - ID of the user uploading the file.
+ * @param filename - The fixed name of the file (e.g., "avatar.jpg").
+ * @param mode - Upload mode: `"setup"` or `"update"`.
+ * @returns A promise that resolves to an object containing:
+ *   - `uploadUrl`: The signed URL to upload the file.
+ *   - `path`: The full object path in Supabase storage.
+ *   Or, in case of an error:
+ *   - `error`: Error message describing the failure.
  */
 export const generateSignedUploadUrl = async (
   userId: string,
@@ -61,10 +77,10 @@ export const generateSignedUploadUrl = async (
     logger.info("[generateSignedUploadUrl] Start", { userId, filename, mode });
 
     if (mode === "setup") {
-      // This is a destructive action, so we wait for it to complete.
+      // Destructive action: delete all existing files
       await deleteAllUserFiles(userId);
     } else if (mode === "update") {
-      // This can happen in the background, but for consistency, we'll wait.
+      // Delete only the specific file being replaced
       await deleteSingleUserFile(userId, filename);
     }
 
@@ -85,10 +101,7 @@ export const generateSignedUploadUrl = async (
       path: objectPath,
     });
 
-    return {
-      uploadUrl: data.signedUrl,
-      path: objectPath,
-    };
+    return { uploadUrl: data.signedUrl, path: objectPath };
   } catch (err: any) {
     logger.error("[generateSignedUploadUrl] Exception", { error: err });
     return { error: err.message || "Unknown error creating upload URL" };

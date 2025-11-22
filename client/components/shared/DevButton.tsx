@@ -3,7 +3,7 @@ import { TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { DANGER } from "@/constants/theme";
 import { useAuthStore } from "@/store/authStore";
-import * as AuthService from "@/services/authService";
+import { useAuth } from "@/hooks/useAuth"; // Import useAuth hook
 
 interface DevButtonProps {
   route?: string;
@@ -15,6 +15,7 @@ export default function DevButton({ route }: DevButtonProps) {
 
   // Auth state from store
   const { userId, isLoading } = useAuthStore();
+  const { signOut } = useAuth(); // Get signOut from useAuth hook
 
   // Memoize targetRoute safely
   const targetRoute = useMemo(() => {
@@ -47,9 +48,15 @@ export default function DevButton({ route }: DevButtonProps) {
           style: "destructive",
           onPress: async () => {
             try {
-              await AuthService.logout();
-              router.replace("/");
-              Alert.alert("Logout", "Successfully logged out.");
+              const result = await signOut();
+              if (result?.success) {
+                // Navigate immediately - the home layout checks current auth state
+                // and will allow navigation since isLoggedIn is now false
+                router.replace("/" as any);
+                Alert.alert("Logout", "Successfully logged out.");
+              } else {
+                Alert.alert("Logout", result?.error || "Logout failed. Check logs.");
+              }
             } catch (err) {
               console.error("DevButton: Logout failed", err);
               Alert.alert("Logout", "Logout failed. Check logs.");

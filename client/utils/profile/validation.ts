@@ -2,7 +2,16 @@ import { Profile } from "@/types/Profile";
 
 export function validateProfile(profile: Profile) {
   const errors: string[] = [];
+  
+  // Optional fields that can be null
+  const optionalFields = ["campus_id"];
+  
   for (const [key, value] of Object.entries(profile)) {
+    // Skip validation for optional fields that are null
+    if (optionalFields.includes(key) && value === null) {
+      continue;
+    }
+    
     if (value === null || value === undefined)
       errors.push(`Field "${key}" is required`);
     else if (typeof value === "string" && value.trim() === "")

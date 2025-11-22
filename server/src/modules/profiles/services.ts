@@ -81,16 +81,37 @@ export const updateProfile = async (
  */
 export const getProfileByUserId = async (
   userId: string
-): Promise<Profile | null> => {
+): Promise<(Profile & { university_name?: string; campus_name?: string }) | null> => {
   try {
     const profile = await prisma.profiles.findUnique({
       where: { user_id: userId },
+      include: {
+        universities: {
+          select: {
+            name: true,
+          },
+        },
+        campuses: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
 
-    if (!profile) logger.warn("PROFILE_NOT_FOUND", { userId });
-    else logger.info("PROFILE_FETCHED", { userId });
+    if (!profile) {
+      logger.warn("PROFILE_NOT_FOUND", { userId });
+      return null;
+    }
 
-    return profile;
+    logger.info("PROFILE_FETCHED", { userId });
+
+    // Add university_name and campus_name to the profile
+    return {
+      ...profile,
+      university_name: profile.universities?.name,
+      campus_name: profile.campuses?.name || undefined,
+    };
   } catch (error) {
     logger.error("GET_PROFILE_ERROR", { error, userId });
     throw error;

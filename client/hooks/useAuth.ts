@@ -5,11 +5,10 @@ import * as AuthService from "@/services/authService";
 export function useAuth() {
   const { userId, email, token, isLoggedIn, isLoading } = useAuthStore();
 
-  // On mount, restore session and auto-refresh if needed
+  // On mount, restore session
   useEffect(() => {
     async function initAuth() {
       await AuthService.restoreSession();
-      await AuthService.autoRefreshIfNeeded();
     }
     initAuth();
   }, []);
@@ -22,11 +21,9 @@ export function useAuth() {
     isLoading,
 
     login: AuthService.login,
-    logout: AuthService.logout,
+    signOut: AuthService.signOut,
     restoreSession: AuthService.restoreSession,
-    refreshSession: AuthService.refreshSession,
-    signup: AuthService.signup,
-    verifyOTP: AuthService.verifyOTP,
-    autoRefreshIfNeeded: AuthService.autoRefreshIfNeeded,
+    sendOtp: AuthService.sendOtp,
+    verifyAndSignup: AuthService.verifyAndSignup,
   };
 }

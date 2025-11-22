@@ -3,7 +3,7 @@ export interface AuthResult {
   success: boolean;
   error?: string;
   user?: UserData;
-  session?: any;
+  token?: string;
 }
 
 export interface PendingSignupResult {

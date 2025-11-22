@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -8,6 +8,7 @@ import {
   Text,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { profileApi } from "@/api/profile";
 import { useProfileSetupStore } from "@/store/profileStore";
 import logger from "@/config/logger";
@@ -19,38 +20,36 @@ import PhotosSection from "@/components/profile/PhotosSection";
 import PreferencesSection from "@/components/profile/PreferencesSection";
 
 export default function ProfileScreen() {
-  const { data: profile, setField } = useProfileSetupStore();
+  const { setField } = useProfileSetupStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (profile && Object.keys(profile).length > 0) {
-        setLoading(false);
-        return;
-      }
+  const fetchProfile = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-      setLoading(true);
-      setError(null);
+    try {
+      const data = await profileApi.me();
 
-      try {
-        const data = await profileApi.me();
+      // Merge API data into store
+      Object.entries(data).forEach(([key, value]) => {
+        const typedKey = key as keyof typeof data;
+        setField(typedKey as any, value);
+      });
+    } catch (err) {
+      logger.error("Error fetching profile:", err);
+      setError("Failed to load profile");
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setError, setField]);
 
-        // Merge API data into store
-        Object.entries(data).forEach(([key, value]) => {
-          const typedKey = key as keyof typeof data;
-          setField(typedKey as any, value);
-        });
-      } catch (err) {
-        logger.error("Error fetching profile:", err);
-        setError("Failed to load profile");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [profile, setField]);
+  // Fetch profile on mount and when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [fetchProfile])
+  );
 
   if (loading) {
     return (
