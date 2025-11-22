@@ -8,8 +8,13 @@ import {
   Dimensions,
   TouchableOpacity,
   Modal,
+  Alert,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { useProfileSetupStore } from "@/store/profileStore";
+import { useAuthStore } from "@/store/authStore";
+import { updatePhoto } from "@/services/uploadService";
+import logger from "@/config/logger";
 
 const { width, height } = Dimensions.get("window");
 const IMAGE_SIZE = width * 0.8;
@@ -17,6 +22,7 @@ const IMAGE_SIZE = width * 0.8;
 export default function PhotosSection() {
   const { data: profile } = useProfileSetupStore();
   const photos = Array.isArray(profile?.photos) ? profile.photos : [];
+  const userId = useAuthStore.getState().userId;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -28,6 +34,41 @@ export default function PhotosSection() {
 
   const closeModal = () => {
     setModalVisible(false);
+  };
+
+  const handleReplacePhoto = async () => {
+    if (!userId) {
+      Alert.alert("Error", "You must be logged in to update photos.");
+      return;
+    }
+
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      Alert.alert("Permission required", "You need to allow access to your photos.");
+      return;
+    }
+
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 5],
+      quality: 1,
+    });
+
+    if (pickerResult.canceled) {
+      return;
+    }
+
+    const newUri = pickerResult.assets[0].uri;
+    closeModal(); // Close the modal before upload
+
+    try {
+      await updatePhoto(userId, newUri, currentIndex);
+      Alert.alert("Success", "Photo updated successfully!");
+    } catch (error) {
+      logger.error("Failed to replace photo", { error });
+      Alert.alert("Upload Failed", "Could not replace the photo. Please try again.");
+    }
   };
 
   const renderPhotoItem = ({
@@ -95,13 +136,22 @@ export default function PhotosSection() {
             })}
           />
 
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={closeModal}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.closeText}>Close</Text>
-          </TouchableOpacity>
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleReplacePhoto}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.actionText}>Replace</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={closeModal}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.actionText}>Close</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
     </View>
@@ -151,17 +201,24 @@ const styles = StyleSheet.create({
     width,
     height,
   },
-  closeButton: {
+  modalActions: {
     position: "absolute",
-    top: 50,
-    right: 20,
-    padding: 12,
+    bottom: 40,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  actionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     backgroundColor: "rgba(255,255,255,0.3)",
     borderRadius: 8,
   },
-  closeText: {
+  actionText: {
     color: "white",
     fontWeight: "600",
-    fontSize: 14,
+    fontSize: 16,
   },
 });
+

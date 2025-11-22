@@ -31,16 +31,18 @@ async function compressImage(uri: string): Promise<Blob> {
 async function uploadViaSignedUrl(
   userId: string,
   fileName: string,
-  fileData: Blob
+  fileData: Blob,
+  mode: "setup" | "update"
 ): Promise<string> {
   logger.info("[upload] uploadViaSignedUrl start", {
     userId,
     fileName,
     size: fileData.size,
+    mode,
   });
 
   // Request signed URL from backend
-  const { uploadUrl, path } = await storageApi.getUploadUrl(userId, fileName);
+  const { uploadUrl, path } = await storageApi.getUploadUrl(userId, fileName, mode);
 
   // Use fetch PUT for mobile (React Native)
   const res = await fetch(uploadUrl, {
@@ -63,17 +65,21 @@ async function uploadViaSignedUrl(
 /**
  * Upload avatar
  */
-export async function uploadAvatar(userId: string, avatarUri?: string): Promise<string> {
+export async function uploadAvatar(
+  userId: string,
+  avatarUri: string | undefined,
+  mode: "setup" | "update"
+): Promise<string> {
   if (!avatarUri || avatarUri.startsWith("https://")) return avatarUri ?? "";
 
   const ext = getImageType(avatarUri);
-  const avatarName = `avatar-${Date.now()}.${ext}`;
+  const avatarName = `avatar.${ext}`; // Fixed filename
   const avatarBlob = await compressImage(avatarUri);
 
-  const publicUrl = await uploadViaSignedUrl(userId, avatarName, avatarBlob);
+  const publicUrl = await uploadViaSignedUrl(userId, avatarName, avatarBlob, mode);
 
   useProfileSetupStore.getState().setField("avatar_url", publicUrl);
-  logger.info("[upload] Avatar uploaded", { userId, url: publicUrl });
+  logger.info("[upload] Avatar uploaded", { userId, url: publicUrl, mode });
 
   return publicUrl;
 }
@@ -81,17 +87,21 @@ export async function uploadAvatar(userId: string, avatarUri?: string): Promise<
 /**
  * Upload multiple photos
  */
-export async function uploadPhotos(userId: string, photoUris: string[]): Promise<string[]> {
+export async function uploadPhotos(
+  userId: string,
+  photoUris: string[],
+  mode: "setup" | "update"
+): Promise<string[]> {
   const uploadedPhotos = await Promise.all(
     photoUris.map(async (uri, i) => {
       if (uri.startsWith("https://")) return uri;
 
       const ext = getImageType(uri);
-      const photoName = `photo-${i}-${Date.now()}.${ext}`;
+      const photoName = `photo_${i}.${ext}`; // Fixed filename
       const photoBlob = await compressImage(uri);
 
-      const publicUrl = await uploadViaSignedUrl(userId, photoName, photoBlob);
-      logger.info("[upload] Photo uploaded", { userId, url: publicUrl });
+      const publicUrl = await uploadViaSignedUrl(userId, photoName, photoBlob, mode);
+      logger.info("[upload] Photo uploaded", { userId, url: publicUrl, mode });
 
       return publicUrl;
     })
@@ -99,4 +109,30 @@ export async function uploadPhotos(userId: string, photoUris: string[]): Promise
 
   useProfileSetupStore.getState().setField("photos", uploadedPhotos);
   return uploadedPhotos;
+}
+
+/**
+ * Upload a single photo and update it in the store
+ */
+export async function updatePhoto(
+  userId: string,
+  photoUri: string,
+  photoIndex: number
+): Promise<string> {
+  if (photoUri.startsWith("https://")) return photoUri;
+
+  const ext = getImageType(photoUri);
+  const photoName = `photo_${photoIndex}.${ext}`; // Fixed filename
+  const photoBlob = await compressImage(photoUri);
+
+  const publicUrl = await uploadViaSignedUrl(userId, photoName, photoBlob, "update");
+  logger.info("[upload] Photo updated", { userId, url: publicUrl, index: photoIndex });
+
+  // Update the specific photo in the store
+  const currentPhotos = useProfileSetupStore.getState().data.photos ?? [];
+  const updatedPhotos = [...currentPhotos];
+  updatedPhotos[photoIndex] = publicUrl;
+  useProfileSetupStore.getState().setField("photos", updatedPhotos);
+
+  return publicUrl;
 }

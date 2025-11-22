@@ -15,14 +15,15 @@ export const storageApi = {
    * Request a signed upload URL from backend
    * @param userId string - ID of the user uploading the file
    * @param filename string - name of the file to upload
+   * @param mode "setup" | "update" - determines server-side file handling
    */
-  getUploadUrl: async (userId: string, filename: string) => {
+  getUploadUrl: async (userId: string, filename: string, mode: "setup" | "update") => {
     const headers = getAuthHeaders();
-    logger.info("[storageApi] Requesting signed URL", { userId, filename });
+    logger.info("[storageApi] Requesting signed URL", { userId, filename, mode });
 
     const response = await axios.post(
       `${API_BASE}/url`,
-      { userId, filename },
+      { userId, filename, mode },
       { headers }
     );
 
@@ -52,3 +53,4 @@ export const storageApi = {
     logger.info("[storageApi] File uploaded successfully", { uploadUrl });
   },
 };
+

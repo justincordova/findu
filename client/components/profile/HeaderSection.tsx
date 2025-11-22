@@ -1,14 +1,18 @@
 import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { DARK, MUTED } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
+import { useAuthStore } from "@/store/authStore";
+import { uploadAvatar } from "@/services/uploadService";
+import logger from "@/config/logger";
 
 const AVATAR_SIZE = 120;
 
 /** Calculate age from birthdate */
 function calculateAge(birthdate: string | undefined): number | null {
   if (!birthdate) return null;
-
+  // ... (age calculation logic remains the same)
   try {
     const birth = new Date(birthdate);
     const today = new Date();
@@ -24,7 +28,52 @@ function calculateAge(birthdate: string | undefined): number | null {
 }
 
 export default function HeaderSection() {
-  const { data: profile } = useProfileSetupStore();
+  const { data: profile, setField } = useProfileSetupStore();
+  const userId = useAuthStore.getState().userId;
+
+  const handleUpdateAvatar = async () => {
+    if (!userId) {
+      Alert.alert("Error", "You must be logged in to update your avatar.");
+      return;
+    }
+
+    // Request permission
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      Alert.alert("Permission required", "You need to allow access to your photos to update your avatar.");
+      return;
+    }
+
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (pickerResult.canceled) {
+      return;
+    }
+
+    const newAvatarUri = pickerResult.assets[0].uri;
+
+    try {
+      // Optimistically update the UI
+      setField("avatar_url", newAvatarUri);
+
+      // Upload with "update" mode
+      const publicUrl = await uploadAvatar(userId, newAvatarUri, "update");
+
+      // Final update with the public URL
+      setField("avatar_url", publicUrl);
+      logger.info("Avatar updated successfully", { userId, publicUrl });
+    } catch (error) {
+      logger.error("Failed to update avatar", { error });
+      Alert.alert("Upload Failed", "Could not update your avatar. Please try again.");
+      // Revert optimistic update if needed
+      setField("avatar_url", profile?.avatar_url);
+    }
+  };
 
   const avatarUrl = profile?.avatar_url;
   const name = profile?.name || "";
@@ -36,17 +85,19 @@ export default function HeaderSection() {
 
   return (
     <View style={styles.container}>
-      {avatarUrl ? (
-        <Image
-          source={{ uri: avatarUrl }}
-          style={styles.avatar}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={[styles.avatar, styles.avatarPlaceholder]}>
-          <Text style={styles.avatarPlaceholderText}>No Avatar</Text>
-        </View>
-      )}
+      <TouchableOpacity onPress={handleUpdateAvatar} activeOpacity={0.7}>
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={styles.avatar}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.avatar, styles.avatarPlaceholder]}>
+            <Text style={styles.avatarPlaceholderText}>Set Avatar</Text>
+          </View>
+        )}
+      </TouchableOpacity>
 
       {displayName ? <Text style={styles.name}>{displayName}</Text> : null}
       {gender ? <Text style={styles.subText}>{gender}</Text> : null}

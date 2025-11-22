@@ -107,3 +107,6 @@ dump/
 *.sqlite3
 *.db
 *.db-journal
+
+# AI CLI
+GEMINI.MD

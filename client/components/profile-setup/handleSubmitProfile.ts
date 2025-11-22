@@ -31,10 +31,10 @@ export async function handleSubmitProfile(userId?: string) {
 
     logger.info("[handleSubmitProfile] Submitting profile", { currentUserId, profileData });
 
-    // Upload avatar & photos
+    // Upload avatar & photos in "setup" mode
     const [avatarUrl, uploadedPhotos] = await Promise.all([
-      uploadAvatar(currentUserId, profileData.avatar_url),
-      uploadPhotos(currentUserId, profileData.photos ?? []),
+      uploadAvatar(currentUserId, profileData.avatar_url, "setup"),
+      uploadPhotos(currentUserId, profileData.photos ?? [], "setup"),
     ]);
 
     logger.info("[handleSubmitProfile] Upload completed", { avatarUrl, uploadedPhotos });
