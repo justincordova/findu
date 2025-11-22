@@ -5,7 +5,7 @@ import logger from "@/config/logger";
 import { generateOTP } from "@/utils/auth";
 import prisma from "@/lib/prismaClient";
 import * as bcrypt from "bcrypt";
-import { AuthResult, PendingSignupResult } from "@/types/Auth";
+import { AuthResult, PendingSignupResult } from "@/types/auth";
 
 const OTP_EXPIRATION = Number(process.env.OTP_EXPIRATION_SECONDS) || 600;
 
@@ -18,11 +18,16 @@ export const OTPService = {
    * Sends an OTP to a given email address for signup verification.
    * Validates if the user already exists, stores OTP in Redis, and sends an email.
    *
-   * @param email - Email address to send the OTP to
+   * @param email - Email address to send the OTP to (must be a .edu address)
    * @returns Promise resolving to a PendingSignupResult indicating success or error
    */
   sendOtp: async (email: string): Promise<PendingSignupResult> => {
     try {
+      // Validate email is a .edu address
+      if (!/^[\w.+-]+@[\w-]+\.edu$/i.test(email)) {
+        return { success: false, error: "Email must be a .edu address" };
+      }
+
       const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) {
         return { success: false, error: "User already exists" };
@@ -55,7 +60,7 @@ export const AuthService = {
    * Signs up a user with email, password, and OTP verification.
    * Creates user and account records in the database and signs in the user.
    *
-   * @param email - User's email address
+   * @param email - User's email address (must be a .edu address)
    * @param password - User's password
    * @param otp - OTP provided by the user for verification
    * @returns Promise resolving to AuthResult indicating success or failure
@@ -66,6 +71,11 @@ export const AuthService = {
     otp: string
   ): Promise<AuthResult> => {
     try {
+      // Validate email is a .edu address
+      if (!/^[\w.+-]+@[\w-]+\.edu$/i.test(email)) {
+        return { success: false, error: "Email must be a .edu address" };
+      }
+
       const storedOtp = await redis.get(`otp:${email}`);
       if (storedOtp !== otp) {
         return { success: false, error: "Invalid or expired OTP" };
@@ -134,15 +144,24 @@ export const AuthService = {
       }
 
       const isPasswordValid = await bcrypt.compare(password, account.password);
-      if (!isPasswordValid) return { success: false, error: "Invalid credentials" };
+      if (!isPasswordValid)
+        return { success: false, error: "Invalid credentials" };
 
-      const signInResult = await auth.api.signInEmail({ body: { email, password } });
+      const signInResult = await auth.api.signInEmail({
+        body: { email, password },
+      });
 
       if (!signInResult || !signInResult.user || !signInResult.token) {
-        return { success: false, error: "Failed to create session after signup" };
+        return {
+          success: false,
+          error: "Failed to create session after signup",
+        };
       }
 
-      logger.info("USER_LOGIN_SUCCESSFUL", { email, userId: signInResult.user.id });
+      logger.info("USER_LOGIN_SUCCESSFUL", {
+        email,
+        userId: signInResult.user.id,
+      });
 
       return {
         success: true,
@@ -170,7 +189,8 @@ export const AuthService = {
         include: { user: true },
       });
 
-      if (!session || !session.user || session.expiresAt < new Date()) return null;
+      if (!session || !session.user || session.expiresAt < new Date())
+        return null;
 
       return { id: session.user.id, email: session.user.email || null };
     } catch (error) {
@@ -193,7 +213,8 @@ export const AuthService = {
     } catch (error) {
       // Log error but don't throw, as the session may already be invalid.
       logger.warn("SIGNOUT_ERROR", {
-        errorMessage: "Failed to delete session, it might have already been deleted.",
+        errorMessage:
+          "Failed to delete session, it might have already been deleted.",
         tokenHint: token.slice(-4),
         error,
       });
@@ -208,18 +229,26 @@ export const AuthService = {
    */
   refreshSession: async (
     token: string
-  ): Promise<{ token: string; user: { id: string; email: string | null } } | null> => {
+  ): Promise<{
+    token: string;
+    user: { id: string; email: string | null };
+  } | null> => {
     try {
       const session = await prisma.session.findUnique({
         where: { token },
         include: { user: true },
       });
 
-      if (!session || !session.user || session.expiresAt < new Date()) return null;
+      if (!session || !session.user || session.expiresAt < new Date())
+        return null;
 
-      const daysUntilExpiry = (session.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+      const daysUntilExpiry =
+        (session.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
       if (daysUntilExpiry > 7) {
-        return { token, user: { id: session.user.id, email: session.user.email || null } };
+        return {
+          token,
+          user: { id: session.user.id, email: session.user.email || null },
+        };
       }
 
       const account = await prisma.account.findFirst({
@@ -231,7 +260,10 @@ export const AuthService = {
       const newExpiresAt = new Date();
       newExpiresAt.setDate(newExpiresAt.getDate() + 30);
 
-      await prisma.session.update({ where: { id: session.id }, data: { expiresAt: newExpiresAt } });
+      await prisma.session.update({
+        where: { id: session.id },
+        data: { expiresAt: newExpiresAt },
+      });
 
       logger.info("SESSION_REFRESHED", {
         userId: session.user.id,
@@ -239,10 +271,13 @@ export const AuthService = {
         newExpiresAt: newExpiresAt.toISOString(),
       });
 
-      return { token, user: { id: session.user.id, email: session.user.email || null } };
+      return {
+        token,
+        user: { id: session.user.id, email: session.user.email || null },
+      };
     } catch (error) {
       logger.error("REFRESH_SESSION_ERROR", { error });
       return null;
     }
-  }
-}
+  },
+};

@@ -1,3 +1,4 @@
+
 import * as ProfileService from "@/modules/profiles/services";
 import { Profile } from "@/types/Profile";
 import prisma from "@/lib/prismaClient";
@@ -73,6 +74,10 @@ describe("Profiles API happy path cases", () => {
 
     expect(prisma.profiles.findUnique).toHaveBeenCalledWith({
       where: { user_id: userId },
+      include: {
+        universities: { select: { name: true } },
+        campuses: { select: { name: true } },
+      },
     });
     expect(result).toEqual(sampleProfile);
   });

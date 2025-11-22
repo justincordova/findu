@@ -8,6 +8,9 @@ module.exports = {
   transform: {
     ...tsJestTransformCfg,
   },
+  transformIgnorePatterns: [
+    "/node_modules/(?!better-auth)"
+  ],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
