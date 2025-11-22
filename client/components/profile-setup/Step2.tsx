@@ -80,6 +80,11 @@ export default function Step2({ onBack, onValidityChange }: Step2Props) {
 
           // Store campus name in the store
           setField("campus_name", defaultCampus.name);
+        } else {
+          // No campuses available - set campus_id to null
+          setField("campus_id", null);
+          setField("campus_name", null);
+          setCampusItems([]);
         }
       } catch (err) {
         console.error("Error fetching university data:", err);

@@ -14,7 +14,7 @@ const YEAR_MAP: Record<number, string> = {
 export default function AcademicSection() {
   const { data: profile } = useProfileSetupStore();
 
-  const university = profile?.university || "";
+  const university = profile?.university_name || "";
   const universityYear = profile?.university_year;
   const major = profile?.major || "";
   const gradYear = profile?.grad_year;

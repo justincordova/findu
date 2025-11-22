@@ -1,10 +1,19 @@
-// eslint.config.mjs
 import tsParser from "@typescript-eslint/parser";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 
 export default [
   {
+<<<<<<< HEAD
     ignores: ["node_modules", "dist", "build", "coverage", "src/generated/**"],
+=======
+    ignores: [
+      "node_modules",
+      "dist",
+      "build",
+      "src/generated/**",
+      "coverage", 
+    ],
+>>>>>>> 22dc5cfc6311268736584268451cfa92ab4d02b7
   },
   {
     files: ["**/*.ts", "**/*.tsx"],

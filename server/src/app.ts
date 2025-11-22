@@ -50,7 +50,8 @@ if (!isDev) {
   app.use(noop); // limiter
 }
 
-// Application Routes
+// Auth routes. This handles custom OTP flow and falls back to the Better Auth
+// handler for built-in routes like /session, /signout, etc.
 app.use("/api/auth", authRoutes);
 app.use("/api/storage", storageRoutes);
 app.use("/api/profiles", profileRoutes);
