@@ -13,15 +13,15 @@ export default function Step4({
   onValidityChange?: (isValid: boolean) => void;
 }) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setField = useProfileSetupStore((state) => state.setField);
+  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
   /** Slider change handler */
   const handleSliderChange = useCallback(
     (low: number, high: number) => {
-      setField("min_age", low);
-      setField("max_age", high);
+      setProfileField("min_age", low);
+      setProfileField("max_age", high);
     },
-    [setField]
+    [setProfileField]
   );
 
   /** Validity check */

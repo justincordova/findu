@@ -29,7 +29,7 @@ type DropdownKey =
 
 export default function Step2({ onBack, onValidityChange }: Step2Props) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setField = useProfileSetupStore((state) => state.setField);
+  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
   const email = useAuthStore((state) => state.email);
   const { data } = useProfileSetupStore();
   const universityName = data?.university_name;
@@ -65,8 +65,8 @@ export default function Step2({ onBack, onValidityChange }: Step2Props) {
         const { university, campuses } = await profileApi.domainMap(email);
 
         // Store the university id and name
-        setField("university_id", university.id);
-        setField("university_name", university.name);
+        setProfileField("university_id", university.id);
+        setProfileField("university_name", university.name);
 
         if (campuses.length > 0) {
           // Prepare items for the dropdown
@@ -75,15 +75,15 @@ export default function Step2({ onBack, onValidityChange }: Step2Props) {
           // Set default campus if not already selected
           const defaultCampus = campuses[0];
           if (!profileData?.campus_id) {
-            setField("campus_id", defaultCampus.id);
+            setProfileField("campus_id", defaultCampus.id);
           }
 
           // Store campus name in the store
-          setField("campus_name", defaultCampus.name);
+          setProfileField("campus_name", defaultCampus.name);
         } else {
           // No campuses available - set campus_id to null
-          setField("campus_id", null);
-          setField("campus_name", null);
+          setProfileField("campus_id", null);
+          setProfileField("campus_name", null);
           setCampusItems([]);
         }
       } catch (err) {
@@ -94,7 +94,7 @@ export default function Step2({ onBack, onValidityChange }: Step2Props) {
     };
 
     fetchUniversityData();
-  }, [email, profileData?.campus_id, setField]);
+  }, [email, profileData?.campus_id, setProfileField]);
 
   const universityYearItems: ItemType<string>[] = useMemo(
     () => [
@@ -176,7 +176,7 @@ export default function Step2({ onBack, onValidityChange }: Step2Props) {
                 typeof callback === "function"
                   ? callback(profileData?.campus_id ?? "")
                   : callback;
-              setField("campus_id", value ?? "");
+              setProfileField("campus_id", value ?? "");
             }}
             setItems={emptyCallback}
             listMode="SCROLLVIEW"
@@ -202,7 +202,7 @@ export default function Step2({ onBack, onValidityChange }: Step2Props) {
               typeof callback === "function"
                 ? callback(profileData?.major ?? "")
                 : callback;
-            setField("major", value ?? "");
+            setProfileField("major", value ?? "");
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
@@ -240,7 +240,7 @@ export default function Step2({ onBack, onValidityChange }: Step2Props) {
                       : ""
                   )
                 : callback;
-            setField("university_year", value ? parseInt(value) : 0);
+            setProfileField("university_year", value ? parseInt(value) : 0);
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
@@ -272,7 +272,7 @@ export default function Step2({ onBack, onValidityChange }: Step2Props) {
                     profileData?.grad_year ? String(profileData.grad_year) : ""
                   )
                 : callback;
-            setField("grad_year", value ? parseInt(value) : 0);
+            setProfileField("grad_year", value ? parseInt(value) : 0);
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"

@@ -78,7 +78,7 @@ export async function uploadAvatar(
 
   const publicUrl = await uploadViaSignedUrl(userId, avatarName, avatarBlob, mode);
 
-  useProfileSetupStore.getState().setField("avatar_url", publicUrl);
+  useProfileSetupStore.getState().setProfileField("avatar_url", publicUrl);
   logger.info("[upload] Avatar uploaded", { userId, url: publicUrl, mode });
 
   return publicUrl;
@@ -107,7 +107,7 @@ export async function uploadPhotos(
     })
   );
 
-  useProfileSetupStore.getState().setField("photos", uploadedPhotos);
+  useProfileSetupStore.getState().setProfileField("photos", uploadedPhotos);
   return uploadedPhotos;
 }
 
@@ -132,7 +132,7 @@ export async function updatePhoto(
   const currentPhotos = useProfileSetupStore.getState().data.photos ?? [];
   const updatedPhotos = [...currentPhotos];
   updatedPhotos[photoIndex] = publicUrl;
-  useProfileSetupStore.getState().setField("photos", updatedPhotos);
+  useProfileSetupStore.getState().setProfileField("photos", updatedPhotos);
 
   return publicUrl;
 }

@@ -31,7 +31,7 @@ export default function ProfileSetupStep() {
 
   // access store
   const profileData = useProfileSetupStore((state) => state.data);
-  const setField = useProfileSetupStore((state) => state.setField);
+  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
   const goToNextStep = useCallback(() => {
     const idx = STEPS.indexOf(currentStep);
@@ -47,7 +47,7 @@ export default function ProfileSetupStep() {
 
   const stepProps = {
     data: profileData,
-    onUpdate: setField,
+    onUpdate: setProfileField,
     onNext: goToNextStep,
     onBack: goToPreviousStep,
     onValidityChange: setIsCurrentStepValid,

@@ -20,7 +20,7 @@ export default function Step6({
   onValidityChange?: (isValid: boolean) => void;
 }) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setField = useProfileSetupStore((state) => state.setField);
+  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
   /** Pick multiple photos up to 6 */
   const pickImages = useCallback(async () => {
@@ -37,18 +37,18 @@ export default function Step6({
 
     if (!result.canceled && result.assets?.length) {
       const uris = result.assets.map((asset) => asset.uri);
-      setField("photos", [...(profileData?.photos || []), ...uris].slice(0, 6));
+      setProfileField("photos", [...(profileData?.photos || []), ...uris].slice(0, 6));
     }
-  }, [profileData?.photos, setField]);
+  }, [profileData?.photos, setProfileField]);
 
   /** Remove a photo by index */
   const removePhoto = useCallback(
     (index: number) => {
       const updatedPhotos = [...(profileData?.photos || [])];
       updatedPhotos.splice(index, 1);
-      setField("photos", updatedPhotos);
+      setProfileField("photos", updatedPhotos);
     },
-    [profileData?.photos, setField]
+    [profileData?.photos, setProfileField]
   );
 
   /** Step validity: at least 6 photos required */

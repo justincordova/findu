@@ -21,7 +21,7 @@ type DropdownKey = "gender" | "pronouns" | null;
 
 export default function Step1({ onValidityChange }: Step1Props) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setField = useProfileSetupStore((state) => state.setField);
+  const setProfileField = useProfileSetupStore((state) => state.setField);
 
   const [activeDropdown, setActiveDropdown] = useState<DropdownKey>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -90,7 +90,7 @@ export default function Step1({ onValidityChange }: Step1Props) {
       setBirthdateError("You must be at least 18 years old");
     } else {
       setBirthdateError(null);
-      setField("birthdate", date.toISOString());
+      setProfileField("birthdate", date.toISOString());
     }
     setShowDatePicker(false);
   };
@@ -115,7 +115,7 @@ export default function Step1({ onValidityChange }: Step1Props) {
           placeholder="Enter your first name"
           placeholderTextColor={MUTED}
           value={profileData?.name ?? ""}
-          onChangeText={(text) => setField("name", text)}
+          onChangeText={(text) => setProfileField("name", text)}
           returnKeyType="done"
           onSubmitEditing={Keyboard.dismiss}
           blurOnSubmit
@@ -171,7 +171,7 @@ export default function Step1({ onValidityChange }: Step1Props) {
               typeof callback === "function"
                 ? callback(profileData?.gender ?? "")
                 : callback;
-            setField("gender", val ?? "");
+            setProfileField("gender", val ?? "");
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
@@ -199,7 +199,7 @@ export default function Step1({ onValidityChange }: Step1Props) {
               typeof callback === "function"
                 ? callback(profileData?.pronouns ?? "")
                 : callback;
-            setField("pronouns", val ?? "");
+            setProfileField("pronouns", val ?? "");
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"

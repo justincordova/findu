@@ -30,7 +30,7 @@ export default function Step5({
   onValidityChange?: (isValid: boolean) => void;
 }) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setField = useProfileSetupStore((state) => state.setField);
+  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
   const [interestInput, setInterestInput] = useState("");
   const [photoUploaded, setPhotoUploaded] = useState(false);
@@ -51,31 +51,31 @@ export default function Step5({
 
     if (!result.canceled && result.assets?.length) {
       const uri = result.assets[0].uri;
-      setField("avatar_url", uri);
+      setProfileField("avatar_url", uri);
       setPhotoUploaded(true);
       setTimeout(() => setPhotoUploaded(false), 2000); // hide indicator after 2s
     }
-  }, [setField]);
+  }, [setProfileField]);
 
   /** Add interest */
   const addInterest = useCallback(() => {
     const trimmed = interestInput.trim();
     if (trimmed && !profileData?.interests?.includes(trimmed)) {
-      setField("interests", [...(profileData?.interests || []), trimmed]);
+      setProfileField("interests", [...(profileData?.interests || []), trimmed]);
       setInterestInput("");
       Keyboard.dismiss();
     }
-  }, [interestInput, profileData?.interests, setField]);
+  }, [interestInput, profileData?.interests, setProfileField]);
 
   /** Remove interest */
   const removeInterest = useCallback(
     (item: string) => {
-      setField(
+      setProfileField(
         "interests",
         (profileData?.interests || []).filter((i) => i !== item)
       );
     },
-    [profileData?.interests, setField]
+    [profileData?.interests, setProfileField]
   );
 
   /** Step validity: require profile picture, bio, and at least one interest */
@@ -157,7 +157,7 @@ export default function Step5({
             style={styles.bioInput}
             placeholder="Tell us about yourself..."
             value={profileData?.bio ?? ""}
-            onChangeText={(text) => setField("bio", text)}
+            onChangeText={(text) => setProfileField("bio", text)}
             multiline
             maxLength={500}
             placeholderTextColor={MUTED}

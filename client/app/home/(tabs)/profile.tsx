@@ -20,35 +20,40 @@ import PhotosSection from "@/components/profile/PhotosSection";
 import PreferencesSection from "@/components/profile/PreferencesSection";
 
 export default function ProfileScreen() {
-  const { setField } = useProfileSetupStore();
-  const [loading, setLoading] = useState(true);
+  const { data: profileData, setProfileData } = useProfileSetupStore();
+  const [loading, setLoading] = useState(!profileData); // Only load if no data
   const [error, setError] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async () => {
-    setLoading(true);
+    if (!loading) setLoading(true); // Ensure loading is true when fetching
     setError(null);
 
     try {
       const data = await profileApi.me();
-
-      // Merge API data into store
-      Object.entries(data).forEach(([key, value]) => {
-        const typedKey = key as keyof typeof data;
-        setField(typedKey as any, value);
-      });
+      setProfileData(data); // Update store with all data at once
     } catch (err) {
       logger.error("Error fetching profile:", err);
       setError("Failed to load profile");
     } finally {
       setLoading(false);
     }
-  }, [setLoading, setError, setField]);
+  }, [loading, setProfileData]);
 
   // Fetch profile on mount and when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      fetchProfile();
-    }, [fetchProfile])
+      if (!profileData) {
+        // If there's no data in the store, fetch it.
+        fetchProfile();
+      } else {
+        // Data already exists, no need to refetch on every focus.
+        // TODO: Implement a lightweight API call here to check if the profile
+        // on the server has been updated since the last fetch.
+        // Compare `profileData.updated_at` with the server's timestamp.
+        // If it's stale, then call `fetchProfile()`.
+        logger.info("Profile data already in store. Skipping fetch.");
+      }
+    }, [profileData, fetchProfile])
   );
 
   if (loading) {

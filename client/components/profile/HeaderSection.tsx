@@ -28,7 +28,7 @@ function calculateAge(birthdate: string | undefined): number | null {
 }
 
 export default function HeaderSection() {
-  const { data: profile, setField } = useProfileSetupStore();
+  const { data: profile, setProfileField } = useProfileSetupStore();
   const userId = useAuthStore.getState().userId;
 
   const handleUpdateAvatar = async () => {
@@ -60,19 +60,19 @@ export default function HeaderSection() {
 
     try {
       // Optimistically update the UI
-      setField("avatar_url", newAvatarUri);
+      setProfileField("avatar_url", newAvatarUri);
 
       // Upload with "update" mode
       const publicUrl = await uploadAvatar(userId, newAvatarUri, "update");
 
       // Final update with the public URL
-      setField("avatar_url", publicUrl);
+      setProfileField("avatar_url", publicUrl);
       logger.info("Avatar updated successfully", { userId, publicUrl });
     } catch (error) {
       logger.error("Failed to update avatar", { error });
       Alert.alert("Upload Failed", "Could not update your avatar. Please try again.");
       // Revert optimistic update if needed
-      setField("avatar_url", profile?.avatar_url);
+      setProfileField("avatar_url", profile?.avatar_url);
     }
   };
 

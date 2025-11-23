@@ -13,7 +13,7 @@ export default function Step3({
   onValidityChange?: (isValid: boolean) => void;
 }) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setField = useProfileSetupStore((state) => state.setField);
+  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
   /** Active dropdown state for orientation */
   const [activeDropdown, setActiveDropdown] = useState<"orientation" | null>(
@@ -53,8 +53,8 @@ export default function Step3({
 
   /** Intent selection */
   const toggleIntent = useCallback(
-    (intent: string) => setField("intent", intent),
-    [setField]
+    (intent: string) => setProfileField("intent", intent),
+    [setProfileField]
   );
   const isIntentSelected = useCallback(
     (intent: string) => profileData?.intent === intent,
@@ -66,15 +66,15 @@ export default function Step3({
     (gender: string) => {
       const current = profileData?.gender_preference ?? [];
       if (current.includes(gender)) {
-        setField(
+        setProfileField(
           "gender_preference",
           current.filter((g) => g !== gender)
         );
       } else {
-        setField("gender_preference", [...current, gender]);
+        setProfileField("gender_preference", [...current, gender]);
       }
     },
-    [profileData?.gender_preference, setField]
+    [profileData?.gender_preference, setProfileField]
   );
   const isGenderSelected = useCallback(
     (gender: string) => profileData?.gender_preference?.includes(gender),
@@ -127,7 +127,7 @@ export default function Step3({
               typeof callback === "function"
                 ? callback(profileData?.sexual_orientation ?? "")
                 : callback;
-            setField("sexual_orientation", val ?? "");
+            setProfileField("sexual_orientation", val ?? "");
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
