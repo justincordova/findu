@@ -21,10 +21,17 @@ export const getMatchesController = async (req: Request, res: Response) => {
 export const getMatchByIdController = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const match = await matchesService.getMutualMatch(id, id); // Adjust if you want a different endpoint for pair check
+    const userId = (req as any).user.id;
+
+    const match = await matchesService.getMatchById(id);
 
     if (!match) {
       return res.status(404).json({ error: "Match not found" });
+    }
+
+    // Authorization check: User must be part of the match
+    if (match.user1 !== userId && match.user2 !== userId) {
+      return res.status(403).json({ error: "Not authorized to view this match" });
     }
 
     res.json(match);

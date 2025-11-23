@@ -1,5 +1,6 @@
 import prisma from "@/lib/prismaClient";
 import { Like, CreateLikeResult } from "@/types/Like";
+import * as MatchesService from "../matches/services";
 
 // Configuration constants
 const DAILY_SUPERLIKE_LIMIT = 5; // Adjust based on your business logic
@@ -103,31 +104,8 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
 
     // If reciprocal exists, create a match
     if (reciprocal) {
-      // Double-check that match doesn't already exist (race condition protection)
-      const existingMatch = await tx.matches.findFirst({
-        where: {
-          OR: [
-            { user1: data.from_user, user2: data.to_user },
-            { user1: data.to_user, user2: data.from_user },
-          ],
-        },
-      });
-
-      if (!existingMatch) {
-        const match = await tx.matches.create({
-          data: {
-            user1: data.from_user,
-            user2: data.to_user,
-            matched_at: new Date(),
-          },
-        });
-
-        matchId = match.id;
-
-        // No initial chat created - users will start chats manually from UI
-      } else {
-        matchId = existingMatch.id;
-      }
+      const match = await MatchesService.createMatch(data.from_user, data.to_user, tx);
+      matchId = match.id;
     }
 
     return {

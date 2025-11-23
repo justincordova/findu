@@ -1,4 +1,4 @@
-import { body, param, query } from "express-validator";
+import { body, query } from "express-validator";
 
 /**
  * Validate compatibility calculation request
@@ -22,16 +22,6 @@ export const validateCompatibilityRequest = [
 ];
 
 /**
- * Validate userId parameter in routes
- */
-export const validateUserIdParam = [
-  param("userId")
-    .isString()
-    .notEmpty()
-    .withMessage("User ID must be a valid non-empty string"),
-];
-
-/**
  * Validate discovery feed query parameters
  */
 export const validateDiscoveryQuery = [
@@ -43,6 +33,7 @@ export const validateDiscoveryQuery = [
     .optional()
     .isInt({ min: 0 })
     .withMessage("Offset must be a number 0 or greater"),
+  // Remove userId validation from query/param as it comes from auth token
 ];
 
 /**
@@ -116,8 +107,5 @@ export const validateDiscoveryPreferences = [
  * Validate refresh feed request
  */
 export const validateRefreshFeed = [
-  param("userId")
-    .isString()
-    .notEmpty()
-    .withMessage("User ID must be a valid non-empty string"),
+  // No validation needed as userId comes from auth token
 ];

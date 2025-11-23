@@ -1,4 +1,5 @@
 import prisma from "@/lib/prismaClient";
+import logger from "@/config/logger";
 import { Profile } from "@/types/Profile";
 import { 
   ProfileWithScore, 
@@ -61,17 +62,6 @@ export const isWithinAgePreference = (
   return candidateAge >= minAge && candidateAge <= maxAge;
 };
 
-/**
- * Utility: Shuffle array for randomization.
- */
-const shuffleArray = <T>(array: T[]): T[] => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
 
 /**
  * Calculate shared interests score based on overlap.
@@ -243,30 +233,6 @@ export const calculateCompatibilityScore = (userProfile: Profile, candidateProfi
   return Math.round(totalScore * 100); // Convert to 0-100 scale
 };
 
-/**
- * Rank candidates with randomization within score tiers to avoid monotony.
- */
-export const rankCandidatesWithRandomization = (candidates: ProfileWithScore[]): ProfileWithScore[] => {
-  // Group by score tiers (0-20, 21-40, 41-60, 61-80, 81-100)
-  const scoreTiers = {
-    tier5: candidates.filter(c => c.compatibilityScore >= 81), // 81-100
-    tier4: candidates.filter(c => c.compatibilityScore >= 61 && c.compatibilityScore <= 80), // 61-80
-    tier3: candidates.filter(c => c.compatibilityScore >= 41 && c.compatibilityScore <= 60), // 41-60
-    tier2: candidates.filter(c => c.compatibilityScore >= 21 && c.compatibilityScore <= 40), // 21-40
-    tier1: candidates.filter(c => c.compatibilityScore <= 20), // 0-20
-  };
-
-  // Shuffle within each tier and combine
-  const shuffledTiers = [
-    ...shuffleArray(scoreTiers.tier5),
-    ...shuffleArray(scoreTiers.tier4),
-    ...shuffleArray(scoreTiers.tier3),
-    ...shuffleArray(scoreTiers.tier2),
-    ...shuffleArray(scoreTiers.tier1),
-  ];
-
-  return shuffledTiers;
-};
 
 /**
  * Gets all eligible candidates for a user based on hard filters.
@@ -312,37 +278,65 @@ export const getEligibleCandidates = async (userId: string, userProfile: Profile
     ...blockedUserIds
   ])].filter((id): id is string => Boolean(id));
 
+  logger.info(`Discover: Exclusion list size: ${excludedUserIds.length}`, { 
+    liked: likedUserIds.length, 
+    matched: matchedUserIds.length, 
+    blocked: blockedUserIds.length 
+  });
+
   // Get precise birthdate range for age filtering using date-fns
   const { minBirthdate, maxBirthdate } = getBirthdateRangeForAge(userProfile.min_age, userProfile.max_age);
 
-  const profiles = await prisma.profiles.findMany({
-    where: {
-      // Hard filters - ALL must match
-      user_id: { notIn: excludedUserIds },
-      university_id: userProfile.university_id, // SAME EXACT UNIVERSITY ONLY - enforced strictly
-      campus_id: userProfile.campus_id, // SAME CAMPUS if specified
-      gender: { in: userProfile.gender_preference }, // Must match gender preference
-      birthdate: {
-        gte: maxBirthdate, // Born after this date (older than min_age)
-        lte: minBirthdate, // Born before this date (younger than max_age)
-      },
-      // Ensure candidate's age preference includes current user
-      min_age: { lte: userAge },
-      max_age: { gte: userAge },
-      // Ensure candidate's gender preference includes current user
-      gender_preference: { 
-        has: userProfile.gender,
-      },
+  const where: any = {
+    // Hard filters - ALL must match
+    user_id: { notIn: excludedUserIds },
+    university_id: userProfile.university_id, // SAME EXACT UNIVERSITY ONLY - enforced strictly
+    campus_id: userProfile.campus_id, // SAME CAMPUS if specified
+    birthdate: {
+      gte: maxBirthdate, // Born after this date (older than min_age)
+      lte: minBirthdate, // Born before this date (younger than max_age)
     },
-    // Get a larger pool to score and rank
-    take: 200,
+    // Ensure candidate's age preference includes current user
+    min_age: { lte: userAge },
+    max_age: { gte: userAge },
+    // Ensure candidate's gender preference includes current user OR is 'All'
+    OR: [
+      { gender_preference: { has: userProfile.gender } },
+      { gender_preference: { has: 'All' } },
+    ],
+  }
+
+  if (!userProfile.gender_preference.includes('All')) {
+    where.gender = { in: userProfile.gender_preference };
+  }
+
+  logger.info(`Discover: Querying profiles with filters`, { 
+    universityId: userProfile.university_id,
+    ageRange: `${userProfile.min_age}-${userProfile.max_age}`,
+    userAge,
+    genderPref: userProfile.gender_preference
   });
 
+  const profiles = await prisma.profiles.findMany({
+    where,
+    // Get a larger pool to score and rank
+    take: 200,
+    orderBy: {
+      created_at: 'desc',
+    },
+  });
+
+  logger.info(`Discover: Found ${profiles.length} raw candidates after DB query`);
+
   // Filter out profiles with empty interests or gender_preference after the query
-  return profiles.filter(profile => 
+  const finalProfiles = profiles.filter(profile => 
     profile.interests && profile.interests.length > 0 &&
     profile.gender_preference && profile.gender_preference.length > 0
   );
+
+  logger.info(`Discover: Returning ${finalProfiles.length} candidates after validation`);
+
+  return finalProfiles;
 };
 
 /**
@@ -381,8 +375,13 @@ export const getDiscoverProfiles = async (
     compatibilityScore: calculateCompatibilityScore(currentUser, candidate)
   }));
 
-  // Sort by compatibility score (highest first) with randomization within tiers
-  const rankedCandidates = rankCandidatesWithRandomization(scoredCandidates);
+  // Sort by compatibility score (highest first), then by user_id for stability
+  const rankedCandidates = scoredCandidates.sort((a, b) => {
+    if (b.compatibilityScore !== a.compatibilityScore) {
+      return b.compatibilityScore - a.compatibilityScore;
+    }
+    return a.user_id.localeCompare(b.user_id);
+  });
 
   // Apply pagination
   return rankedCandidates.slice(offset, offset + limit);

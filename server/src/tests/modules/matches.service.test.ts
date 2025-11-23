@@ -45,17 +45,52 @@ describe("Matches API happy path cases", () => {
   });
 
   it("should fetch matches for a user", async () => {
-    (prisma.matches.findMany as jest.Mock).mockResolvedValue([matchSample]);
+    const mockMatchWithProfile = {
+      ...matchSample,
+      users_matches_user1Tousers: {
+        profiles: { name: "User 1", avatar_url: "url1" }
+      },
+      users_matches_user2Tousers: {
+        profiles: { name: "User 2", avatar_url: "url2" }
+      }
+    };
+
+    (prisma.matches.findMany as jest.Mock).mockResolvedValue([mockMatchWithProfile]);
 
     const result = await MatchesService.getMatchesForUser(user1);
 
     expect(prisma.matches.findMany).toHaveBeenCalledWith({
       where: { OR: [{ user1 }, { user2: user1 }] },
-      select: { id: true, user1: true, user2: true, matched_at: true },
+      include: {
+        users_matches_user1Tousers: {
+          include: {
+            profiles: {
+              select: { name: true, avatar_url: true }
+            }
+          }
+        },
+        users_matches_user2Tousers: {
+          include: {
+            profiles: {
+              select: { name: true, avatar_url: true }
+            }
+          }
+        }
+      },
       orderBy: { matched_at: "desc" },
     });
 
-    expect(result).toEqual([matchSample]);
+    expect(result).toEqual([{
+      id: matchSample.id,
+      user1: matchSample.user1,
+      user2: matchSample.user2,
+      matched_at: matchSample.matched_at,
+      otherUser: {
+        id: user2,
+        name: "User 2",
+        avatar_url: "url2"
+      }
+    }]);
   });
 
   it("should check if users are matched", async () => {
@@ -106,12 +141,13 @@ describe("Matches API edge & failure cases", () => {
     );
   });
 
-  it("should throw if match already exists", async () => {
+  it("should return existing match if match already exists", async () => {
     (prisma.matches.findFirst as jest.Mock).mockResolvedValue(matchSample);
 
-    await expect(MatchesService.createMatch(user1, user2)).rejects.toThrow(
-      "Match already exists between these users"
-    );
+    const result = await MatchesService.createMatch(user1, user2);
+
+    expect(result).toEqual(matchSample);
+    expect(prisma.matches.create).not.toHaveBeenCalled();
   });
 
   it("should return false for areUsersMatched with invalid IDs", async () => {

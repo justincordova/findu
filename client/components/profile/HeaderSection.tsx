@@ -45,6 +45,7 @@ export default function HeaderSection() {
     }
 
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      // @ts-ignore
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],

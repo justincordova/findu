@@ -1,21 +1,27 @@
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prismaClient";
-import { Match } from "@/types/Match";
+import { Match, MatchWithProfile } from "@/types/Match";
+
+type PrismaTx = Prisma.TransactionClient;
 
 /**
- * Creates a new match between two users.
+ * Creates a new match between two users, or returns the existing one.
  *
  * @param user1Id - First user's ID
  * @param user2Id - Second user's ID
+ * @param tx - Optional Prisma transaction client
  * @returns Minimal match info: matchId, user1Id, user2Id, matchedAt
- * @throws Error if match already exists or users are invalid
+ * @throws Error if users are invalid
  */
-export const createMatch = async (user1Id: string, user2Id: string): Promise<Match> => {
+export const createMatch = async (user1Id: string, user2Id: string, tx?: PrismaTx): Promise<Match> => {
+  const prismaClient = tx || prisma;
+
   if (!user1Id || !user2Id || user1Id === user2Id) {
     throw new Error('Valid user IDs required and users cannot match themselves');
   }
 
   // Check if match already exists to prevent duplicates
-  const existingMatch = await prisma.matches.findFirst({
+  const existingMatch = await prismaClient.matches.findFirst({
     where: {
       OR: [
         { user1: user1Id, user2: user2Id },
@@ -25,10 +31,13 @@ export const createMatch = async (user1Id: string, user2Id: string): Promise<Mat
   });
 
   if (existingMatch) {
-    throw new Error('Match already exists between these users');
+    return {
+      ...existingMatch,
+      matched_at: existingMatch.matched_at!,
+    };
   }
 
-  const match = await prisma.matches.create({
+  const match = await prismaClient.matches.create({
     data: {
       user1: user1Id,
       user2: user2Id,
@@ -49,13 +58,12 @@ export const createMatch = async (user1Id: string, user2Id: string): Promise<Mat
 };
 
 /**
- * Returns all matches for a given user.
- * Only returns user IDs + match metadata.
+ * Returns all matches for a given user with the other user's profile.
  *
  * @param userId - The ID of the user whose matches to retrieve
- * @returns Array of match info with just user IDs and metadata
+ * @returns Array of matches with other user's profile info
  */
-export const getMatchesForUser = async (userId: string): Promise<Match[]> => {
+export const getMatchesForUser = async (userId: string): Promise<MatchWithProfile[]> => {
   if (!userId) {
     throw new Error('User ID is required');
   }
@@ -64,19 +72,42 @@ export const getMatchesForUser = async (userId: string): Promise<Match[]> => {
     where: {
       OR: [{ user1: userId }, { user2: userId }],
     },
-    select: {
-      id: true,
-      user1: true,
-      user2: true,
-      matched_at: true,
+    include: {
+      users_matches_user1Tousers: {
+        include: {
+          profiles: {
+            select: { name: true, avatar_url: true }
+          }
+        }
+      },
+      users_matches_user2Tousers: {
+        include: {
+          profiles: {
+            select: { name: true, avatar_url: true }
+          }
+        }
+      }
     },
     orderBy: { matched_at: 'desc' },
   });
 
-  return matches.map(match => ({
-    ...match,
-    matched_at: match.matched_at!,
-  }));
+  return matches.map(match => {
+    const isUser1 = match.user1 === userId;
+    const otherUser = isUser1 ? match.users_matches_user2Tousers : match.users_matches_user1Tousers;
+    const otherProfile = otherUser?.profiles;
+
+    return {
+      id: match.id,
+      user1: match.user1,
+      user2: match.user2,
+      matched_at: match.matched_at!,
+      otherUser: {
+        id: isUser1 ? match.user2 : match.user1,
+        name: otherProfile?.name || "Unknown User",
+        avatar_url: otherProfile?.avatar_url || "",
+      }
+    };
+  });
 };
 
 /**
@@ -139,6 +170,33 @@ export const getMutualMatch = async (user1Id: string, user2Id: string): Promise<
         { user1: user2Id, user2: user1Id },
       ],
     },
+    select: {
+      id: true,
+      user1: true,
+      user2: true,
+      matched_at: true,
+    },
+  });
+
+  if (!match) return null;
+
+  return {
+    ...match,
+    matched_at: match.matched_at!,
+  };
+};
+
+/**
+ * Get a match by its ID.
+ * 
+ * @param matchId - The ID of the match
+ * @returns Match info or null if not found
+ */
+export const getMatchById = async (matchId: string): Promise<Match | null> => {
+  if (!matchId) return null;
+
+  const match = await prisma.matches.findUnique({
+    where: { id: matchId },
     select: {
       id: true,
       user1: true,

@@ -13,6 +13,7 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 import { useAuth } from "@/hooks/useAuth";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Prevent splash screen from auto hiding
 SplashScreen.preventAutoHideAsync();
@@ -50,7 +51,7 @@ export default function RootLayout() {
   }, [fontsLoaded]);
 
   return (
-    <View style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -97,7 +98,7 @@ export default function RootLayout() {
           <DevButton route="/profile-setup/0" />
         </View>
       )}
-    </View>
+    </GestureHandlerRootView>
   );
 }
 

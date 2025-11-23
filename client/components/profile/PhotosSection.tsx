@@ -65,6 +65,7 @@ export default function PhotosSection() {
     }
 
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      // @ts-ignore
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 5],
@@ -104,7 +105,7 @@ export default function PhotosSection() {
       const rowPhotos = photos.slice(i, i + 2);
       rows.push(
         <View key={i} style={styles.row}>
-          {rowPhotos.map((photo, idx) => {
+          {rowPhotos.map((photo: string, idx: number) => {
             const photoIndex = i + idx;
             return (
               <TouchableOpacity

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as LikesService from "./services";
+import logger from "@/config/logger";
 
 /**
  * Create a like or superlike from one user to another
@@ -8,6 +9,13 @@ import * as LikesService from "./services";
 export const createLike = async (req: Request, res: Response) => {
   try {
     const result = await LikesService.createLike(req.body);
+
+    logger.info("Like created successfully", { 
+      fromUser: req.body.from_user, 
+      toUser: req.body.to_user, 
+      isSuperlike: req.body.is_superlike,
+      matched: result.matched 
+    });
 
     return res.status(201).json({
       like: result.like,

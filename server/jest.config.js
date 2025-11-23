@@ -7,9 +7,10 @@ module.exports = {
   testEnvironment: "node",
   transform: {
     ...tsJestTransformCfg,
+    '^.+\\.(js|mjs)$': 'babel-jest',
   },
   transformIgnorePatterns: [
-    "/node_modules/(?!better-auth)"
+    "/node_modules/(?!(@better-auth|jose|@noble|drizzle-orm|drizzle-kit)/)"
   ],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",

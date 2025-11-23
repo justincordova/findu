@@ -28,6 +28,7 @@ export default function Step6({
     if (remaining <= 0) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
+      // @ts-ignore
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 0.7,
@@ -78,7 +79,7 @@ export default function Step6({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.photosContainer}
       >
-        {(profileData?.photos || []).map((uri, idx) => (
+        {(profileData?.photos || []).map((uri: string, idx: number) => (
           <View key={idx} style={styles.photoWrapper}>
             <Image source={{ uri }} style={styles.photo} />
             <TouchableOpacity

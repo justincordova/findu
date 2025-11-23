@@ -2,7 +2,6 @@ import { Router } from "express";
 import * as DiscoverController from "./controllers"; 
 import { 
   validateCompatibilityRequest, 
-  validateUserIdParam, 
   validateDiscoveryQuery,
   validateRefreshFeed
 } from "./validators";
@@ -16,8 +15,7 @@ router.use(authMiddleware.requireAuth);
 
 // Get discovery feed for authenticated user
 router.get(
-  "/:userId", 
-  validateUserIdParam, 
+  "/", 
   validateDiscoveryQuery, 
   handleValidationErrors,
   DiscoverController.getDiscoverFeed
@@ -25,8 +23,7 @@ router.get(
 
 // Get eligible candidates for user (admin/debug endpoint)
 router.get(
-  "/:userId/candidates", 
-  validateUserIdParam, 
+  "/candidates", 
   handleValidationErrors,
   DiscoverController.getEligibleCandidates
 );
@@ -41,7 +38,7 @@ router.post(
 
 // Refresh discovery feed for user
 router.post(
-  "/:userId/refresh", 
+  "/refresh", 
   validateRefreshFeed, 
   handleValidationErrors,
   DiscoverController.refreshDiscoverFeed

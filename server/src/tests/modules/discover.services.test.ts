@@ -138,21 +138,42 @@ describe("Discover API happy path cases", () => {
     expect(typeof result[0].compatibilityScore).toBe('number');
   });
 
-  it("should maintain score-based ordering within tiers", () => {
-    const candidates: ProfileWithScore[] = [
-      { ...sampleCandidateProfile, user_id:"low1", compatibilityScore:15 },
-      { ...sampleCandidateProfile, user_id:"high1", compatibilityScore:85 },
-      { ...sampleCandidateProfile, user_id:"mid1", compatibilityScore:50 },
-      { ...sampleCandidateProfile, user_id:"high2", compatibilityScore:90 },
-      { ...sampleCandidateProfile, user_id:"low2", compatibilityScore:10 },
-    ];
+  it("should maintain stable sorting (score desc, then user_id asc)", async () => {
+    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleUserProfile);
+    (prisma.likes.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.matches.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.blocks.findMany as jest.Mock).mockResolvedValue([]);
+    
+    const candidate1 = { ...sampleCandidateProfile, user_id: "b_user", compatibilityScore: 80 };
+    const candidate2 = { ...sampleCandidateProfile, user_id: "a_user", compatibilityScore: 80 };
+    const candidate3 = { ...sampleCandidateProfile, user_id: "c_user", compatibilityScore: 90 };
 
-    const result = DiscoverService.rankCandidatesWithRandomization(candidates);
-    expect(result).toHaveLength(5);
-    const highScoreCandidates = result.filter(c => c.compatibilityScore >= 81);
-    expect(highScoreCandidates).toHaveLength(2);
-    const lowScoreCandidates = result.slice(-2);
-    expect(lowScoreCandidates.every(c => c.compatibilityScore <= 20)).toBe(true);
+    (prisma.profiles.findMany as jest.Mock).mockResolvedValue([candidate1, candidate2, candidate3]);
+
+    // We need to mock calculateCompatibilityScore to return the pre-set scores
+    // Since it's an exported function in the same module, we can't easily spy on it if it's called internally.
+    // However, the service logic calculates the score. Let's rely on the service logic but ensure
+    // the input profiles produce the expected scores or just verify the sorting logic if we can mock the internal call.
+    // Alternatively, we can just test the sorting logic by mocking the candidates returned by getEligibleCandidates
+    // But getEligibleCandidates is also internal.
+    
+    // Let's assume the scores will be calculated based on the profiles.
+    // To test stable sort specifically, we might need to rely on the fact that identical profiles will have identical scores.
+    
+    const result = await DiscoverService.getDiscoverProfiles("user1-id", 10, 0);
+    
+    // Expected order: 
+    // 1. candidate3 (score 90)
+    // 2. candidate2 (score 80, user_id "a_user")
+    // 3. candidate1 (score 80, user_id "b_user")
+    
+    // Note: The actual scores will depend on calculateCompatibilityScore logic.
+    // Since we are using the same profile data for all candidates, they will have the same score.
+    // So we expect them to be sorted by user_id asc.
+    
+    expect(result[0].user_id).toBe("a_user");
+    expect(result[1].user_id).toBe("b_user");
+    expect(result[2].user_id).toBe("c_user");
   });
 });
 

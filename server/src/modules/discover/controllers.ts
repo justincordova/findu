@@ -4,10 +4,10 @@ import prisma from "@/lib/prismaClient";
 
 /**
  * Get discovery feed for a user - potential matches with compatibility scores
- * GET /discover/:userId?limit=10&offset=0
+ * GET /discover?limit=10&offset=0
  */
 export const getDiscoverFeed = async (req: Request, res: Response) => {
-  const { userId } = req.params;
+  const userId = (req as any).user.id;
   const limit = parseInt(req.query.limit as string) || 10;
   const offset = parseInt(req.query.offset as string) || 0;
 
@@ -33,10 +33,10 @@ export const getDiscoverFeed = async (req: Request, res: Response) => {
 
 /**
  * Get eligible candidates for a user (for debugging/admin purposes)
- * GET /discover/:userId/candidates
+ * GET /discover/candidates
  */
 export const getEligibleCandidates = async (req: Request, res: Response) => {
-  const { userId } = req.params;
+  const userId = (req as any).user.id;
 
   try {
     // First get user profile
@@ -66,14 +66,15 @@ export const getEligibleCandidates = async (req: Request, res: Response) => {
 /**
  * Calculate compatibility score between two users
  * POST /discover/compatibility
- * Body: { userId: string, candidateId: string }
+ * Body: { candidateId: string }
  */
 export const calculateCompatibility = async (req: Request, res: Response) => {
-  const { userId, candidateId } = req.body;
+  const userId = (req as any).user.id;
+  const { candidateId } = req.body;
 
-  if (!userId || !candidateId) {
+  if (!candidateId) {
     return res.status(400).json({ 
-      message: "Both userId and candidateId are required" 
+      message: "candidateId is required" 
     });
   }
 
@@ -140,10 +141,10 @@ export const calculateCompatibility = async (req: Request, res: Response) => {
 
 /**
  * Refresh/reset discovery feed for a user
- * POST /discover/:userId/refresh
+ * POST /discover/refresh
  */
 export const refreshDiscoverFeed = async (req: Request, res: Response) => {
-  const { userId } = req.params;
+  const userId = (req as any).user.id;
 
   try {
     await DiscoverService.refreshDiscoverFeed(userId);
