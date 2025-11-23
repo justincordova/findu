@@ -11,7 +11,8 @@
     "test": "jest --verbose",
     "test:coverage": "jest --coverage --verbose",
     "seed": "ts-node -r tsconfig-paths/register scripts/seed.ts",
-    "cleanup": "ts-node -r tsconfig-paths/register scripts/cleanup_seed.ts"
+    "cleanup": "ts-node -r tsconfig-paths/register scripts/cleanup_seed.ts",
+    "cleanup:likes-matches": "ts-node -r tsconfig-paths/register scripts/cleanup_likes_matches.ts"
   },
   "keywords": [],
   "author": "",
