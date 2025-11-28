@@ -125,6 +125,28 @@ describe("Discover API happy path cases", () => {
     expect(Number.isInteger(score)).toBe(true);
   });
 
+  describe("calculateOrientationCompatibilityScore", () => {
+    it("should return 1.0 for a perfect match", () => {
+      const score = DiscoverService.calculateOrientationCompatibilityScore("straight", "straight", "male", "female", ["female"], ["male"]);
+      expect(score).toBe(1.0);
+    });
+  
+    it("should return 0.9 for a cross-compatible match", () => {
+      const score = DiscoverService.calculateOrientationCompatibilityScore("bisexual", "pansexual", "male", "female", ["female"], ["male"]);
+      expect(score).toBe(0.9);
+    });
+
+    it("should return 0.1 for a low-compat match (straight and gay, same gender)", async () => {
+      const score = DiscoverService.calculateOrientationCompatibilityScore( "straight", "gay", "male", "male", ["female"], ["male"]);
+      expect(score).toBe(0.1);
+    });
+
+    it("should return a low score if gender preferences do not match", async () => {
+      const score = DiscoverService.calculateOrientationCompatibilityScore("straight", "straight", "male", "female", ["male"], ["male"]);
+      expect(score).toBe(0.1);
+    });
+  });
+
   it("should return discover profiles with compatibility scores", async () => {
     (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleUserProfile);
     (prisma.likes.findMany as jest.Mock).mockResolvedValue([]);
@@ -150,15 +172,8 @@ describe("Discover API happy path cases", () => {
 
     (prisma.profiles.findMany as jest.Mock).mockResolvedValue([candidate1, candidate2, candidate3]);
 
-    // We need to mock calculateCompatibilityScore to return the pre-set scores
-    // Since it's an exported function in the same module, we can't easily spy on it if it's called internally.
-    // However, the service logic calculates the score. Let's rely on the service logic but ensure
-    // the input profiles produce the expected scores or just verify the sorting logic if we can mock the internal call.
-    // Alternatively, we can just test the sorting logic by mocking the candidates returned by getEligibleCandidates
-    // But getEligibleCandidates is also internal.
-    
-    // Let's assume the scores will be calculated based on the profiles.
-    // To test stable sort specifically, we might need to rely on the fact that identical profiles will have identical scores.
+    const spy = jest.spyOn(DiscoverService, "calculateCompatibilityScore");
+    spy.mockReturnValueOnce(80).mockReturnValueOnce(80).mockReturnValue(90);
     
     const result = await DiscoverService.getDiscoverProfiles("user1-id", 10, 0);
     
@@ -167,13 +182,68 @@ describe("Discover API happy path cases", () => {
     // 2. candidate2 (score 80, user_id "a_user")
     // 3. candidate1 (score 80, user_id "b_user")
     
-    // Note: The actual scores will depend on calculateCompatibilityScore logic.
-    // Since we are using the same profile data for all candidates, they will have the same score.
-    // So we expect them to be sorted by user_id asc.
+    expect(result[0].user_id).toBe("c_user");
+    expect(result[1].user_id).toBe("a_user");
+    expect(result[2].user_id).toBe("b_user");
+
+    spy.mockRestore();
+  });
+
+  it("should handle pagination correctly", async () => {
+    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleUserProfile);
+    (prisma.likes.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.matches.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.blocks.findMany as jest.Mock).mockResolvedValue([]);
     
-    expect(result[0].user_id).toBe("a_user");
-    expect(result[1].user_id).toBe("b_user");
-    expect(result[2].user_id).toBe("c_user");
+    const candidates = [
+      { ...sampleCandidateProfile, user_id: "user1" },
+      { ...sampleCandidateProfile, user_id: "user2" },
+      { ...sampleCandidateProfile, user_id: "user3" },
+      { ...sampleCandidateProfile, user_id: "user4" },
+      { ...sampleCandidateProfile, user_id: "user5" },
+    ];
+    (prisma.profiles.findMany as jest.Mock).mockResolvedValue(candidates);
+
+    const paginatedResult = await DiscoverService.getDiscoverProfiles("user-id", 2, 1);
+
+    expect(paginatedResult).toHaveLength(2);
+    expect(paginatedResult[0].user_id).toBe("user2");
+  });
+});
+
+describe("getEligibleCandidates", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(Date, 'now').mockReturnValue(mockToday.getTime());
+    (require('date-fns').differenceInYears as jest.Mock).mockReturnValue(23);
+    (require('date-fns').subYears as jest.Mock).mockImplementation(
+      (date, years) => new Date(date.getFullYear() - years, date.getMonth(), date.getDate())
+    );
+    (require('date-fns').addDays as jest.Mock).mockImplementation(
+      (date, days) => new Date(date.getTime() + days * 24 * 60 * 60 * 1000)
+    );
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it("should apply gender filter when gender_preference is not 'All'", async () => {
+    (prisma.likes.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.matches.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.blocks.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.profiles.findMany as jest.Mock).mockResolvedValue([]);
+
+    await DiscoverService.getEligibleCandidates("user1-id", {
+      ...sampleUserProfile,
+      gender_preference: ["female"],
+    });
+
+    expect(prisma.profiles.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          gender: { in: ["female"] },
+        }),
+      })
+    );
   });
 });
 

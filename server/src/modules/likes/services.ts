@@ -1,6 +1,6 @@
 import prisma from "@/lib/prismaClient";
 import { Like, CreateLikeResult } from "@/types/Like";
-import * as MatchesService from "../matches/services";
+
 
 // Configuration constants
 const DAILY_SUPERLIKE_LIMIT = 5; // Adjust based on your business logic
@@ -102,15 +102,32 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
 
     let matchId: string | null = null;
 
-    // If reciprocal exists, create a match
+    // If reciprocal exists, the DB trigger will create the match automatically.
+    // We can check if it exists, but since it's async, we might not see it immediately in this transaction unless the trigger runs synchronously (which it usually does in Postgres).
+    // However, to be safe and consistent with the "trigger" approach, we shouldn't manually create it.
+    
+    // We can still check for reciprocal to return 'matched: true' to the UI.
+    
     if (reciprocal) {
-      const match = await MatchesService.createMatch(data.from_user, data.to_user, tx);
-      matchId = match.id;
+       // We can try to fetch the match if the trigger ran, or just assume it will be created.
+       // The UI might expect a matchId.
+       // If the trigger runs AFTER the transaction commits, we won't see it here.
+       // If it runs AFTER INSERT (which it does), it runs within the same transaction context usually.
+       // Let's try to find it.
+       const match = await tx.matches.findFirst({
+         where: {
+            OR: [
+              { user1: data.from_user, user2: data.to_user },
+              { user1: data.to_user, user2: data.from_user },
+            ]
+         }
+       });
+       matchId = match?.id || null;
     }
 
     return {
       like,
-      matched: !!reciprocal && !!matchId,
+      matched: !!reciprocal,
       matchId,
     };
   });

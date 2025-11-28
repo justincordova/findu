@@ -23,6 +23,7 @@ import profileRoutes from "@/modules/profiles/routes";
 import likesRoutes from "@/modules/likes/routes";
 import matchesRoutes from "@/modules/matches/routes";
 import discoverRoutes from "@/modules/discover/routes";
+import blocksRoutes from "@/modules/blocks/routes";
 
 const app = express();
 
@@ -58,6 +59,7 @@ app.use("/api/profiles", profileRoutes);
 app.use("/api/likes", likesRoutes);
 app.use("/api/matches", matchesRoutes);
 app.use("/api/discover", discoverRoutes);
+app.use("/api/blocks", blocksRoutes);
 
 // Root Route
 // Simple endpoint to indicate this is an API server
@@ -73,6 +75,7 @@ app.get("/", (_req: Request, res: Response) => {
       likes: "/api/likes",
       matches: "/api/matches",
       discover: "/api/discover",
+      blocks: "/api/blocks",
     },
   });
 });

@@ -9,6 +9,7 @@ jest.mock("@/lib/prismaClient", () => ({
     findMany: jest.fn(),
     create: jest.fn(),
     delete: jest.fn(),
+    findUnique: jest.fn(),
   },
 }));
 
@@ -124,6 +125,28 @@ describe("Matches API happy path cases", () => {
 
     expect(result).toEqual(matchSample);
   });
+
+  it("should create a match using a transaction client", async () => {
+    const mockTx = {
+      matches: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue(matchSample),
+      },
+    };
+
+    const result = await MatchesService.createMatch(user1, user2, mockTx as any);
+
+    expect(mockTx.matches.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        user1,
+        user2,
+        matched_at: expect.any(Date),
+      }),
+      select: { id: true, user1: true, user2: true, matched_at: true },
+    });
+    expect(prisma.matches.create).not.toHaveBeenCalled();
+    expect(result).toEqual(matchSample);
+  });
 });
 
 describe("Matches API edge & failure cases", () => {
@@ -168,6 +191,34 @@ describe("Matches API edge & failure cases", () => {
     (prisma.matches.findFirst as jest.Mock).mockResolvedValue(null);
 
     const result = await MatchesService.getMutualMatch(user1, user2);
+    expect(result).toBeNull();
+  });
+});
+
+describe("getMatchById", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should return a match if found", async () => {
+    (prisma.matches.findUnique as jest.Mock).mockResolvedValue(matchSample);
+    const result = await MatchesService.getMatchById(matchSample.id);
+    expect(result).toEqual(matchSample);
+    expect(prisma.matches.findUnique).toHaveBeenCalledWith({
+      where: { id: matchSample.id },
+      select: { id: true, user1: true, user2: true, matched_at: true },
+    });
+  });
+
+  it("should return null if no matchId is provided", async () => {
+    const result = await MatchesService.getMatchById("");
+    expect(result).toBeNull();
+    expect(prisma.matches.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("should return null if match is not found", async () => {
+    (prisma.matches.findUnique as jest.Mock).mockResolvedValue(null);
+    const result = await MatchesService.getMatchById("non-existent-id");
     expect(result).toBeNull();
   });
 });

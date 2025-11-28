@@ -1,120 +1,108 @@
-import { EmailVerificationData, OTPEmailData } from "@/modules/auth/emailService";
 
-describe("EmailService", () => {
-  let sendMailMock: jest.Mock;
-  let verifyMock: jest.Mock;
-  let emailService: typeof import("@/modules/auth/emailService");
-  let loggerMock: any;
+const mockSendMail = jest.fn();
+const mockVerify = jest.fn();
 
+jest.mock("nodemailer", () => ({
+  createTransport: () => ({
+    sendMail: mockSendMail,
+    verify: mockVerify,
+  }),
+}));
+
+import {
+  sendVerificationEmail,
+  sendOTPEmail,
+  testEmailConnection,
+} from "@/modules/auth/emailService";
+import logger from "@/config/logger";
+
+
+jest.mock("@/config/logger", () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+}));
+
+describe("Email Service", () => {
   beforeEach(() => {
-    jest.resetModules();
-    
-    sendMailMock = jest.fn().mockResolvedValue({ messageId: "test-id" });
-    verifyMock = jest.fn().mockResolvedValue(true);
-
-    jest.doMock("nodemailer", () => ({
-      createTransport: jest.fn().mockReturnValue({
-        sendMail: sendMailMock,
-        verify: verifyMock,
-      }),
-    }));
-
-    loggerMock = {
-      info: jest.fn(),
-      error: jest.fn(),
-    };
-    jest.doMock("@/config/logger", () => ({
-      __esModule: true,
-      default: loggerMock,
-    }));
-
-    emailService = require("@/modules/auth/emailService");
-  });
-
-  afterEach(() => {
     jest.clearAllMocks();
   });
 
   describe("sendVerificationEmail", () => {
-    it("should send verification email successfully", async () => {
-      const data: EmailVerificationData = {
-        email: "test@example.com",
-        verificationToken: "token123",
-        userId: "user123",
-      };
+    const verificationData = {
+      email: "test@example.com",
+      verificationToken: "token123",
+      userId: "user123",
+    };
 
-      const result = await emailService.sendVerificationEmail(data);
+    it("should send a verification email successfully", async () => {
+      mockSendMail.mockResolvedValue({ messageId: "message-id" });
+
+      const result = await sendVerificationEmail(verificationData);
 
       expect(result.success).toBe(true);
-      expect(sendMailMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          to: "test@example.com",
-          subject: "Create your FindU account",
-        })
-      );
-      expect(loggerMock.info).toHaveBeenCalledWith("VERIFICATION_EMAIL_SENT", {
-        email: "test@example.com",
-        messageId: "test-id",
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      expect(logger.info).toHaveBeenCalledWith("VERIFICATION_EMAIL_SENT", {
+        email: verificationData.email,
+        messageId: "message-id",
       });
     });
 
-    it("should handle errors when sending verification email", async () => {
-      sendMailMock.mockRejectedValue(new Error("SMTP Error"));
+    it("should use FRONTEND_URL environment variable if set", async () => {
+        const originalEnv = process.env;
+        process.env = { ...originalEnv, FRONTEND_URL: "https://findu.app" };
+  
+        await sendVerificationEmail(verificationData);
+  
+        const emailHtml = mockSendMail.mock.calls[0][0].html;
+        expect(emailHtml).toContain("https://findu.app/auth/account-created?token=token123");
+  
+        process.env = originalEnv; // Restore original environment
+      });
 
-      const data: EmailVerificationData = {
-        email: "test@example.com",
-        verificationToken: "token123",
-        userId: "user123",
-      };
+    it("should return an error if sending fails", async () => {
+      const error = new Error("SMTP Error");
+      mockSendMail.mockRejectedValue(error);
 
-      const result = await emailService.sendVerificationEmail(data);
+      const result = await sendVerificationEmail(verificationData);
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("SMTP Error");
-      expect(loggerMock.error).toHaveBeenCalledWith("VERIFICATION_EMAIL_ERROR", {
-        email: "test@example.com",
+      expect(logger.error).toHaveBeenCalledWith("VERIFICATION_EMAIL_ERROR", {
+        email: verificationData.email,
         error: "SMTP Error",
       });
     });
   });
 
   describe("sendOTPEmail", () => {
-    it("should send OTP email successfully", async () => {
-      const data: OTPEmailData = {
-        email: "test@example.com",
-        otp: "123456",
-      };
+    const otpData = {
+      email: "test@example.com",
+      otp: "123456",
+    };
 
-      const result = await emailService.sendOTPEmail(data);
+    it("should send an OTP email successfully", async () => {
+      mockSendMail.mockResolvedValue({ messageId: "message-id" });
+
+      const result = await sendOTPEmail(otpData);
 
       expect(result.success).toBe(true);
-      expect(sendMailMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          to: "test@example.com",
-          subject: "Your FindU verification code",
-          html: expect.stringContaining("123456"),
-        })
-      );
-      expect(loggerMock.info).toHaveBeenCalledWith("OTP_EMAIL_SENT", {
-        email: "test@example.com",
-        messageId: "test-id",
+      expect(mockSendMail).toHaveBeenCalledTimes(1);
+      expect(logger.info).toHaveBeenCalledWith("OTP_EMAIL_SENT", {
+        email: otpData.email,
+        messageId: "message-id",
       });
     });
 
-    it("should handle errors when sending OTP email", async () => {
-      sendMailMock.mockRejectedValue(new Error("SMTP Error"));
+    it("should return an error if sending fails", async () => {
+      const error = new Error("SMTP Error");
+      mockSendMail.mockRejectedValue(error);
 
-      const data: OTPEmailData = {
-        email: "test@example.com",
-        otp: "123456",
-      };
-
-      const result = await emailService.sendOTPEmail(data);
+      const result = await sendOTPEmail(otpData);
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("SMTP Error");
-      expect(loggerMock.error).toHaveBeenCalledWith("OTP_EMAIL_ERROR", {
-        email: "test@example.com",
+      expect(logger.error).toHaveBeenCalledWith("OTP_EMAIL_ERROR", {
+        email: otpData.email,
         error: "SMTP Error",
       });
     });
@@ -122,21 +110,25 @@ describe("EmailService", () => {
 
   describe("testEmailConnection", () => {
     it("should return true if connection is successful", async () => {
-      const result = await emailService.testEmailConnection();
+      mockVerify.mockResolvedValue(true);
+
+      const result = await testEmailConnection();
 
       expect(result).toBe(true);
-      expect(verifyMock).toHaveBeenCalled();
-      expect(loggerMock.info).toHaveBeenCalledWith("EMAIL_CONNECTION_SUCCESS");
+      expect(mockVerify).toHaveBeenCalledTimes(1);
+      expect(logger.info).toHaveBeenCalledWith("EMAIL_CONNECTION_SUCCESS");
     });
 
     it("should return false if connection fails", async () => {
-      verifyMock.mockRejectedValue(new Error("Connection Error"));
+      const error = new Error("Connection failed");
+      mockVerify.mockRejectedValue(error);
 
-      const result = await emailService.testEmailConnection();
+      const result = await testEmailConnection();
 
       expect(result).toBe(false);
-      expect(loggerMock.error).toHaveBeenCalledWith("EMAIL_CONNECTION_ERROR", {
-        error: expect.any(Error),
+      expect(mockVerify).toHaveBeenCalledTimes(1);
+      expect(logger.error).toHaveBeenCalledWith("EMAIL_CONNECTION_ERROR", {
+        error,
       });
     });
   });

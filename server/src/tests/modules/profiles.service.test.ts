@@ -227,3 +227,61 @@ describe("Profiles API edge & failure cases", () => {
     expect(result?.bio).toBe(sampleProfile.bio);
   });
 });
+
+describe("resolveUniversityAndCampuses", () => {
+  const email = "test@example.edu";
+  const domain = "example.edu";
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Mock for university_domains needs to be on the root prisma object
+    (prisma as any).university_domains = { findFirst: jest.fn() };
+  });
+
+  it("should resolve university and campuses from email", async () => {
+    const mockUniDomain = {
+      domain,
+      universities: {
+        id: "uni-1",
+        name: "Example University",
+        slug: "example-university",
+        campuses: [
+          { id: "campus-1", name: "Main Campus", slug: "main-campus" },
+        ],
+      },
+    };
+    ((prisma as any).university_domains.findFirst as jest.Mock).mockResolvedValue(mockUniDomain);
+
+    const result = await ProfileService.resolveUniversityAndCampuses(email);
+
+    expect(result).toEqual({
+      university: {
+        id: "uni-1",
+        name: "Example University",
+        slug: "example-university",
+      },
+      campuses: [
+        { id: "campus-1", name: "Main Campus", slug: "main-campus" },
+      ],
+    });
+    expect((prisma as any).university_domains.findFirst).toHaveBeenCalledWith({
+      where: { domain },
+      include: { universities: { include: { campuses: true } } },
+    });
+  });
+
+  it("should return null if university not found for domain", async () => {
+    ((prisma as any).university_domains.findFirst as jest.Mock).mockResolvedValue(null);
+
+    const result = await ProfileService.resolveUniversityAndCampuses(email);
+
+    expect(result).toBeNull();
+  });
+
+  it("should throw an error if database call fails", async () => {
+    const error = new Error("DB Error");
+    ((prisma as any).university_domains.findFirst as jest.Mock).mockRejectedValue(error);
+
+    await expect(ProfileService.resolveUniversityAndCampuses(email)).rejects.toThrow("DB Error");
+  });
+});

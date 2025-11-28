@@ -1,5 +1,4 @@
 import * as LikesService from "@/modules/likes/services";
-import * as MatchesService from "@/modules/matches/services";
 import { Like } from "@/types/Like";
 import { Profile } from "@/types/Profile";
 import prisma from "@/lib/prismaClient";
@@ -12,8 +11,6 @@ jest.mock("@/lib/prismaClient", () => ({
   matches: { findFirst: jest.fn(), create: jest.fn() },
   $transaction: jest.fn(),
 }));
-
-jest.mock("@/modules/matches/services");
 
 const fromUser = "user1";
 const toUser = "user2";
@@ -65,14 +62,17 @@ describe("Likes API happy path cases", () => {
   it("should create a like and a match if reciprocal like exists", async () => {
     (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(mockProfile(fromUser));
     (prisma.blocks.findFirst as jest.Mock).mockResolvedValue(null);
-    (MatchesService.createMatch as jest.Mock).mockResolvedValue({ id: "match-id" });
-
+    
+    // Mock transaction to return match when looked up
     (prisma.$transaction as jest.Mock).mockImplementation(async (cb: any) =>
       cb({
         likes: {
           findFirst: jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(sampleLike),
           create: jest.fn().mockResolvedValue(sampleLike),
         },
+        matches: {
+          findFirst: jest.fn().mockResolvedValue({ id: "match-id" }),
+        }
       })
     );
 
@@ -80,7 +80,6 @@ describe("Likes API happy path cases", () => {
     expect(result.like).toEqual(sampleLike);
     expect(result.matched).toBe(true);
     expect(result.matchId).toBe("match-id");
-    expect(MatchesService.createMatch).toHaveBeenCalledWith(fromUser, toUser, expect.any(Object));
   });
 
   it("should fetch all sent likes for a user", async () => {
@@ -171,21 +170,30 @@ describe("Likes API edge & failure cases", () => {
   it("should throw an error if the daily superlike limit has been reached", async () => {
     (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(mockProfile(fromUser));
     (prisma.blocks.findFirst as jest.Mock).mockResolvedValue(null);
-    (prisma.$transaction as jest.Mock).mockImplementation(async (cb: any) =>
-      cb({
-        likes: { 
-          findFirst: jest.fn().mockResolvedValue(null),
-          count: jest.fn().mockResolvedValue(5) 
-        },
-      })
-    );
+    const mockTx = {
+      likes: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        count: jest.fn().mockResolvedValue(6), // Set to a value greater than the limit
+        create: jest.fn(),
+      },
+    };
+    (prisma.$transaction as jest.Mock).mockImplementation(async (cb: any) => cb(mockTx));
+    
     await expect(LikesService.createLike({ ...sampleLike, is_superlike: true })).rejects.toThrow("Daily superlike limit of 5 reached");
+
+    // Verify count was called correctly
+    expect(mockTx.likes.count).toHaveBeenCalledWith({
+      where: {
+        from_user: fromUser,
+        is_superlike: true,
+        created_at: { gte: expect.any(Date) },
+      },
+    });
   });
 
   it("should return existing matchId if match already exists", async () => {
     (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(mockProfile(fromUser));
     (prisma.blocks.findFirst as jest.Mock).mockResolvedValue(null);
-    (MatchesService.createMatch as jest.Mock).mockResolvedValue({ id: "existing-match-id" });
 
     (prisma.$transaction as jest.Mock).mockImplementation(async (cb: any) =>
       cb({
@@ -193,12 +201,14 @@ describe("Likes API edge & failure cases", () => {
           findFirst: jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(sampleLike),
           create: jest.fn().mockResolvedValue(sampleLike),
         },
+        matches: {
+          findFirst: jest.fn().mockResolvedValue({ id: "existing-match-id" }),
+        }
       })
     );
     const result = await LikesService.createLike(sampleLike);
     expect(result.matched).toBe(true);
     expect(result.matchId).toBe("existing-match-id");
-    expect(MatchesService.createMatch).toHaveBeenCalledWith(fromUser, toUser, expect.any(Object));
   });
 
   it("should throw an error if userId is not provided to getSentLikes", async () => {

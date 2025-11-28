@@ -264,6 +264,28 @@ describe("AuthService", () => {
           where: { id: "1" },
         });
       });
+
+      it("should handle errors without a message during account creation and cleanup", async () => {
+        const error = new Error();
+        (error as any).message = ""; // Force an empty message
+        (redis.get as jest.Mock).mockResolvedValue("123456");
+        const ctx = await auth.$context;
+        (ctx.password.hash as jest.Mock).mockResolvedValue("hashedPassword");
+        (prisma.user.create as jest.Mock).mockResolvedValue({ id: "1", email: "test@university.edu" });
+        (prisma.account.create as jest.Mock).mockRejectedValue(error);
+        (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: "1", email: "test@university.edu" });
+        (prisma.user.delete as jest.Mock).mockResolvedValue({});
+    
+        const result = await AuthService.signUpAndVerify(
+          "test@university.edu",
+          "password",
+          "123456"
+        );
+    
+        expect(result.success).toBe(false);
+        expect(result.error).toBe("Failed to create user account");
+        expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: "1" } });
+      });
     });
 
     describe("signIn", () => {

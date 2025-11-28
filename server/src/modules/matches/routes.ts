@@ -1,6 +1,12 @@
 import { Router } from "express";
 import * as matchesControllers from "./controllers";
 import * as authMiddleware from "@/middleware/auth/requireAuth";
+import { 
+  validateCreateMatch, 
+  validateMatchId, 
+  validateCheckMatch 
+} from "./validators";
+import { handleValidationErrors } from "@/middleware/error/handleValidationErrors";
 
 const router = Router();
 
@@ -11,15 +17,35 @@ router.use(authMiddleware.requireAuth);
 router.get("/", matchesControllers.getMatchesController);
 
 // Get a single match by ID
-router.get("/:id", matchesControllers.getMatchByIdController);
+router.get(
+  "/:id", 
+  validateMatchId, 
+  handleValidationErrors, 
+  matchesControllers.getMatchByIdController
+);
 
 // Create a new match manually (usually via LikesService)
-router.post("/", matchesControllers.createMatchController);
+router.post(
+  "/", 
+  validateCreateMatch, 
+  handleValidationErrors, 
+  matchesControllers.createMatchController
+);
 
 // Delete a match by ID
-router.delete("/:id", matchesControllers.deleteMatchController);
+router.delete(
+  "/:id", 
+  validateMatchId, 
+  handleValidationErrors, 
+  matchesControllers.deleteMatchController
+);
 
 // Optional: Check if two users are matched
-router.get("/check/:user1Id/:user2Id", matchesControllers.areUsersMatchedController);
+router.get(
+  "/check/:user1Id/:user2Id", 
+  validateCheckMatch, 
+  handleValidationErrors, 
+  matchesControllers.areUsersMatchedController
+);
 
 export default router;

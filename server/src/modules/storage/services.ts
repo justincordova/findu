@@ -28,6 +28,7 @@ const deleteAllUserFiles = async (userId: string): Promise<void> => {
   } catch (err: any) {
     logger.error("[deleteAllUserFiles] Exception", { error: err });
     // Optional: re-throw or handle silently depending on business logic
+    throw err;
   }
 };
 

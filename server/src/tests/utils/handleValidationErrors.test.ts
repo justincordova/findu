@@ -81,4 +81,27 @@ describe('checkValidationErrors', () => {
     const logMetadata = mockedLoggerWarn.mock.calls[0][1];
     expect(logMetadata.body).toEqual({});
   });
+
+  it('should handle an undefined body', () => {
+    const errors = [{ msg: 'Invalid value' }];
+    delete req.body;
+    mockedValidationResult.mockReturnValue({ isEmpty: () => false, array: () => errors } as any);
+
+    checkValidationErrors(req as Request);
+
+    expect(mockedLoggerWarn).toHaveBeenCalledWith('VALIDATION_FAILED', expect.any(Object));
+    const logMetadata = mockedLoggerWarn.mock.calls[0][1];
+    expect(logMetadata.body).toEqual({});
+  });
+
+  it('should use "N/A" for x-request-id if it is not in headers', () => {
+    const errors = [{ msg: 'Invalid value' }];
+    delete req.headers?.['x-request-id'];
+    mockedValidationResult.mockReturnValue({ isEmpty: () => false, array: () => errors } as any);
+
+    checkValidationErrors(req as Request);
+    expect(mockedLoggerWarn).toHaveBeenCalledWith('VALIDATION_FAILED', expect.any(Object));
+    const logMetadata = mockedLoggerWarn.mock.calls[0][1];
+    expect(logMetadata.requestId).toBe('N/A');
+  });
 });
