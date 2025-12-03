@@ -110,6 +110,7 @@ const styles = StyleSheet.create({
     borderRadius: TAB_BAR_RADIUS,
     backgroundColor: "transparent",
     zIndex: 10,
+    overflow: "hidden",
   },
   tabBarBg: {
     flex: 1,

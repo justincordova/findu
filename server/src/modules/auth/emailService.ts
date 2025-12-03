@@ -112,6 +112,23 @@ export async function sendOTPEmail(
   data: OTPEmailData
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // In development, just log the OTP instead of sending email
+    if (process.env.NODE_ENV !== "production") {
+      console.log("\n========================================");
+      console.log("🔐 DEVELOPMENT MODE - OTP CODE");
+      console.log("========================================");
+      console.log(`Email: ${data.email}`);
+      console.log(`OTP Code: ${data.otp}`);
+      console.log("========================================\n");
+      
+      logger.info("OTP_LOGGED_FOR_DEVELOPMENT", {
+        email: data.email,
+        otp: data.otp,
+      });
+
+      return { success: true };
+    }
+
     const mailOptions = {
       from: process.env.EMAIL_FROM || "FindU <findu.team@gmail.com>",
       to: data.email,

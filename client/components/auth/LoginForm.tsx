@@ -22,7 +22,12 @@ export default function LoginForm() {
       if (!result.success) {
         setError(result.error || "Login failed");
       } else {
-        router.replace("/home/(tabs)/discover"); // Navigate after successful login
+        // Redirect based on whether profile setup is complete
+        if (result.profileSetup) {
+          router.replace("/home/(tabs)/discover");
+        } else {
+          router.replace("/profile-setup/1");
+        }
       }
     } catch (err) {
       console.error("LoginForm: Login error", err);

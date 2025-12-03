@@ -47,7 +47,8 @@ export async function handleSubmitProfile(userId?: string) {
       gender: profileData.gender ?? "",
       pronouns: profileData.pronouns ?? "",
       bio: profileData.bio ?? "",
-      university: profileData.university ?? "",
+      university_id: profileData.university_id ?? "",
+      campus_id: profileData.campus_id ?? null,
       university_year: profileData.university_year ?? 0,
       major: profileData.major ?? "",
       grad_year: Number(profileData.grad_year) || 0,
@@ -68,6 +69,10 @@ export async function handleSubmitProfile(userId?: string) {
     // Submit via API
     await profileApi.create(finalProfile);
     logger.info("[handleSubmitProfile] Profile submitted successfully", { currentUserId });
+
+    // Mark profile as complete
+    await profileApi.markProfileSetupComplete(currentUserId);
+    logger.info("[handleSubmitProfile] Profile setup marked as complete", { currentUserId });
 
     // Reset local store
     useProfileSetupStore.getState().reset();

@@ -116,3 +116,65 @@ export const deleteProfile = async (userId: string): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * Gets university information from an email domain.
+ *
+ * @param email - The email address to extract domain from.
+ * @returns The university information or null if not found.
+ */
+export const getUniversityFromEmail = async (email: string) => {
+  try {
+    const domain = email.split('@')[1];
+    if (!domain) {
+      logger.warn("INVALID_EMAIL_FORMAT", { email });
+      return null;
+    }
+
+    const university = await prisma.universities.findFirst({
+      where: {
+        university_domains: {
+          some: {
+            domain: domain,
+          },
+        },
+      },
+      include: {
+        university_domains: true,
+      },
+    });
+
+    if (!university) {
+      logger.warn("UNIVERSITY_NOT_FOUND", { domain });
+      return null;
+    }
+
+    logger.info("UNIVERSITY_FOUND", { domain, universityId: university.id });
+    return university;
+  } catch (error) {
+    logger.error("GET_UNIVERSITY_FROM_EMAIL_ERROR", { error, email });
+    throw error;
+  }
+};
+
+/**
+ * Gets campuses for a given university.
+ *
+ * @param universityId - The ID of the university.
+ * @returns Array of campuses for the university.
+ */
+export const getCampusesByUniversity = async (universityId: string) => {
+  try {
+    const campuses = await prisma.campuses.findMany({
+      where: {
+        university_id: universityId,
+      },
+    });
+
+    logger.info("CAMPUSES_FETCHED", { universityId, count: campuses.length });
+    return campuses;
+  } catch (error) {
+    logger.error("GET_CAMPUSES_ERROR", { error, universityId });
+    throw error;
+  }
+};

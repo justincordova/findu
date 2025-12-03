@@ -3,6 +3,12 @@ import { Profile } from "@/types/Profile";
 export function validateProfile(profile: Profile) {
   const errors: string[] = [];
   for (const [key, value] of Object.entries(profile)) {
+    // Skip campus_id - it's optional
+    if (key === "campus_id") continue;
+    
+    // Skip photos - can be empty
+    if (key === "photos") continue;
+
     if (value === null || value === undefined)
       errors.push(`Field "${key}" is required`);
     else if (typeof value === "string" && value.trim() === "")

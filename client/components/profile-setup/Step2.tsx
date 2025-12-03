@@ -1,8 +1,11 @@
 import React, { useMemo, useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Dimensions, Alert } from "react-native";
 import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
 import { DARK, MUTED, BACKGROUND } from "../../constants/theme";
 import { useProfileSetupStore } from "../../store/profileStore";
+import { useAuthStore } from "../../store/authStore";
+import { profileApi } from "../../api/profile";
+import logger from "../../config/logger";
 
 interface Step2Props {
   onValidityChange?: (isValid: boolean) => void;
@@ -10,6 +13,7 @@ interface Step2Props {
 
 type DropdownKey =
   | "university"
+  | "campus"
   | "major"
   | "university_year"
   | "grad_year"
@@ -18,14 +22,21 @@ type DropdownKey =
 export default function Step2({ onValidityChange }: Step2Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setField = useProfileSetupStore((state) => state.setField);
+  const userEmail = useAuthStore((state) => state.userEmail);
 
   const [activeDropdown, setActiveDropdown] = useState<DropdownKey>(null);
+  const [universityItems, setUniversityItems] = useState<ItemType<string>[]>([]);
+  const [campusItems, setCampusItems] = useState<ItemType<string>[]>([]);
+  const [selectedCampus, setSelectedCampus] = useState<string | null>(null);
+  const [isLoadingUniversity, setIsLoadingUniversity] = useState(false);
+  const [detectedUniversity, setDetectedUniversity] = useState<any>(null);
+  
   const screenHeight = Dimensions.get("window").height;
   const emptyCallback = useCallback(() => {}, []);
 
   const isValid = useMemo(
     () =>
-      !!profileData?.university &&
+      !!profileData?.university_id &&
       !!profileData?.major &&
       !!profileData?.university_year &&
       !!profileData?.grad_year,
@@ -36,19 +47,77 @@ export default function Step2({ onValidityChange }: Step2Props) {
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
-  const universityItems: ItemType<string>[] = useMemo(
-    () => [
-      { label: "Northeastern University", value: "Northeastern University" },
-      { label: "Boston University", value: "Boston University" },
-      { label: "MIT", value: "MIT" },
-      { label: "Harvard University", value: "Harvard University" },
-      { label: "Tufts University", value: "Tufts University" },
-      { label: "Boston College", value: "Boston College" },
-      { label: "UMass Boston", value: "UMass Boston" },
-      { label: "Other", value: "Other" },
-    ],
-    []
-  );
+  // Auto-detect university from email on component mount
+  useEffect(() => {
+    const detectUniversityFromEmail = async () => {
+      if (!userEmail) return;
+      
+      setIsLoadingUniversity(true);
+      try {
+        logger.info("Detecting university from email", { email: userEmail });
+        const result = await profileApi.getUniversityFromEmail(userEmail);
+        
+        if (result && result.id) {
+          setDetectedUniversity(result);
+          
+          // Set the university ID in store (not the name)
+          setField("university_id", result.id);
+          
+          // Set the detected university in the dropdown
+          const universityOption = {
+            label: result.name,
+            value: result.id  // Store ID as value
+          };
+          setUniversityItems([universityOption]);
+          
+          // Fetch campuses for this university
+          try {
+            const campuses = await profileApi.getCampusesByUniversity(result.id);
+            if (campuses && campuses.length > 1) {
+              const campusOptions = campuses.map((campus: any) => ({
+                label: campus.name,
+                value: campus.id
+              }));
+              setCampusItems(campusOptions);
+            } else if (campuses && campuses.length === 1) {
+              // Auto-select if only one campus
+              setField("campus_id", campuses[0].id);
+              setSelectedCampus(campuses[0].id);
+              logger.info("Single campus auto-selected", { campus: campuses[0].name });
+            } else {
+              // No campuses, set to null
+              setField("campus_id", null);
+            }
+          } catch (campusError) {
+            logger.warn("Could not fetch campuses", { error: campusError });
+            setField("campus_id", null);
+          }
+          
+          logger.info("University auto-detected", { 
+            university: result.name,
+            universityId: result.id
+          });
+        }
+      } catch (error) {
+        logger.warn("Could not detect university from email", { error, email: userEmail });
+        // Fallback to default list - note: these won't work without real IDs
+        setUniversityItems([
+          { label: "Northeastern University", value: "neu-id" },
+          { label: "Boston University", value: "bu-id" },
+          { label: "MIT", value: "mit-id" },
+          { label: "Harvard University", value: "harvard-id" },
+          { label: "Tufts University", value: "tufts-id" },
+          { label: "Boston College", value: "bc-id" },
+          { label: "UMass Boston", value: "umass-id" },
+          { label: "Other", value: "other-id" },
+        ]);
+      } finally {
+        setIsLoadingUniversity(false);
+      }
+    };
+
+    detectUniversityFromEmail();
+  }, [userEmail, setField]);
 
   const majorItems: ItemType<string>[] = useMemo(
     () => [
@@ -100,21 +169,21 @@ export default function Step2({ onValidityChange }: Step2Props) {
 
       {/* University */}
       <View
-        style={[styles.fieldContainer, { zIndex: getZIndex("university", 4) }]}
+        style={[styles.fieldContainer, { zIndex: getZIndex("university", 5) }]}
       >
         <Text style={styles.label}>University *</Text>
         <DropDownPicker<string>
           placeholder="Select your university"
           open={activeDropdown === "university"}
-          value={profileData?.university ?? null}
+          value={profileData?.university_id ?? null}
           items={universityItems}
           setOpen={() => handleOpen("university")}
           setValue={(callback) => {
             const value =
               typeof callback === "function"
-                ? callback(profileData?.university ?? "")
+                ? callback(profileData?.university_id ?? "")
                 : callback;
-            setField("university", value ?? "");
+            setField("university_id", value ?? "");
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
@@ -125,6 +194,38 @@ export default function Step2({ onValidityChange }: Step2Props) {
           ]}
         />
       </View>
+
+      {/* Campus Selection - Only show if multiple campuses detected */}
+      {campusItems.length > 1 && (
+        <View
+          style={[styles.fieldContainer, { zIndex: getZIndex("campus", 4) }]}
+        >
+          <Text style={styles.label}>Campus *</Text>
+          <DropDownPicker<string>
+            placeholder="Select your campus"
+            open={activeDropdown === "campus"}
+            value={selectedCampus}
+            items={campusItems}
+            setOpen={() => handleOpen("campus")}
+            setValue={(callback) => {
+              const value =
+                typeof callback === "function"
+                  ? callback(selectedCampus ?? "")
+                  : callback;
+              setSelectedCampus(value);
+              setField("campus_id", value);  // Save to store
+              logger.info("Campus selected", { campusId: value });
+            }}
+            setItems={emptyCallback}
+            listMode="SCROLLVIEW"
+            style={styles.dropdown}
+            dropDownContainerStyle={[
+              styles.dropdownContainer,
+              { maxHeight: screenHeight * 0.35 },
+            ]}
+          />
+        </View>
+      )}
 
       {/* Major */}
       <View style={[styles.fieldContainer, { zIndex: getZIndex("major", 3) }]}>

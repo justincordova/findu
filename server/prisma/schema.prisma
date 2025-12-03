@@ -50,15 +50,15 @@ model flow_state {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model identities {
   provider_id     String
-  user_id         String    @db.Uuid
+  user_id         String     @db.Uuid
   identity_data   Json
   provider        String
-  last_sign_in_at DateTime? @db.Timestamptz(6)
-  created_at      DateTime? @db.Timestamptz(6)
-  updated_at      DateTime? @db.Timestamptz(6)
-  email           String?   @default(dbgenerated("lower((identity_data ->> 'email'::text))"))
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  users           users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  last_sign_in_at DateTime?  @db.Timestamptz(6)
+  created_at      DateTime?  @db.Timestamptz(6)
+  updated_at      DateTime?  @db.Timestamptz(6)
+  email           String?    @default(dbgenerated("lower((identity_data ->> 'email'::text))"))
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  users           auth_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([provider_id, provider], map: "identities_provider_id_provider_unique")
   @@index([email])
@@ -81,12 +81,12 @@ model instances {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model mfa_amr_claims {
-  session_id            String   @db.Uuid
-  created_at            DateTime @db.Timestamptz(6)
-  updated_at            DateTime @db.Timestamptz(6)
+  session_id            String        @db.Uuid
+  created_at            DateTime      @db.Timestamptz(6)
+  updated_at            DateTime      @db.Timestamptz(6)
   authentication_method String
-  id                    String   @id(map: "amr_id_pk") @db.Uuid
-  sessions              sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                    String        @id(map: "amr_id_pk") @db.Uuid
+  sessions              auth_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([session_id, authentication_method], map: "mfa_amr_claims_session_id_authentication_method_pkey")
   @@schema("auth")
@@ -111,24 +111,88 @@ model mfa_challenges {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model mfa_factors {
-  id                   String           @id @db.Uuid
-  user_id              String           @db.Uuid
-  friendly_name        String?
-  factor_type          factor_type
-  status               factor_status
-  created_at           DateTime         @db.Timestamptz(6)
-  updated_at           DateTime         @db.Timestamptz(6)
-  secret               String?
-  phone                String?
-  last_challenged_at   DateTime?        @unique @db.Timestamptz(6)
-  web_authn_credential Json?
-  web_authn_aaguid     String?          @db.Uuid
-  mfa_challenges       mfa_challenges[]
-  users                users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                           String           @id @db.Uuid
+  user_id                      String           @db.Uuid
+  friendly_name                String?
+  factor_type                  factor_type
+  status                       factor_status
+  created_at                   DateTime         @db.Timestamptz(6)
+  updated_at                   DateTime         @db.Timestamptz(6)
+  secret                       String?
+  phone                        String?
+  last_challenged_at           DateTime?        @unique @db.Timestamptz(6)
+  web_authn_credential         Json?
+  web_authn_aaguid             String?          @db.Uuid
+  last_webauthn_challenge_data Json?
+  mfa_challenges               mfa_challenges[]
+  users                        auth_users       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, phone], map: "unique_phone_factor_per_user")
   @@index([user_id, created_at], map: "factor_id_created_at_idx")
   @@index([user_id])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model oauth_authorizations {
+  id                    String                     @id @db.Uuid
+  authorization_id      String                     @unique
+  client_id             String                     @db.Uuid
+  user_id               String?                    @db.Uuid
+  redirect_uri          String
+  scope                 String
+  state                 String?
+  resource              String?
+  code_challenge        String?
+  code_challenge_method code_challenge_method?
+  response_type         oauth_response_type        @default(code)
+  status                oauth_authorization_status @default(pending)
+  authorization_code    String?                    @unique
+  created_at            DateTime                   @default(now()) @db.Timestamptz(6)
+  expires_at            DateTime                   @default(dbgenerated("(now() + '00:03:00'::interval)")) @db.Timestamptz(6)
+  approved_at           DateTime?                  @db.Timestamptz(6)
+  nonce                 String?
+  oauth_clients         oauth_clients              @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                 auth_users?                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model oauth_clients {
+  id                   String                  @id @db.Uuid
+  client_secret_hash   String?
+  registration_type    oauth_registration_type
+  redirect_uris        String
+  grant_types          String
+  client_name          String?
+  client_uri           String?
+  logo_uri             String?
+  created_at           DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime                @default(now()) @db.Timestamptz(6)
+  deleted_at           DateTime?               @db.Timestamptz(6)
+  client_type          oauth_client_type       @default(confidential)
+  oauth_authorizations oauth_authorizations[]
+  oauth_consents       oauth_consents[]
+  sessions             auth_sessions[]
+
+  @@index([deleted_at])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model oauth_consents {
+  id            String        @id @db.Uuid
+  user_id       String        @db.Uuid
+  client_id     String        @db.Uuid
+  scopes        String
+  granted_at    DateTime      @default(now()) @db.Timestamptz(6)
+  revoked_at    DateTime?     @db.Timestamptz(6)
+  oauth_clients oauth_clients @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users         auth_users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, client_id], map: "oauth_consents_user_client_unique")
+  @@index([user_id, granted_at(sort: Desc)], map: "oauth_consents_user_order_idx")
   @@schema("auth")
 }
 
@@ -142,7 +206,7 @@ model one_time_tokens {
   relates_to String
   created_at DateTime            @default(now()) @db.Timestamp(6)
   updated_at DateTime            @default(now()) @db.Timestamp(6)
-  users      users               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      auth_users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, token_type])
   @@index([relates_to], map: "one_time_tokens_relates_to_hash_idx", type: Hash)
@@ -153,16 +217,16 @@ model one_time_tokens {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model refresh_tokens {
-  instance_id String?   @db.Uuid
-  id          BigInt    @id @default(autoincrement())
-  token       String?   @unique(map: "refresh_tokens_token_unique") @db.VarChar(255)
-  user_id     String?   @db.VarChar(255)
+  instance_id String?        @db.Uuid
+  id          BigInt         @id @default(autoincrement())
+  token       String?        @unique(map: "refresh_tokens_token_unique") @db.VarChar(255)
+  user_id     String?        @db.VarChar(255)
   revoked     Boolean?
-  created_at  DateTime? @db.Timestamptz(6)
-  updated_at  DateTime? @db.Timestamptz(6)
-  parent      String?   @db.VarChar(255)
-  session_id  String?   @db.Uuid
-  sessions    sessions? @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at  DateTime?      @db.Timestamptz(6)
+  updated_at  DateTime?      @db.Timestamptz(6)
+  parent      String?        @db.VarChar(255)
+  session_id  String?        @db.Uuid
+  sessions    auth_sessions? @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([instance_id])
   @@index([instance_id, user_id])
@@ -220,27 +284,35 @@ model schema_migrations {
   @@schema("auth")
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model sessions {
-  id             String           @id @db.Uuid
-  user_id        String           @db.Uuid
-  created_at     DateTime?        @db.Timestamptz(6)
-  updated_at     DateTime?        @db.Timestamptz(6)
-  factor_id      String?          @db.Uuid
-  aal            aal_level?
-  not_after      DateTime?        @db.Timestamptz(6)
-  refreshed_at   DateTime?        @db.Timestamp(6)
-  user_agent     String?
-  ip             String?          @db.Inet
-  tag            String?
-  mfa_amr_claims mfa_amr_claims[]
-  refresh_tokens refresh_tokens[]
-  users          users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+model auth_sessions {
+  id                     String           @id @db.Uuid
+  user_id                String           @db.Uuid
+  created_at             DateTime?        @db.Timestamptz(6)
+  updated_at             DateTime?        @db.Timestamptz(6)
+  factor_id              String?          @db.Uuid
+  aal                    aal_level?
+  not_after              DateTime?        @db.Timestamptz(6)
+  refreshed_at           DateTime?        @db.Timestamp(6)
+  user_agent             String?
+  ip                     String?          @db.Inet
+  tag                    String?
+  oauth_client_id        String?          @db.Uuid
+  refresh_token_hmac_key String?
+  refresh_token_counter  BigInt?
+  scopes                 String?
+  mfa_amr_claims         mfa_amr_claims[]
+  refresh_tokens         refresh_tokens[]
+  oauth_clients          oauth_clients?   @relation(fields: [oauth_client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                  auth_users       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([not_after(sort: Desc)])
+  @@index([oauth_client_id])
   @@index([user_id])
   @@index([user_id, created_at], map: "user_id_created_at_idx")
+  @@map("sessions")
   @@schema("auth")
 }
 
@@ -282,70 +354,84 @@ model sso_providers {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
-model users {
-  instance_id                     String?           @db.Uuid
-  id                              String            @id @db.Uuid
-  aud                             String?           @db.VarChar(255)
-  role                            String?           @db.VarChar(255)
-  email                           String?           @db.VarChar(255)
-  encrypted_password              String?           @db.VarChar(255)
-  email_confirmed_at              DateTime?         @db.Timestamptz(6)
-  invited_at                      DateTime?         @db.Timestamptz(6)
-  confirmation_token              String?           @db.VarChar(255)
-  confirmation_sent_at            DateTime?         @db.Timestamptz(6)
-  recovery_token                  String?           @db.VarChar(255)
-  recovery_sent_at                DateTime?         @db.Timestamptz(6)
-  email_change_token_new          String?           @db.VarChar(255)
-  email_change                    String?           @db.VarChar(255)
-  email_change_sent_at            DateTime?         @db.Timestamptz(6)
-  last_sign_in_at                 DateTime?         @db.Timestamptz(6)
-  raw_app_meta_data               Json?
-  raw_user_meta_data              Json?
-  is_super_admin                  Boolean?
-  created_at                      DateTime?         @db.Timestamptz(6)
-  updated_at                      DateTime?         @db.Timestamptz(6)
-  phone                           String?           @unique
-  phone_confirmed_at              DateTime?         @db.Timestamptz(6)
-  phone_change                    String?           @default("")
-  phone_change_token              String?           @default("") @db.VarChar(255)
-  phone_change_sent_at            DateTime?         @db.Timestamptz(6)
-  confirmed_at                    DateTime?         @default(dbgenerated("LEAST(email_confirmed_at, phone_confirmed_at)")) @db.Timestamptz(6)
-  email_change_token_current      String?           @default("") @db.VarChar(255)
-  email_change_confirm_status     Int?              @default(0) @db.SmallInt
-  banned_until                    DateTime?         @db.Timestamptz(6)
-  reauthentication_token          String?           @default("") @db.VarChar(255)
-  reauthentication_sent_at        DateTime?         @db.Timestamptz(6)
-  is_sso_user                     Boolean           @default(false)
-  deleted_at                      DateTime?         @db.Timestamptz(6)
-  is_anonymous                    Boolean           @default(false)
-  identities                      identities[]
-  mfa_factors                     mfa_factors[]
-  one_time_tokens                 one_time_tokens[]
-  sessions                        sessions[]
-  blocks_blocks_blocked_idTousers blocks[]          @relation("blocks_blocked_idTousers")
-  blocks_blocks_blocker_idTousers blocks[]          @relation("blocks_blocker_idTousers")
-  chats                           chats[]
-  donations                       donations[]
-  likes_likes_from_userTousers    likes[]           @relation("likes_from_userTousers")
-  likes_likes_to_userTousers      likes[]           @relation("likes_to_userTousers")
-  matches_matches_user1Tousers    matches[]         @relation("matches_user1Tousers")
-  matches_matches_user2Tousers    matches[]         @relation("matches_user2Tousers")
-  profiles                        profiles?
-  subscriptions                   subscriptions[]
+model auth_users {
+  instance_id                 String?                @db.Uuid
+  id                          String                 @id @db.Uuid
+  aud                         String?                @db.VarChar(255)
+  role                        String?                @db.VarChar(255)
+  email                       String?                @db.VarChar(255)
+  encrypted_password          String?                @db.VarChar(255)
+  email_confirmed_at          DateTime?              @db.Timestamptz(6)
+  invited_at                  DateTime?              @db.Timestamptz(6)
+  confirmation_token          String?                @db.VarChar(255)
+  confirmation_sent_at        DateTime?              @db.Timestamptz(6)
+  recovery_token              String?                @db.VarChar(255)
+  recovery_sent_at            DateTime?              @db.Timestamptz(6)
+  email_change_token_new      String?                @db.VarChar(255)
+  email_change                String?                @db.VarChar(255)
+  email_change_sent_at        DateTime?              @db.Timestamptz(6)
+  last_sign_in_at             DateTime?              @db.Timestamptz(6)
+  raw_app_meta_data           Json?
+  raw_user_meta_data          Json?
+  is_super_admin              Boolean?
+  created_at                  DateTime?              @db.Timestamptz(6)
+  updated_at                  DateTime?              @db.Timestamptz(6)
+  phone                       String?                @unique
+  phone_confirmed_at          DateTime?              @db.Timestamptz(6)
+  phone_change                String?                @default("")
+  phone_change_token          String?                @default("") @db.VarChar(255)
+  phone_change_sent_at        DateTime?              @db.Timestamptz(6)
+  confirmed_at                DateTime?              @default(dbgenerated("LEAST(email_confirmed_at, phone_confirmed_at)")) @db.Timestamptz(6)
+  email_change_token_current  String?                @default("") @db.VarChar(255)
+  email_change_confirm_status Int?                   @default(0) @db.SmallInt
+  banned_until                DateTime?              @db.Timestamptz(6)
+  reauthentication_token      String?                @default("") @db.VarChar(255)
+  reauthentication_sent_at    DateTime?              @db.Timestamptz(6)
+  is_sso_user                 Boolean                @default(false)
+  deleted_at                  DateTime?              @db.Timestamptz(6)
+  is_anonymous                Boolean                @default(false)
+  identities                  identities[]
+  mfa_factors                 mfa_factors[]
+  oauth_authorizations        oauth_authorizations[]
+  oauth_consents              oauth_consents[]
+  one_time_tokens             one_time_tokens[]
+  sessions                    auth_sessions[]
 
   @@index([instance_id])
   @@index([is_anonymous])
+  @@map("users")
   @@schema("auth")
 }
 
+model accounts {
+  id                    String       @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime
+  users                 public_users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@schema("public")
+}
+
 model blocks {
-  id                             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  blocker_id                     String?   @db.Uuid
-  blocked_id                     String?   @db.Uuid
-  created_at                     DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at                     DateTime? @default(now()) @db.Timestamptz(6)
-  users_blocks_blocked_idTousers users?    @relation("blocks_blocked_idTousers", fields: [blocked_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users_blocks_blocker_idTousers users?    @relation("blocks_blocker_idTousers", fields: [blocker_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                             String        @id
+  blocker_id                     String?
+  blocked_id                     String?
+  created_at                     DateTime?     @default(now())
+  updated_at                     DateTime?
+  users_blocks_blocked_idTousers public_users? @relation("blocks_blocked_idTousers", fields: [blocked_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_blocks_blocker_idTousers public_users? @relation("blocks_blocker_idTousers", fields: [blocker_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([blocker_id, blocked_id])
   @@index([blocked_id], map: "idx_blocks_blocked")
@@ -353,44 +439,57 @@ model blocks {
   @@schema("public")
 }
 
+model campuses {
+  id            String       @id
+  university_id String
+  name          String
+  slug          String
+  created_at    DateTime?    @default(now())
+  updated_at    DateTime?
+  universities  universities @relation(fields: [university_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles      profiles[]
+
+  @@unique([university_id, slug], map: "campus_unique_per_university")
+  @@schema("public")
+}
+
 model chats {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  match_id   String?   @db.Uuid
-  sender_id  String?   @db.Uuid
+  id         String        @id
+  match_id   String?
+  sender_id  String?
   message    String
-  is_read    Boolean?  @default(false)
-  sent_at    DateTime? @default(now()) @db.Timestamptz(6)
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
-  matches    matches?  @relation(fields: [match_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users      users?    @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  is_read    Boolean?      @default(false)
+  sent_at    DateTime?     @default(now())
+  created_at DateTime?     @default(now())
+  updated_at DateTime?
+  matches    matches?      @relation(fields: [match_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      public_users? @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([match_id], map: "idx_chats_match")
   @@index([sender_id], map: "idx_chats_sender")
   @@schema("public")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model donations {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String?   @db.Uuid
-  amount     Decimal?  @db.Decimal
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
-  users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id         String        @id
+  user_id    String?
+  amount     Decimal?
+  created_at DateTime?     @default(now())
+  updated_at DateTime?
+  users      public_users? @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@schema("public")
 }
 
 model likes {
-  id                           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  from_user                    String?   @db.Uuid
-  to_user                      String?   @db.Uuid
-  is_superlike                 Boolean?  @default(false)
-  created_at                   DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at                   DateTime? @default(now()) @db.Timestamptz(6)
-  users_likes_from_userTousers users?    @relation("likes_from_userTousers", fields: [from_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users_likes_to_userTousers   users?    @relation("likes_to_userTousers", fields: [to_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                           String        @id
+  from_user                    String?
+  to_user                      String?
+  is_superlike                 Boolean?      @default(false)
+  created_at                   DateTime?     @default(now())
+  updated_at                   DateTime?
+  users_likes_from_userTousers public_users? @relation("likes_from_userTousers", fields: [from_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_likes_to_userTousers   public_users? @relation("likes_to_userTousers", fields: [to_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([from_user, to_user])
   @@index([from_user], map: "idx_likes_from_user")
@@ -399,24 +498,36 @@ model likes {
 }
 
 model matches {
-  id                         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user1                      String    @db.Uuid
-  user2                      String    @db.Uuid
-  matched_at                 DateTime? @default(now()) @db.Timestamptz(6)
-  created_at                 DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at                 DateTime? @default(now()) @db.Timestamptz(6)
-  user_min                   String?   @default(dbgenerated("\nCASE\n    WHEN (user1 < user2) THEN user1\n    ELSE user2\nEND")) @db.Uuid
-  user_max                   String?   @default(dbgenerated("\nCASE\n    WHEN (user1 > user2) THEN user1\n    ELSE user2\nEND")) @db.Uuid
+  id                         String       @id
+  user1                      String
+  user2                      String
+  matched_at                 DateTime?    @default(now())
+  created_at                 DateTime?    @default(now())
+  updated_at                 DateTime?
   chats                      chats[]
-  users_matches_user1Tousers users     @relation("matches_user1Tousers", fields: [user1], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users_matches_user2Tousers users     @relation("matches_user2Tousers", fields: [user2], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_matches_user1Tousers public_users @relation("matches_user1Tousers", fields: [user1], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_matches_user2Tousers public_users @relation("matches_user2Tousers", fields: [user2], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([user_min, user_max])
+  @@unique([user1, user2])
+  @@schema("public")
+}
+
+model pending_signups {
+  id                 String    @id
+  email              String    @unique
+  hashed_password    String
+  verification_token String    @unique
+  expires_at         DateTime
+  created_at         DateTime? @default(now())
+  updated_at         DateTime?
+
+  @@index([email], map: "idx_pending_signups_email")
+  @@index([verification_token], map: "idx_pending_signups_verification_token")
   @@schema("public")
 }
 
 model profiles {
-  user_id            String       @id @db.Uuid
+  user_id            String       @id
   name               String       @db.VarChar(100)
   avatar_url         String
   birthdate          DateTime     @db.Date
@@ -433,37 +544,53 @@ model profiles {
   min_age            Int
   max_age            Int
   photos             String[]     @default([])
-  created_at         DateTime?    @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime?    @default(now()) @db.Timestamptz(6)
-  university_id      String       @db.Uuid
-  campus_id          String?      @db.Uuid
+  created_at         DateTime?    @default(now())
+  updated_at         DateTime?
+  university_id      String
+  campus_id          String?
   campuses           campuses?    @relation(fields: [campus_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
   universities       universities @relation(fields: [university_id], references: [id], onUpdate: NoAction)
-  users              users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              public_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@schema("public")
 }
 
+model public_sessions {
+  id        String       @id
+  expiresAt DateTime
+  token     String       @unique
+  createdAt DateTime     @default(now())
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  users     public_users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+  @@schema("public")
+}
+
 model subscriptions {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String?   @db.Uuid
+  id         String        @id
+  user_id    String?
   plan_name  String
-  start_date DateTime? @default(now()) @db.Timestamptz(6)
-  end_date   DateTime? @db.Timestamptz(6)
-  is_active  Boolean?  @default(true)
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
-  users      users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  start_date DateTime?     @default(now())
+  end_date   DateTime?
+  is_active  Boolean?      @default(true)
+  created_at DateTime?     @default(now())
+  updated_at DateTime?
+  users      public_users? @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@schema("public")
 }
 
 model universities {
-  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                 String               @id
   name               String
   slug               String               @unique
-  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  created_at         DateTime?            @default(now())
+  updated_at         DateTime?
   campuses           campuses[]
   profiles           profiles[]
   university_domains university_domains[]
@@ -471,65 +598,54 @@ model universities {
   @@schema("public")
 }
 
-model pending_signups {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email              String    @unique
-  hashed_password    String
-  verification_token String    @unique
-  expires_at         DateTime  @db.Timestamptz(6)
-  created_at         DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime? @default(now()) @db.Timestamptz(6)
-
-  @@index([email], map: "idx_pending_signups_email")
-  @@index([verification_token], map: "idx_pending_signups_verification_token")
-  @@schema("public")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model oauth_clients {
-  id                 String                  @id @db.Uuid
-  client_id          String                  @unique
-  client_secret_hash String
-  registration_type  oauth_registration_type
-  redirect_uris      String
-  grant_types        String
-  client_name        String?
-  client_uri         String?
-  logo_uri           String?
-  created_at         DateTime                @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime                @default(now()) @db.Timestamptz(6)
-  deleted_at         DateTime?               @db.Timestamptz(6)
-
-  @@index([client_id])
-  @@index([deleted_at])
-  @@schema("auth")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model campuses {
-  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  university_id String       @db.Uuid
-  name          String
-  slug          String
-  created_at    DateTime?    @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime?    @default(now()) @db.Timestamptz(6)
-  universities  universities @relation(fields: [university_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  profiles      profiles[]
-
-  @@unique([university_id, slug], map: "campus_unique_per_university")
-  @@schema("public")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model university_domains {
-  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  university_id String       @db.Uuid
+  id            String       @id
+  university_id String
   domain        String
-  created_at    DateTime?    @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime?    @default(now()) @db.Timestamptz(6)
+  created_at    DateTime?    @default(now())
+  updated_at    DateTime?
   universities  universities @relation(fields: [university_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([university_id, domain], map: "university_domain_unique")
+  @@schema("public")
+}
+
+model public_users {
+  id                              String            @id
+  name                            String?
+  email                           String            @unique
+  emailVerified                   Boolean?          @default(false)
+  image                           String?
+  createdAt                       DateTime          @default(now())
+  updatedAt                       DateTime
+  profile_setup                   Boolean?          @default(false)
+  accounts                        accounts[]
+  blocks_blocks_blocked_idTousers blocks[]          @relation("blocks_blocked_idTousers")
+  blocks_blocks_blocker_idTousers blocks[]          @relation("blocks_blocker_idTousers")
+  chats                           chats[]
+  donations                       donations[]
+  likes_likes_from_userTousers    likes[]           @relation("likes_from_userTousers")
+  likes_likes_to_userTousers      likes[]           @relation("likes_to_userTousers")
+  matches_matches_user1Tousers    matches[]         @relation("matches_user1Tousers")
+  matches_matches_user2Tousers    matches[]         @relation("matches_user2Tousers")
+  profiles                        profiles?
+  sessions                        public_sessions[]
+  subscriptions                   subscriptions[]
+
+  @@map("users")
+  @@schema("public")
+}
+
+model verification_tokens {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+
+  @@unique([identifier, value])
+  @@index([identifier])
   @@schema("public")
 }
 
@@ -563,13 +679,18 @@ enum factor_type {
   @@schema("auth")
 }
 
-enum one_time_token_type {
-  confirmation_token
-  reauthentication_token
-  recovery_token
-  email_change_token_new
-  email_change_token_current
-  phone_change_token
+enum oauth_authorization_status {
+  pending
+  approved
+  denied
+  expired
+
+  @@schema("auth")
+}
+
+enum oauth_client_type {
+  public
+  confidential
 
   @@schema("auth")
 }
@@ -577,6 +698,23 @@ enum one_time_token_type {
 enum oauth_registration_type {
   dynamic
   manual
+
+  @@schema("auth")
+}
+
+enum oauth_response_type {
+  code
+
+  @@schema("auth")
+}
+
+enum one_time_token_type {
+  confirmation_token
+  reauthentication_token
+  recovery_token
+  email_change_token_new
+  email_change_token_current
+  phone_change_token
 
   @@schema("auth")
 }

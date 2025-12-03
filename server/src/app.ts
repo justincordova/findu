@@ -18,6 +18,7 @@ import logger from "@/config/logger";
 
 // Route Imports
 import authRoutes from "@/modules/auth/routes";
+import userRoutes from "@/modules/users/routes";
 import storageRoutes from "@/modules/storage/routes";
 import profileRoutes from "@/modules/profiles/routes";
 import likesRoutes from "@/modules/profiles/routes";
@@ -52,6 +53,7 @@ if (!isDev) {
 
 // Application Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/storage", storageRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/likes", likesRoutes);

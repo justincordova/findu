@@ -3,7 +3,7 @@ import { sendOTPEmail } from "@/modules/auth/emailService";
 import { Redis } from "./redis";
 import logger from "@/config/logger";
 import { Request } from "express";
-import { AuthResult, PendingSignupResult } from "@/types/Auth";
+import { AuthResult, PendingSignupResult } from "@/types/auth";
 import { generateOTP, extractBearerToken } from "@/utils/auth";
 import prisma from "@/lib/prismaClient";
 
@@ -23,7 +23,7 @@ export const OTPService = {
   ): Promise<PendingSignupResult> => {
     try {
       // Check if user already exists in the database
-      const existingUser = await prisma.users.findFirst({ where: { email } });
+      const existingUser = await prisma.auth_users.findFirst({ where: { email } });
       if (existingUser) return { success: false, error: "User already exists" };
 
       // Remove any existing OTP for this email
@@ -45,11 +45,6 @@ export const OTPService = {
     } catch (error) {
       logger.error("CREATE_PENDING_SIGNUP_ERROR", { error, email });
       return { success: false, error: "Failed to create pending signup" };
-    } finally {
-      // Clean up
-      if (await Redis.hasOTP(email)) {
-        await Redis.removeOTP(email);
-      }
     }
   },
 
@@ -81,6 +76,24 @@ export const OTPService = {
         return { success: false, error: "Failed to create user account" };
       }
 
+      // Create user in public.users table for profile relationship
+      try {
+        await prisma.public_users.create({
+          data: {
+            id: authData.user.id,
+            email: email,
+            emailVerified: true,
+            profile_setup: false,
+            updatedAt: new Date(),
+          },
+        });
+        logger.info("PUBLIC_USER_CREATED", { userId: authData.user.id });
+      } catch (publicUserError) {
+        logger.error("PUBLIC_USER_CREATION_ERROR", { error: publicUserError, userId: authData.user.id });
+        // If public user creation fails, we should probably delete the auth user too
+        // but for now just log it
+      }
+      
       logger.info("USER_CREATED_SUCCESSFULLY_WITH_OTP", {
         email,
         userId: authData.user.id,
@@ -91,6 +104,7 @@ export const OTPService = {
           id: authData.user.id,
           email: authData.user.email || "",
           email_confirmed_at: authData.user.email_confirmed_at,
+          profile_setup: false,
         },
       };
     } catch (error) {
@@ -124,8 +138,20 @@ export const AuthService = {
         return { success: false, error: "Invalid email or password" };
       }
 
+      // Fetch profile_setup status from public_users
+      let profileSetup = false;
+      try {
+        const publicUser = await prisma.public_users.findUnique({
+          where: { id: data.user.id },
+          select: { profile_setup: true },
+        });
+        profileSetup = publicUser?.profile_setup ?? false;
+      } catch (dbError) {
+        logger.warn("COULD_NOT_FETCH_PROFILE_SETUP", { userId: data.user.id, error: dbError });
+      }
+
       // Log successful login
-      logger.info("USER_LOGIN_SUCCESSFUL", { email, userId: data.user.id });
+      logger.info("USER_LOGIN_SUCCESSFUL", { email, userId: data.user.id, profileSetup });
 
       // Return user details and session info
       return {
@@ -134,6 +160,7 @@ export const AuthService = {
           id: data.user.id,
           email: data.user.email || "",
           email_confirmed_at: data.user.email_confirmed_at,
+          profile_setup: profileSetup,
         },
         session: data.session ?? undefined, // Explicit undefined if session is null
       };
@@ -156,7 +183,7 @@ RESET PASSWORD TO BE WORKED ON LATER
   requestPasswordReset: async (email: string): Promise<AuthResult> => {
     try {
       // Check if the user exists in the database using Prisma
-      const existingUser = await prisma.users.findFirst({
+      const existingUser = await prisma.auth_users.findFirst({
         where: { email },
       });
 
@@ -388,7 +415,7 @@ RESET PASSWORD TO BE WORKED ON LATER
   deleteUser: async (userId: string): Promise<AuthResult> => {
     try {
       // Check if the user exists in the database using Prisma
-      const existingUser = await prisma.users.findUnique({
+      const existingUser = await prisma.auth_users.findUnique({
         where: { id: userId },
       });
 
@@ -398,7 +425,7 @@ RESET PASSWORD TO BE WORKED ON LATER
       }
 
       // Delete the user from Prisma
-      await prisma.users.delete({
+      await prisma.auth_users.delete({
         where: { id: userId },
       });
 

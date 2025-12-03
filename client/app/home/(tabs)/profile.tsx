@@ -7,10 +7,14 @@ import {
   ActivityIndicator,
   StatusBar,
   Text,
+  TouchableOpacity,
+  Animated,
 } from "react-native";
 import { profileApi } from "@/api/profile";
 import { useProfileSetupStore } from "@/store/profileStore";
 import logger from "@/config/logger";
+import { PRIMARY } from "@/constants/theme";
+import { EditModeProvider, useEditMode } from "@/contexts/EditModeContext";
 
 import HeaderSection from "@/components/profile/HeaderSection";
 import AboutSection from "@/components/profile/AboutSection";
@@ -18,10 +22,12 @@ import AcademicSection from "@/components/profile/AcademicSection";
 import PhotosSection from "@/components/profile/PhotosSection";
 import PreferencesSection from "@/components/profile/PreferencesSection";
 
-export default function ProfileScreen() {
+function ProfileContent() {
   const { data: profile, setField } = useProfileSetupStore();
+  const { isEditMode, setEditMode } = useEditMode();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const shakeAnim = new Animated.Value(0);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -52,6 +58,37 @@ export default function ProfileScreen() {
     fetchProfile();
   }, [profile, setField]);
 
+  useEffect(() => {
+    if (isEditMode) {
+      // Start shake animation
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(shakeAnim, {
+            toValue: 1,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnim, {
+            toValue: -1,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeAnim, {
+            toValue: 0,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      shakeAnim.setValue(0);
+    }
+  }, [isEditMode]);
+
+  const handleEditToggle = () => {
+    setEditMode(!isEditMode);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.loaderContainer}>
@@ -73,6 +110,19 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <StatusBar barStyle="dark-content" />
+      
+      {/* Edit/Done Button */}
+      <View style={styles.headerBar}>
+        <TouchableOpacity 
+          style={[styles.editButton, isEditMode && styles.editButtonActive]} 
+          onPress={handleEditToggle}
+        >
+          <Text style={[styles.editButtonText, isEditMode && styles.editButtonTextActive]}>
+            {isEditMode ? "Done" : "Edit"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
@@ -89,10 +139,43 @@ export default function ProfileScreen() {
   );
 }
 
+export default function ProfileScreen() {
+  return (
+    <EditModeProvider>
+      <ProfileContent />
+    </EditModeProvider>
+  );
+}
+
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  headerBar: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  editButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#f3f4f6",
+  },
+  editButtonActive: {
+    backgroundColor: PRIMARY,
+  },
+  editButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1f2937",
+  },
+  editButtonTextActive: {
+    color: "white",
   },
   scrollContainer: {
     flex: 1,

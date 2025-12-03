@@ -18,6 +18,7 @@ export interface UserData {
   email_confirmed_at?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  profile_setup?: boolean;
 }
 
 // Request/Response Types

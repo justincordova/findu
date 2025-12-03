@@ -12,14 +12,16 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
   return {
     userId: null,
+    userEmail: null,
     token: null,
     isLoading: false,
     isLoggedIn: false,
 
     setUserId: (id: string) => logAndSet({ userId: id }),
+    setUserEmail: (email: string | null) => logAndSet({ userEmail: email }),
     setToken: (token: string | null) => logAndSet({ token }),
     setLoading: (isLoading: boolean) => logAndSet({ isLoading }),
     setLoggedIn: (isLoggedIn: boolean) => logAndSet({ isLoggedIn }),
-    reset: () => logAndSet({ userId: null, token: null, isLoggedIn: false }),
+    reset: () => logAndSet({ userId: null, userEmail: null, token: null, isLoggedIn: false }),
   };
 });

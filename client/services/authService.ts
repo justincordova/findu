@@ -41,13 +41,13 @@ export async function autoRefreshIfNeeded() {
 // ------------------- Auth Methods -------------------
 
 export async function login(email: string, password: string) {
-  const { setUserId, setToken, setLoggedIn, setLoading } = useAuthStore.getState();
+  const { setUserId, setUserEmail, setToken, setLoggedIn, setLoading } = useAuthStore.getState();
   setLoading(true);
 
   try {
     if (!ENABLE_AUTH) {
       setLoggedIn(true);
-      return { success: true };
+      return { success: true, profileSetup: true };
     }
 
     const res = await AuthAPI.login(email, password);
@@ -57,11 +57,12 @@ export async function login(email: string, password: string) {
       await storeToken(token, res.session.refresh_token);
 
       setUserId(res.user.id);
+      setUserEmail(email);
       setToken(token);
       setLoggedIn(true);
 
-      logger.info("AuthService: login success", { userId: res.user.id });
-      return { success: true };
+      logger.info("AuthService: login success", { userId: res.user.id, email, profileSetup: res.user.profile_setup });
+      return { success: true, profileSetup: res.user.profile_setup ?? false };
     }
 
     logger.warn("AuthService: login failed", { error: res?.error });
@@ -97,7 +98,7 @@ export async function signup(email: string, password: string) {
 }
 
 export async function verifyOTP(email: string, otp: string) {
-  const { setLoading } = useAuthStore.getState();
+  const { setUserEmail, setLoading } = useAuthStore.getState();
   setLoading(true);
 
   try {
@@ -108,7 +109,8 @@ export async function verifyOTP(email: string, otp: string) {
       return { success: false, error: res?.error || "OTP verification failed" };
     }
 
-    logger.info("AuthService: OTP verified successfully", { userId: res.user.id });
+    setUserEmail(email);
+    logger.info("AuthService: OTP verified successfully", { userId: res.user.id, email });
     return { success: true, userId: res.user.id };
   } catch (err) {
     logger.error("AuthService: verifyOTP error", { err });

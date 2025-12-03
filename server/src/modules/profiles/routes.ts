@@ -18,6 +18,12 @@ router.post(
 // Get the authenticated user's profile
 router.get("/me", profileControllers.getMyProfileController);
 
+// Get university from email domain
+router.post("/university-from-email", profileControllers.getUniversityFromEmailController);
+
+// Get campuses by university ID
+router.get("/university/:universityId/campuses", profileControllers.getCampusesByUniversityController);
+
 // Get another user's profile by ID
 router.get("/:userId", profileControllers.getProfileController);
 

@@ -39,4 +39,23 @@ export const profileApi = {
     const response = await axios.get(`${API_BASE}/me`, { headers });
     return response.data;
   },
+
+  getUniversityFromEmail: async (email: string) => {
+    const headers = getAuthHeaders();
+    const response = await axios.post(`${API_BASE}/university-from-email`, { email }, { headers });
+    return response.data;
+  },
+
+  getCampusesByUniversity: async (universityId: string) => {
+    const headers = getAuthHeaders();
+    const response = await axios.get(`${API_BASE}/university/${universityId}/campuses`, { headers });
+    return response.data;
+  },
+
+  markProfileSetupComplete: async (userId: string) => {
+    const headers = getAuthHeaders();
+    const API_USERS = `${process.env.EXPO_PUBLIC_API_URL}/api/users`;
+    const response = await axios.patch(`${API_USERS}/profile-setup-complete/${userId}`, {}, { headers });
+    return response.data;
+  },
 };

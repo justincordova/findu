@@ -78,3 +78,39 @@ export const getMyProfileController = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to fetch profile" });
   }
 };
+
+/**
+ * Get university from email domain
+ */
+export const getUniversityFromEmailController = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const university = await profileService.getUniversityFromEmail(email);
+    if (!university) {
+      return res.status(404).json({ error: "University not found for this email domain" });
+    }
+
+    res.json(university);
+  } catch (error) {
+    console.error("Error getting university from email:", error);
+    res.status(500).json({ error: "Failed to get university" });
+  }
+};
+
+/**
+ * Get campuses by university ID
+ */
+export const getCampusesByUniversityController = async (req: Request, res: Response) => {
+  try {
+    const { universityId } = req.params;
+    const campuses = await profileService.getCampusesByUniversity(universityId);
+    res.json(campuses);
+  } catch (error) {
+    console.error("Error getting campuses:", error);
+    res.status(500).json({ error: "Failed to get campuses" });
+  }
+};
