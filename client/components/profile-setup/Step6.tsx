@@ -50,11 +50,7 @@ export default function Step6({
     [profileData?.photos, setField]
   );
 
-  /** Step validity: at least 6 photos required */
-  const isValid = useMemo(
-    () => (profileData?.photos?.length || 0) >= 6,
-    [profileData?.photos]
-  );
+  const isValid = useMemo(() => true, []);
 
   useEffect(() => {
     onValidityChange?.(isValid);
@@ -71,31 +67,32 @@ export default function Step6({
       <Text style={styles.title}>Add your photos</Text>
       <Text style={styles.subtitle}>Add up to 6 photos for your profile</Text>
 
-      {/* Horizontal scrollable photos */}
+      {/* 3x2 Grid */}
       <ScrollView
         style={styles.form}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.photosContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
-        {(profileData?.photos || []).map((uri, idx) => (
-          <View key={idx} style={styles.photoWrapper}>
-            <Image source={{ uri }} style={styles.photo} />
-            <TouchableOpacity
-              style={styles.removeButton}
-              onPress={() => removePhoto(idx)}
-            >
-              <Ionicons name="close-circle" size={20} color="red" />
-            </TouchableOpacity>
-          </View>
-        ))}
+        <View style={styles.gridContainer}>
+          {(profileData?.photos || []).map((uri, idx) => (
+            <View key={idx} style={styles.photoWrapper}>
+              <Image source={{ uri }} style={styles.photo} />
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => removePhoto(idx)}
+              >
+                <Ionicons name="close-circle" size={24} color="red" />
+              </TouchableOpacity>
+            </View>
+          ))}
 
-        {(profileData?.photos?.length || 0) < 6 && (
-          <TouchableOpacity style={styles.addPhotoButton} onPress={pickImages}>
-            <Ionicons name="add" size={36} color={PRIMARY} />
-            <Text style={styles.addPhotoText}>Add Photo</Text>
-          </TouchableOpacity>
-        )}
+          {(profileData?.photos?.length || 0) < 6 && (
+            <TouchableOpacity style={styles.addPhotoButton} onPress={pickImages}>
+              <Ionicons name="add" size={40} color={PRIMARY} />
+              <Text style={styles.addPhotoText}>Add Photo</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -123,23 +120,47 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   form: { flex: 1 },
-  photosContainer: { alignItems: "center", gap: 16 },
-  photoWrapper: { position: "relative", marginRight: 16 },
-  photo: { width: 100, height: 100, borderRadius: 12 },
-  removeButton: { position: "absolute", top: -8, right: -8 },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  gridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    justifyContent: "space-between",
+  },
+  photoWrapper: {
+    position: "relative",
+    width: "48%",
+    aspectRatio: 3 / 4,
+  },
+  photo: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 12,
+  },
+  removeButton: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "white",
+    borderRadius: 12,
+  },
   addPhotoButton: {
-    width: 100,
-    height: 100,
+    width: "48%",
+    aspectRatio: 3 / 4,
     borderRadius: 12,
     borderWidth: 2,
+    borderStyle: "dashed",
     borderColor: PRIMARY,
     alignItems: "center",
     justifyContent: "center",
   },
   addPhotoText: {
-    fontSize: 12,
+    fontSize: 14,
     color: PRIMARY,
-    marginTop: 4,
+    marginTop: 8,
     textAlign: "center",
+    fontWeight: "600",
   },
 });
