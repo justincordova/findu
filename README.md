@@ -17,7 +17,7 @@
 | **Frontend**         | React Native + Expo   | Cross-platform mobile app        |
 | **State Management** | Zustand               | Lightweight state management     |
 | **Backend**          | Node.js + Express     | API server                       |
-| **Authentication**   | Supabase Auth         | Email verification & magic links |
+| **Authentication**   | Better Auth           | Email verification & magic links |
 | **Database**         | Supabase (PostgreSQL) | Primary data storage             |
 | **Cache / Queue**    | Redis                 | Caching, sessions, job queues    |
 | **Payments**         | Stripe                | Subscriptions, boosts, tips      |
