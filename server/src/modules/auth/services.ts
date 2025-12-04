@@ -36,6 +36,14 @@ export const OTPService = {
       const otp = generateOTP();
       await redis.set(`otp:${email}`, otp, "EX", OTP_EXPIRATION);
 
+      // In development, just log the OTP to console
+      if (process.env.NODE_ENV === "development") {
+        logger.info("OTP_GENERATED_DEV_MODE", { email, otp });
+        console.log(`\n🔐 OTP for ${email}: ${otp}\n`);
+        return { success: true };
+      }
+
+      // In production, send the email
       const emailResult = await sendOTPEmail({ email, otp });
       if (!emailResult.success) {
         await redis.del(`otp:${email}`);
@@ -165,7 +173,10 @@ export const AuthService = {
 
       return {
         success: true,
-        user: { id: signInResult.user.id, email: signInResult.user.email },
+        user: { 
+          id: signInResult.user.id, 
+          email: signInResult.user.email
+        },
         token: signInResult.token,
       };
     } catch (error) {

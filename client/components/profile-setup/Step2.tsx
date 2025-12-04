@@ -81,9 +81,9 @@ export default function Step2({ onBack, onValidityChange }: Step2Props) {
           // Store campus name in the store
           setProfileField("campus_name", defaultCampus.name);
         } else {
-          // No campuses available - set campus_id to null
+          // No campuses available
           setProfileField("campus_id", null);
-          setProfileField("campus_name", null);
+          setProfileField("campus_name", undefined);
           setCampusItems([]);
         }
       } catch (err) {
@@ -295,7 +295,17 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     backgroundColor: BACKGROUND,
   },
-  backButton: { marginBottom: 24 },
+  backButton: {
+    position: "absolute",
+    top: 48,
+    left: 24,
+    zIndex: 10,
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: "center",
+    paddingTop: 80,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",

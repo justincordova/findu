@@ -21,7 +21,7 @@ type DropdownKey = "gender" | "pronouns" | null;
 
 export default function Step1({ onValidityChange }: Step1Props) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setProfileField = useProfileSetupStore((state) => state.setField);
+  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
   const [activeDropdown, setActiveDropdown] = useState<DropdownKey>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);

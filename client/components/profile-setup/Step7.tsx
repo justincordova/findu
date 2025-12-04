@@ -137,6 +137,7 @@ export default function Step7({
       </View>
 
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+        <View style={styles.contentContainer}>
         {/* Basic Info */}
         <Text style={styles.sectionTitle}>Basic Info</Text>
         {["name", "birthdate", "gender", "pronouns"].map((field) => (
@@ -229,6 +230,7 @@ export default function Step7({
             <Text style={{ color: MUTED }}>No photos added</Text>
           )}
         </ScrollView>
+        </View>
       </ScrollView>
 
       {/* Finish Button */}
@@ -261,7 +263,12 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     backgroundColor: BACKGROUND,
   },
-  header: { marginBottom: 32 },
+  backButton: {
+    position: "absolute",
+    top: 48,
+    left: 24,
+    zIndex: 10,
+  },
   backButton: { marginBottom: 24 },
   title: {
     fontSize: 24,
@@ -277,6 +284,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   form: { flex: 1 },
+  contentContainer: {
+    paddingTop: 80,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",

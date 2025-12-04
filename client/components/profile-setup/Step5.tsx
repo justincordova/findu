@@ -133,10 +133,11 @@ export default function Step5({
           </TouchableOpacity>
         )}
 
-        <Text style={styles.title}>Profile Details</Text>
-        <Text style={styles.subtitle}>
-          Add a bio, profile picture, and interests
-        </Text>
+        <View style={styles.contentContainer}>
+          <Text style={styles.title}>Profile Details</Text>
+          <Text style={styles.subtitle}>
+            Add a bio, profile picture, and interests
+          </Text>
 
         {/* Profile Picture */}
         <View style={styles.fieldContainer}>
@@ -202,6 +203,7 @@ export default function Step5({
             )}
           />
         </View>
+        </View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
   );
@@ -209,12 +211,20 @@ export default function Step5({
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
+    flex: 1,
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 32,
     backgroundColor: BACKGROUND,
   },
-  backButton: { marginBottom: 12 },
+  backButton: {
+    position: "absolute",
+    top: 48,
+    left: 24,
+    zIndex: 10,
+  },
+  contentContainer: {
+    paddingTop: 80,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
