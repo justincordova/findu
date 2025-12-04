@@ -31,7 +31,7 @@ export default function SignupForm() {
     setError("");
     const result = await verifyAndSignup(email, password, otp);
     if (result.success) {
-      router.replace("/home/(tabs)/discover");
+      router.replace("/profile-setup/1");
     } else {
       setError(result.error || "Signup failed.");
     }

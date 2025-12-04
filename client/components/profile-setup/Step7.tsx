@@ -269,7 +269,6 @@ const styles = StyleSheet.create({
     left: 24,
     zIndex: 10,
   },
-  backButton: { marginBottom: 24 },
   title: {
     fontSize: 24,
     fontWeight: "bold",
