@@ -263,13 +263,15 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     backgroundColor: BACKGROUND,
   },
+  header: {
+    marginBottom: 24,
+  },
   backButton: {
     position: "absolute",
     top: 48,
     left: 24,
     zIndex: 10,
   },
-  backButton: { marginBottom: 24 },
   title: {
     fontSize: 24,
     fontWeight: "bold",
