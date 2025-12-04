@@ -39,9 +39,18 @@ export default function Step3({
     []
   );
 
-  /** Intent options (tap boxes) */
+  /** Intent options (tap boxes) - aligned with discovery algorithm intent matrix (8 intents) */
   const intentOptions = useMemo(
-    () => ["dating", "friendship", "networking", "casual"],
+    () => [
+      "Dating",
+      "Casual Dating",
+      "Serious Relationship",
+      "Friendship",
+      "Study Buddy",
+      "Hookup",
+      "Networking",
+      "Unsure",
+    ],
     []
   );
 
@@ -184,7 +193,7 @@ export default function Step3({
                   isIntentSelected(intent) && styles.intentTextSelected,
                 ]}
               >
-                {intent.charAt(0).toUpperCase() + intent.slice(1)}
+                {intent}
               </Text>
             </TouchableOpacity>
           ))}
