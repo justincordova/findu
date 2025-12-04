@@ -111,3 +111,4 @@ dump/
 # AI CLI
 GEMINI.MD
 CLAUDE.MD
+.claude/

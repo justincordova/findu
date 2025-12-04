@@ -10,9 +10,10 @@
     "lint": "eslint . --ext .ts",
     "test": "jest --verbose",
     "test:coverage": "jest --coverage --verbose",
-    "seed": "ts-node -r tsconfig-paths/register scripts/seed.ts",
-    "cleanup": "ts-node -r tsconfig-paths/register scripts/cleanup_seed.ts",
-    "cleanup:likes-matches": "ts-node -r tsconfig-paths/register scripts/cleanup_likes_matches.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/scripts/seed.ts",
+    "cleanup": "ts-node -r tsconfig-paths/register src/scripts/cleanup_seed.ts",
+    "cleanup:likes-matches": "ts-node -r tsconfig-paths/register src/scripts/cleanup_likes_matches.ts",
+    "seed:uni": "ts-node -r tsconfig-paths/register src/scripts/setup_universities.ts"
   },
   "keywords": [],
   "author": "",
