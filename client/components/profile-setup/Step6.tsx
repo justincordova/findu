@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   Image,
   StyleSheet,
 } from "react-native";
@@ -53,7 +52,7 @@ export default function Step6({
 
   /** Step validity: at least 6 photos required */
   const isValid = useMemo(
-    () => (profileData?.photos?.length || 0) >= 6,
+    () => (profileData?.photos?.length || 0) >= 2,
     [profileData?.photos]
   );
 
@@ -72,32 +71,44 @@ export default function Step6({
       <Text style={styles.title}>Add your photos</Text>
       <Text style={styles.subtitle}>Add up to 6 photos for your profile</Text>
 
-      {/* Horizontal scrollable photos */}
-      <ScrollView
-        style={styles.form}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.photosContainer}
-      >
-        {(profileData?.photos || []).map((uri: string, idx: number) => (
-          <View key={idx} style={styles.photoWrapper}>
-            <Image source={{ uri }} style={styles.photo} />
-            <TouchableOpacity
-              style={styles.removeButton}
-              onPress={() => removePhoto(idx)}
-            >
-              <Ionicons name="close-circle" size={20} color="red" />
-            </TouchableOpacity>
-          </View>
-        ))}
-
-        {(profileData?.photos?.length || 0) < 6 && (
-          <TouchableOpacity style={styles.addPhotoButton} onPress={pickImages}>
-            <Ionicons name="add" size={36} color={PRIMARY} />
-            <Text style={styles.addPhotoText}>Add Photo</Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
+      {/* 2x3 Grid of photos */}
+      <View style={styles.gridContainer}>
+        {Array.from({ length: 6 }).map((_, idx) => {
+          const photo = (profileData?.photos || [])[idx];
+          
+          if (photo) {
+            // Show photo with remove button
+            return (
+              <View key={idx} style={styles.photoWrapper}>
+                <Image source={{ uri: photo }} style={styles.photo} />
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => removePhoto(idx)}
+                >
+                  <Ionicons name="close-circle" size={24} color="red" />
+                </TouchableOpacity>
+              </View>
+            );
+          } else if (idx === (profileData?.photos?.length || 0)) {
+            // Show add button for next empty slot
+            return (
+              <TouchableOpacity
+                key={idx}
+                style={styles.addPhotoButton}
+                onPress={pickImages}
+              >
+                <Ionicons name="add" size={36} color={PRIMARY} />
+                <Text style={styles.addPhotoText}>Add Photo</Text>
+              </TouchableOpacity>
+            );
+          } else {
+            // Show empty placeholder
+            return (
+              <View key={idx} style={styles.emptySlot} />
+            );
+          }
+        })}
+      </View>
     </View>
   );
 }
@@ -109,7 +120,16 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     backgroundColor: BACKGROUND,
   },
-  backButton: { marginBottom: 24 },
+  backButton: {
+    position: "absolute",
+    top: 48,
+    left: 24,
+    zIndex: 10,
+  },
+  contentContainer: {
+    flex: 1,
+    paddingTop: 80,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -121,26 +141,58 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: MUTED,
     textAlign: "center",
+    marginBottom: 32,
+  },
+  gridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+  },
+  photoWrapper: {
+    position: "relative",
+    width: "48%",
+    aspectRatio: 1,
     marginBottom: 16,
   },
-  form: { flex: 1 },
-  photosContainer: { alignItems: "center", gap: 16 },
-  photoWrapper: { position: "relative", marginRight: 16 },
-  photo: { width: 100, height: 100, borderRadius: 12 },
-  removeButton: { position: "absolute", top: -8, right: -8 },
+  photo: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 12,
+  },
+  removeButton: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    backgroundColor: "white",
+    borderRadius: 12,
+  },
   addPhotoButton: {
-    width: 100,
-    height: 100,
+    width: "48%",
+    aspectRatio: 1,
+    marginBottom: 16,
     borderRadius: 12,
     borderWidth: 2,
+    borderStyle: "dashed",
     borderColor: PRIMARY,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#f9f9f9",
   },
   addPhotoText: {
     fontSize: 12,
     color: PRIMARY,
     marginTop: 4,
     textAlign: "center",
+  },
+  emptySlot: {
+    width: "48%",
+    aspectRatio: 1,
+    marginBottom: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "#e0e0e0",
+    backgroundColor: "#fafafa",
   },
 });

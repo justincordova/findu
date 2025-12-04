@@ -202,7 +202,17 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     backgroundColor: BACKGROUND,
   },
-  backButton: { marginBottom: 24 },
+  backButton: {
+    position: "absolute",
+    top: 48,
+    left: 24,
+    zIndex: 10,
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: "center",
+    paddingTop: 80,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",

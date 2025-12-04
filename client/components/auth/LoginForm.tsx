@@ -5,6 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { DANGER } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import Button from "../shared/Button";
+import { profileApi } from "@/api/profile";
+
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -24,7 +26,15 @@ export default function LoginForm() {
       if (!result.success) {
         setError(result.error || "Login failed");
       } else {
-        router.replace("/home/(tabs)/discover"); // Navigate after successful login
+        // Check if profile exists by calling /me
+        try {
+          await profileApi.me();
+          // Profile exists, go to discover
+          router.replace("/home/(tabs)/discover");
+        } catch (err) {
+          // Profile doesn't exist (404), go to setup
+          router.replace("/profile-setup/1");
+        }
       }
     } catch (err) {
       console.error("LoginForm: Login error", err);
