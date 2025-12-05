@@ -1,6 +1,7 @@
 import { View, StyleSheet } from "react-native";
 import { BACKGROUND } from "../constants/theme";
 import HeaderSection from "../components/entry/HeaderSection";
+import ActionButtons from "../components/entry/ActionButtons";
 import TermsSection from "../components/entry/TermsSection";
 import FloatingLogo from "@/components/entry/FoatingLogo";
 
@@ -15,6 +16,7 @@ export default function EntryScreen() {
 
       {/* Bottom Section */}
       <View style={styles.bottomSection}>
+        <ActionButtons />
         <TermsSection />
       </View>
     </View>
