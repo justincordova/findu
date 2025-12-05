@@ -435,6 +435,9 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     backgroundColor: BACKGROUND,
   },
+  header: {
+    marginBottom: 24,
+  },
   backButton: {
     position: "absolute",
     top: 48,

@@ -21,6 +21,9 @@ import {
 } from "../../constants/theme";
 import { useProfileSetupStore } from "../../store/profileStore";
 
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const PHOTO_SIZE = (SCREEN_WIDTH - 64) / 2.5; // Bigger photos, 2.5 per row conceptually
+
 export default function Step6({
   onBack,
   onValidityChange,
