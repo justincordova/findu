@@ -24,6 +24,7 @@ import likesRoutes from "@/modules/likes/routes";
 import matchesRoutes from "@/modules/matches/routes";
 import discoverRoutes from "@/modules/discover/routes";
 import blocksRoutes from "@/modules/blocks/routes";
+import constantsRoutes from "@/modules/constants/routes";
 
 const app = express();
 
@@ -55,6 +56,7 @@ if (!isDev) {
 // handler for built-in routes like /session, /signout, etc.
 app.use("/api/auth", authRoutes);
 app.use("/api/storage", storageRoutes);
+app.use("/api/constants", constantsRoutes);
 app.use("/api/profiles", profileRoutes);
 app.use("/api/likes", likesRoutes);
 app.use("/api/matches", matchesRoutes);
@@ -71,6 +73,7 @@ app.get("/", (_req: Request, res: Response) => {
       health: "/health",
       auth: "/api/auth",
       storage: "/api/storage",
+      constants: "/api/constants",
       profiles: "/api/profiles",
       likes: "/api/likes",
       matches: "/api/matches",
