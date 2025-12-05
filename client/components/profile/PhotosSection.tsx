@@ -9,11 +9,13 @@ import {
   Modal,
   Alert,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useProfileSetupStore } from "@/store/profileStore";
 import { useAuthStore } from "@/store/authStore";
 import { updatePhoto } from "@/services/uploadService";
+import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
 
 const { width } = Dimensions.get("window");
@@ -29,6 +31,7 @@ export default function PhotosSection() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   const openModal = (index: number) => {
@@ -54,18 +57,37 @@ export default function PhotosSection() {
 
   const handleReplacePhoto = async () => {
     if (!userId) {
+      logger.error("[PhotosSection] User ID not found");
       Alert.alert("Error", "You must be logged in to update photos.");
       return;
     }
 
+    logger.info("[PhotosSection] Modal opened for photo replacement", {
+      userId,
+      photoIndex: currentIndex
+    });
+
+    logger.info("[PhotosSection] Requesting media library permission", {
+      userId,
+      photoIndex: currentIndex
+    });
+
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
+      logger.warn("[PhotosSection] Media library permission denied", {
+        userId,
+        photoIndex: currentIndex
+      });
       Alert.alert("Permission required", "You need to allow access to your photos.");
       return;
     }
 
+    logger.info("[PhotosSection] Permission granted, launching image picker", {
+      userId,
+      photoIndex: currentIndex
+    });
+
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
-      // @ts-ignore
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 5],
@@ -73,18 +95,72 @@ export default function PhotosSection() {
     });
 
     if (pickerResult.canceled) {
+      logger.info("[PhotosSection] Image picker cancelled by user", {
+        userId,
+        photoIndex: currentIndex
+      });
       return;
     }
 
     const newUri = pickerResult.assets[0].uri;
+    logger.info("[PhotosSection] Image selected for replacement", {
+      userId,
+      photoIndex: currentIndex,
+      uri: newUri
+    });
+
     closeModal(); // Close the modal before upload
+    setIsUploading(true);
 
     try {
-      await updatePhoto(userId, newUri, currentIndex);
+      logger.info("[PhotosSection] Starting photo upload", {
+        userId,
+        photoIndex: currentIndex
+      });
+
+      const newPhotoUrl = await updatePhoto(userId, newUri, currentIndex);
+
+      logger.info("[PhotosSection] Photo replaced successfully", {
+        userId,
+        photoIndex: currentIndex,
+        newUrl: newPhotoUrl
+      });
+
+      // Update the store with the new photo URL
+      // This ensures correct extension is displayed after upload
+      const currentPhotos = Array.isArray(profile?.photos) ? [...profile.photos] : [];
+      currentPhotos[currentIndex] = newPhotoUrl;
+      useProfileSetupStore.getState().setProfileField("photos", currentPhotos);
+
+      logger.info("[PhotosSection] Updated store with new photo URL", {
+        userId,
+        photoIndex: currentIndex,
+        newUrl: newPhotoUrl
+      });
+
+      // Update the profile in the database with the new photo URL
+      logger.info("[PhotosSection] Updating profile in database with new photo URL", {
+        userId,
+        photoIndex: currentIndex,
+        newUrl: newPhotoUrl
+      });
+      await profileApi.update(userId, { photos: currentPhotos });
+
+      logger.info("[PhotosSection] Profile updated in database with new photo URL", {
+        userId,
+        photoIndex: currentIndex
+      });
+
       Alert.alert("Success", "Photo updated successfully!");
     } catch (error) {
-      logger.error("Failed to replace photo", { error });
+      logger.error("[PhotosSection] Failed to replace photo", {
+        userId,
+        photoIndex: currentIndex,
+        error: error instanceof Error ? error.message : String(error)
+      });
       Alert.alert("Upload Failed", "Could not replace the photo. Please try again.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -151,9 +227,9 @@ export default function PhotosSection() {
               offset: width * index,
               index,
             })}
-            renderItem={({ item }) => (
+            renderItem={({ item: photo }) => (
               <Image
-                source={{ uri: item }}
+                source={{ uri: photo }}
                 style={styles.fullscreenImage}
                 resizeMode="contain"
               />
@@ -171,20 +247,33 @@ export default function PhotosSection() {
 
           <View style={styles.modalActions}>
             <TouchableOpacity
-              style={styles.actionButton}
+              style={[styles.actionButton, isUploading && styles.actionButtonDisabled]}
               onPress={handleReplacePhoto}
               activeOpacity={0.8}
+              disabled={isUploading}
             >
-              <Text style={styles.actionText}>Replace</Text>
+              {isUploading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.actionText}>Replace</Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.actionButton}
+              style={[styles.actionButton, isUploading && styles.actionButtonDisabled]}
               onPress={closeModal}
               activeOpacity={0.8}
+              disabled={isUploading}
             >
               <Text style={styles.actionText}>Close</Text>
             </TouchableOpacity>
           </View>
+
+          {isUploading && (
+            <View style={styles.uploadingOverlay}>
+              <ActivityIndicator size="large" color="white" />
+              <Text style={styles.uploadingText}>Updating photo...</Text>
+            </View>
+          )}
         </View>
       </Modal>
     </View>
@@ -258,6 +347,26 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
     fontSize: 16,
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
+  },
+  uploadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 16,
+  },
+  uploadingText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 12,
   },
 });
 

@@ -19,11 +19,10 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { profileApi } from "@/api/profile";
 import AlertModal from "@/components/shared/AlertModal";
-import { useProfileSetupStore } from "@/store/profileStore";
 import logger from "@/config/logger";
 import { DARK, MUTED, PRIMARY } from "@/constants/theme";
 import * as ImagePicker from "expo-image-picker";
-import { uploadAvatar, uploadPhotos } from "@/services/uploadService";
+import { uploadAvatar, uploadPhotos, updatePhoto } from "@/services/uploadService";
 import AgeRangeSlider from "@/components/shared/AgeRangeSlider";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -38,8 +37,8 @@ const YEAR_MAP: Record<number, string> = {
 };
 
 export default function ProfileScreen() {
-  const { data: profileData, setProfileData } = useProfileSetupStore();
-  const [loading, setLoading] = useState(!profileData);
+  const [profileData, setProfileData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -76,27 +75,30 @@ export default function ProfileScreen() {
     []
   );
 
-  const fetchProfile = useCallback(async () => {
-    if (!loading) setLoading(true);
+  const fetchProfile = useCallback(async (showLoading = true) => {
+    if (showLoading && !loading) setLoading(true);
     setError(null);
 
     try {
       const data = await profileApi.me();
+      logger.debug("[profile] Fetched profile data", {
+        hasPhotos: !!data?.photos,
+        photoCount: data?.photos?.length || 0
+      });
       setProfileData(data);
     } catch (err) {
       logger.error("Error fetching profile:", err);
       setError("Failed to load profile");
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [loading, setProfileData]);
 
   useFocusEffect(
     useCallback(() => {
+      // Only fetch if we don't have profile data yet
       if (!profileData) {
-        fetchProfile();
-      } else {
-        logger.info("Profile data already in store. Skipping fetch.");
+        fetchProfile(true);
       }
     }, [profileData, fetchProfile])
   );
@@ -121,6 +123,12 @@ export default function ProfileScreen() {
 
   const photos = Array.isArray(profileData?.photos) ? profileData.photos : [];
   const displayPhotos = photos.length > 0 ? photos : [];
+
+  // Log current photos for debugging
+  logger.debug("[profile] Current photos", {
+    count: photos.length,
+    photos: photos
+  });
   
   const calculateAge = (birthdate: string | undefined): number | null => {
     if (!birthdate) return null;
@@ -386,25 +394,108 @@ export default function ProfileScreen() {
     }
   };
 
-  const removePhoto = async (photoUrl: string) => {
-    try {
-      const currentPhotos = Array.isArray(profileData?.photos) ? profileData.photos : [];
-      const newPhotos = currentPhotos.filter(p => p !== photoUrl);
-      
-      await profileApi.update(profileData?.user_id || "", { photos: newPhotos });
-      setProfileData({ ...profileData, photos: newPhotos });
-      setAlertModal({
-        visible: true,
-        title: 'Success',
-        message: 'Photo removed successfully',
-        type: 'success'
-      });
-    } catch (err) {
-      logger.error("Error removing photo:", err);
+  const handleReplacePhotoInCarousel = async () => {
+    if (!profileData?.user_id) {
       setAlertModal({
         visible: true,
         title: 'Error',
-        message: 'Failed to remove photo',
+        message: 'User ID not found',
+        type: 'error'
+      });
+      return;
+    }
+
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      logger.warn("[photo] Media library permission denied", { userId: profileData.user_id });
+      setAlertModal({
+        visible: true,
+        title: 'Permission Required',
+        message: 'Please allow access to your photos',
+        type: 'warning'
+      });
+      return;
+    }
+
+    logger.info("[photo] Launching image picker for photo replacement", {
+      userId: profileData.user_id,
+      photoIndex: currentPhotoIndex
+    });
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 5],
+      quality: 1,
+    });
+
+    if (result.canceled) {
+      logger.info("[photo] Image picker cancelled by user", { photoIndex: currentPhotoIndex });
+      return;
+    }
+
+    const newPhotoUri = result.assets[0].uri;
+    logger.info("[photo] Image selected for replacement", {
+      userId: profileData.user_id,
+      photoIndex: currentPhotoIndex,
+      uri: newPhotoUri
+    });
+
+    try {
+      logger.info("[photo] Starting photo upload", {
+        userId: profileData.user_id,
+        photoIndex: currentPhotoIndex
+      });
+
+      const newPhotoUrl = await updatePhoto(profileData.user_id, newPhotoUri, currentPhotoIndex);
+
+      logger.info("[photo] Photo replaced successfully", {
+        userId: profileData.user_id,
+        photoIndex: currentPhotoIndex,
+        newUrl: newPhotoUrl
+      });
+
+      // Update the local profile data with the new photo URL
+      // This ensures we display the correct URL with the correct extension
+      const currentPhotos = Array.isArray(profileData?.photos) ? [...profileData.photos] : [];
+      currentPhotos[currentPhotoIndex] = newPhotoUrl;
+      setProfileData({ ...profileData, photos: currentPhotos });
+
+      logger.info("[photo] Updated local profile data with new photo URL", {
+        userId: profileData.user_id,
+        photoIndex: currentPhotoIndex,
+        newUrl: newPhotoUrl
+      });
+
+      // Update the profile in the database with the new photo URL
+      logger.info("[photo] Updating profile in database with new photo URL", {
+        userId: profileData.user_id,
+        photoIndex: currentPhotoIndex,
+        newUrl: newPhotoUrl
+      });
+      await profileApi.update(profileData.user_id, { photos: currentPhotos });
+
+      logger.info("[photo] Profile updated in database with new photo URL", {
+        userId: profileData.user_id,
+        photoIndex: currentPhotoIndex
+      });
+
+      setAlertModal({
+        visible: true,
+        title: 'Success',
+        message: 'Photo updated successfully!',
+        type: 'success'
+      });
+    } catch (err) {
+      logger.error("[photo] Failed to replace photo", {
+        userId: profileData.user_id,
+        photoIndex: currentPhotoIndex,
+        error: err
+      });
+      setAlertModal({
+        visible: true,
+        title: 'Upload Failed',
+        message: 'Could not replace the photo. Please try again.',
         type: 'error'
       });
     }
@@ -413,6 +504,12 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
+
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#000" />
+        </View>
+      )}
 
       <ScrollView
         style={styles.scrollContainer}
@@ -431,63 +528,54 @@ export default function ProfileScreen() {
                 onScroll={handlePhotoScroll}
                 scrollEventThrottle={16}
               >
-                {displayPhotos.map((photo, index) => (
-                  <View key={index} style={styles.photoContainer}>
-                    <Image
-                      source={{ uri: photo }}
-                      style={styles.photo}
-                      resizeMode="cover"
-                    />
-                  </View>
-                ))}
+                {displayPhotos.map((photo: string, index: number) => {
+                  // Add cache busting timestamp to force reload on URL changes
+                  const photoUrlWithCache = photo.includes('?') ? `${photo}&t=${Date.now()}` : `${photo}?t=${Date.now()}`;
+                  return (
+                    <View key={`photo-${index}-${photo}`} style={styles.photoContainer}>
+                      <Image
+                        source={{ uri: photoUrlWithCache }}
+                        style={styles.photo}
+                        resizeMode="cover"
+                        onError={(error) => {
+                          logger.error("[profile] Image failed to load", {
+                            index,
+                            photo,
+                            error: error.nativeEvent.error
+                          });
+                        }}
+                        onLoad={() => {
+                          logger.debug("[profile] Image loaded successfully", {
+                            index,
+                            photo
+                          });
+                        }}
+                      />
+                    </View>
+                  );
+                })}
+
               </ScrollView>
               
-              {/* Persistent Action Buttons */}
+              {/* Replace Photo Button */}
               {displayPhotos.length > 0 && (
-                <>
-                  <TouchableOpacity 
-                    style={[
-                      styles.deletePhotoButton,
-                      displayPhotos.length <= 2 && styles.buttonDisabled
-                    ]}
-                    onPress={() => {
-                      if (displayPhotos.length <= 2) return; 
-                      const currentPhoto = displayPhotos[currentPhotoIndex];
-                      setAlertModal({
-                        visible: true,
-                        title: 'Delete Photo',
-                        message: 'Are you sure you want to delete this photo?',
-                        type: 'warning',
-                        onConfirm: () => removePhoto(currentPhoto)
-                      });
-                    }}
-                    disabled={displayPhotos.length <= 2}
-                  >
-                    <Ionicons name="trash" size={20} color="white" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity 
-                    style={[
-                      styles.addPhotoButton,
-                      displayPhotos.length >= 6 && styles.buttonDisabled
-                    ]}
-                    onPress={pickPhotos}
-                    disabled={uploadingPhotos || displayPhotos.length >= 6}
-                  >
-                    {uploadingPhotos ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : (
-                      <Ionicons name="add" size={24} color="white" />
-                    )}
-                  </TouchableOpacity>
-
-                </>
+                <TouchableOpacity
+                  style={styles.replacePhotoButton}
+                  onPress={handleReplacePhotoInCarousel}
+                  disabled={uploadingPhotos}
+                >
+                  {uploadingPhotos ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Ionicons name="pencil" size={20} color="white" />
+                  )}
+                </TouchableOpacity>
               )}
               
               {/* Photo Indicators */}
               {displayPhotos.length > 1 && (
                 <View style={styles.indicatorContainer}>
-                  {displayPhotos.map((_, index) => (
+                  {displayPhotos.map((_: string, index: number) => (
                     <View
                       key={index}
                       style={[
@@ -537,7 +625,25 @@ export default function ProfileScreen() {
             <View style={styles.profileCardContent}>
               <TouchableOpacity onPress={pickAvatar} style={styles.avatarContainer}>
                 {profileData?.avatar_url ? (
-                  <Image source={{ uri: profileData.avatar_url }} style={styles.avatar} />
+                  <Image
+                    source={{
+                      uri: profileData.avatar_url.includes('?')
+                        ? `${profileData.avatar_url}&t=${Date.now()}`
+                        : `${profileData.avatar_url}?t=${Date.now()}`
+                    }}
+                    style={styles.avatar}
+                    onError={(error) => {
+                      logger.error("[profile] Avatar failed to load", {
+                        url: profileData.avatar_url,
+                        error: error.nativeEvent.error
+                      });
+                    }}
+                    onLoad={() => {
+                      logger.debug("[profile] Avatar loaded successfully", {
+                        url: profileData.avatar_url
+                      });
+                    }}
+                  />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Text style={styles.avatarPlaceholderText}>
@@ -600,7 +706,7 @@ export default function ProfileScreen() {
                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
               </View>
               <View style={styles.interestsContainer}>
-                {interests.map((interest, index) => (
+                {interests.map((interest: string, index: number) => (
                   <View key={index} style={styles.interestBadge}>
                     <Text style={styles.interestText}>{interest}</Text>
                   </View>
@@ -723,7 +829,7 @@ export default function ProfileScreen() {
                   <View style={styles.infoTextContainer}>
                     <Text style={styles.infoLabel}>Interested In</Text>
                     <View style={styles.interestsContainer}>
-                      {profileData.gender_preference.map((pref, idx) => (
+                      {profileData.gender_preference.map((pref: string, idx: number) => (
                         <View key={idx} style={styles.interestBadge}>
                           <Text style={styles.interestText}>{pref}</Text>
                         </View>
@@ -1368,6 +1474,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F5F5F5",
   },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
   errorContainer: {
     flex: 1,
     backgroundColor: "#F5F5F5",
@@ -1564,14 +1681,14 @@ const styles = StyleSheet.create({
   buttonDisabled: {
       opacity: 0.6,
     },
-  deletePhotoButton: {
+  replacePhotoButton: {
     position: "absolute",
     bottom: 20,
-    left: 20,
+    right: 20,
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "rgba(220, 38, 38, 0.9)",
+    backgroundColor: "rgba(59, 130, 246, 0.9)",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
