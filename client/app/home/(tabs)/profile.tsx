@@ -43,6 +43,7 @@ export default function ProfileScreen() {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [replacingPhotoIndex, setReplacingPhotoIndex] = useState<number | null>(null);
   const [photoVersions, setPhotoVersions] = useState<Record<number, number>>({}); // Track version for cache busting
+  const [avatarVersion, setAvatarVersion] = useState<number>(0); // Track avatar version for cache busting
   const scrollViewRef = useRef<ScrollView>(null);
   
   const [modalVisible, setModalVisible] = useState(false);
@@ -301,9 +302,12 @@ export default function ProfileScreen() {
         setUploadingAvatar(true);
         const imageUri = result.assets[0].uri;
         const newAvatarUrl = await uploadAvatar(profileData?.user_id || "", imageUri, "update");
-        
+
         setProfileData({ ...profileData, avatar_url: newAvatarUrl });
-        
+
+        // Increment avatar version to trigger cache bust and reload image
+        setAvatarVersion(prev => prev + 1);
+
         setAlertModal({
           visible: true,
           title: 'Success',
@@ -640,8 +644,8 @@ export default function ProfileScreen() {
                   <Image
                     source={{
                       uri: profileData.avatar_url.includes('?')
-                        ? `${profileData.avatar_url}&t=${Date.now()}`
-                        : `${profileData.avatar_url}?t=${Date.now()}`
+                        ? `${profileData.avatar_url}&v=${avatarVersion}`
+                        : `${profileData.avatar_url}?v=${avatarVersion}`
                     }}
                     style={styles.avatar}
                     onError={(error) => {
