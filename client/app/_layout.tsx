@@ -14,6 +14,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { useAuth } from "@/hooks/useAuth";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useConstantsStore } from "@/store/constantsStore";
 
 // Prevent splash screen from auto hiding
 SplashScreen.preventAutoHideAsync();
@@ -33,14 +34,16 @@ export default function RootLayout() {
   });
 
   const { isLoading, restoreSession } = useAuth();
+  const fetchConstants = useConstantsStore((state) => state.fetchConstants);
 
-  // Restore session on app start
+  // Restore session and fetch constants on app start
   useEffect(() => {
     (async () => {
-      logger.info("RootLayout: Restoring session...");
+      logger.info("RootLayout: Restoring session and fetching constants...");
       await restoreSession();
+      await fetchConstants();
     })();
-  }, [restoreSession]);
+  }, [restoreSession, fetchConstants]);
 
   // Hide splash screen once fonts and auth check are ready
   useEffect(() => {
@@ -77,12 +80,7 @@ export default function RootLayout() {
             headerBackVisible: false,
           }}
         />
-        <Stack.Screen
-          name="profile-setup/Welcome"
-          options={{
-            gestureEnabled: false,
-          }}
-        />
+
       </Stack>
 
       {/* Loading overlay */}
