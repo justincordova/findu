@@ -445,39 +445,42 @@ export default function ProfileScreen() {
               {/* Persistent Action Buttons */}
               {displayPhotos.length > 0 && (
                 <>
-                  {/* Delete current photo button - bottom left */}
-                  {displayPhotos.length > 2 && (
-                    <TouchableOpacity 
-                      style={styles.deletePhotoButton}
-                      onPress={() => {
-                        const currentPhoto = displayPhotos[currentPhotoIndex];
-                        setAlertModal({
-                          visible: true,
-                          title: 'Delete Photo',
-                          message: 'Are you sure you want to delete this photo?',
-                          type: 'warning',
-                          onConfirm: () => removePhoto(currentPhoto)
-                        });
-                      }}
-                    >
-                      <Ionicons name="trash" size={20} color="white" />
-                    </TouchableOpacity>
-                  )}
-                  
-                  {/* Add photo button - bottom right */}
-                  {displayPhotos.length < 6 && (
-                    <TouchableOpacity 
-                      style={styles.addPhotoButton}
-                      onPress={pickPhotos}
-                      disabled={uploadingPhotos}
-                    >
-                      {uploadingPhotos ? (
-                        <ActivityIndicator size="small" color="white" />
-                      ) : (
-                        <Ionicons name="add" size={24} color="white" />
-                      )}
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity 
+                    style={[
+                      styles.deletePhotoButton,
+                      displayPhotos.length <= 2 && styles.buttonDisabled
+                    ]}
+                    onPress={() => {
+                      if (displayPhotos.length <= 2) return; 
+                      const currentPhoto = displayPhotos[currentPhotoIndex];
+                      setAlertModal({
+                        visible: true,
+                        title: 'Delete Photo',
+                        message: 'Are you sure you want to delete this photo?',
+                        type: 'warning',
+                        onConfirm: () => removePhoto(currentPhoto)
+                      });
+                    }}
+                    disabled={displayPhotos.length <= 2}
+                  >
+                    <Ionicons name="trash" size={20} color="white" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={[
+                      styles.addPhotoButton,
+                      displayPhotos.length >= 6 && styles.buttonDisabled
+                    ]}
+                    onPress={pickPhotos}
+                    disabled={uploadingPhotos || displayPhotos.length >= 6}
+                  >
+                    {uploadingPhotos ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <Ionicons name="add" size={24} color="white" />
+                    )}
+                  </TouchableOpacity>
+
                 </>
               )}
               
@@ -1558,6 +1561,25 @@ const styles = StyleSheet.create({
     color: "#374151",
     fontWeight: "500",
   },
+  buttonDisabled: {
+      opacity: 0.6,
+    },
+  deletePhotoButton: {
+    position: "absolute",
+    bottom: 20,
+    left: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(220, 38, 38, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
   addPhotoButton: {
     position: "absolute",
     bottom: 20,
@@ -1578,22 +1600,6 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     height: PHOTO_HEIGHT,
     position: "relative",
-  },
-  deletePhotoButton: {
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(220, 38, 38, 0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
   },
   avatarContainer: {
     position: "relative",
