@@ -92,12 +92,19 @@ export async function uploadPhotos(
   photoUris: string[],
   mode: "setup" | "update"
 ): Promise<string[]> {
+  // Get existing photos from the store
+  const existingPhotos = mode === "update" 
+    ? (useProfileSetupStore.getState().data.photos ?? [])
+    : [];
+  
+  const startIndex = existingPhotos.length;
+  
   const uploadedPhotos = await Promise.all(
     photoUris.map(async (uri, i) => {
       if (uri.startsWith("https://")) return uri;
 
       const ext = getImageType(uri);
-      const photoName = `photo_${i}.${ext}`; // Fixed filename
+      const photoName = `photo_${startIndex + i}.${ext}`; // Use correct index to append
       const photoBlob = await compressImage(uri);
 
       const publicUrl = await uploadViaSignedUrl(userId, photoName, photoBlob, mode);
@@ -107,7 +114,9 @@ export async function uploadPhotos(
     })
   );
 
-  useProfileSetupStore.getState().setProfileField("photos", uploadedPhotos);
+  // Combine existing and new photos
+  const allPhotos = [...existingPhotos, ...uploadedPhotos];
+  useProfileSetupStore.getState().setProfileField("photos", allPhotos);
   return uploadedPhotos;
 }
 
