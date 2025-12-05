@@ -41,6 +41,8 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [replacingPhotoIndex, setReplacingPhotoIndex] = useState<number | null>(null);
+  const [photoVersions, setPhotoVersions] = useState<Record<number, number>>({}); // Track version for cache busting
   const scrollViewRef = useRef<ScrollView>(null);
   
   const [modalVisible, setModalVisible] = useState(false);
@@ -441,6 +443,7 @@ export default function ProfileScreen() {
       uri: newPhotoUri
     });
 
+    setReplacingPhotoIndex(currentPhotoIndex);
     try {
       logger.info("[photo] Starting photo upload", {
         userId: profileData.user_id,
@@ -460,6 +463,12 @@ export default function ProfileScreen() {
       const currentPhotos = Array.isArray(profileData?.photos) ? [...profileData.photos] : [];
       currentPhotos[currentPhotoIndex] = newPhotoUrl;
       setProfileData({ ...profileData, photos: currentPhotos });
+
+      // Increment version to trigger cache bust and reload image
+      setPhotoVersions(prev => ({
+        ...prev,
+        [currentPhotoIndex]: (prev[currentPhotoIndex] || 0) + 1
+      }));
 
       logger.info("[photo] Updated local profile data with new photo URL", {
         userId: profileData.user_id,
@@ -498,6 +507,8 @@ export default function ProfileScreen() {
         message: 'Could not replace the photo. Please try again.',
         type: 'error'
       });
+    } finally {
+      setReplacingPhotoIndex(null);
     }
   };
 
@@ -529,8 +540,9 @@ export default function ProfileScreen() {
                 scrollEventThrottle={16}
               >
                 {displayPhotos.map((photo: string, index: number) => {
-                  // Add cache busting timestamp to force reload on URL changes
-                  const photoUrlWithCache = photo.includes('?') ? `${photo}&t=${Date.now()}` : `${photo}?t=${Date.now()}`;
+                  // Add cache busting version param (only changes when photo actually updates)
+                  const photoVersion = photoVersions[index] || 0;
+                  const photoUrlWithCache = photo.includes('?') ? `${photo}&v=${photoVersion}` : `${photo}?v=${photoVersion}`;
                   return (
                     <View key={`photo-${index}-${photo}`} style={styles.photoContainer}>
                       <Image
@@ -562,9 +574,9 @@ export default function ProfileScreen() {
                 <TouchableOpacity
                   style={styles.replacePhotoButton}
                   onPress={handleReplacePhotoInCarousel}
-                  disabled={uploadingPhotos}
+                  disabled={replacingPhotoIndex !== null}
                 >
-                  {uploadingPhotos ? (
+                  {replacingPhotoIndex === currentPhotoIndex ? (
                     <ActivityIndicator size="small" color="white" />
                   ) : (
                     <Ionicons name="pencil" size={20} color="white" />

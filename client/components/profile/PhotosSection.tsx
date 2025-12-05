@@ -109,7 +109,6 @@ export default function PhotosSection() {
       uri: newUri
     });
 
-    closeModal(); // Close the modal before upload
     setIsUploading(true);
 
     try {
@@ -152,6 +151,7 @@ export default function PhotosSection() {
       });
 
       Alert.alert("Success", "Photo updated successfully!");
+      closeModal(); // Close the modal after successful upload
     } catch (error) {
       logger.error("[PhotosSection] Failed to replace photo", {
         userId,
