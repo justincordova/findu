@@ -1,25 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Keyboard,
-  Animated,
-} from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import React, { useCallback, useMemo, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import RangeSlider from "rn-range-slider";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  DARK,
-  MUTED,
-  BACKGROUND,
-  PRIMARY,
-  SUCCESS,
-} from "../../constants/theme";
+import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
 import { useProfileSetupStore } from "../../store/profileStore";
 
 export default function Step5({
@@ -32,186 +15,90 @@ export default function Step5({
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
-  const [interestInput, setInterestInput] = useState("");
-  const [photoUploaded, setPhotoUploaded] = useState(false);
-  const keyboardHeight = useState(new Animated.Value(0))[0];
-
-  /** Pick image from library */
-  const pickImage = useCallback(async () => {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) return;
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets?.length) {
-      const uri = result.assets[0].uri;
-      setProfileField("avatar_url", uri);
-      setPhotoUploaded(true);
-      setTimeout(() => setPhotoUploaded(false), 2000); // hide indicator after 2s
-    }
-  }, [setProfileField]);
-
-  /** Add interest */
-  const addInterest = useCallback(() => {
-    const trimmed = interestInput.trim();
-    if (trimmed && !profileData?.interests?.includes(trimmed)) {
-      setProfileField("interests", [...(profileData?.interests || []), trimmed]);
-      setInterestInput("");
-      Keyboard.dismiss();
-    }
-  }, [interestInput, profileData?.interests, setProfileField]);
-
-  /** Remove interest */
-  const removeInterest = useCallback(
-    (item: string) => {
-      setProfileField(
-        "interests",
-        (profileData?.interests || []).filter((i) => i !== item)
-      );
+  /** Slider change handler */
+  const handleSliderChange = useCallback(
+    (low: number, high: number) => {
+      setProfileField("min_age", low);
+      setProfileField("max_age", high);
     },
-    [profileData?.interests, setProfileField]
+    [setProfileField]
   );
 
-  /** Step validity: require profile picture, bio, and at least one interest */
+  /** Validity check */
   const isValid = useMemo(
     () =>
-      !!profileData?.avatar_url &&
-      !!profileData?.bio?.trim() &&
-      (profileData?.interests?.length || 0) > 0,
-    [profileData?.avatar_url, profileData?.bio, profileData?.interests]
+      typeof profileData?.min_age === "number" &&
+      typeof profileData?.max_age === "number" &&
+      profileData?.min_age > 0 &&
+      profileData?.max_age > 0 &&
+      profileData?.min_age <= profileData?.max_age,
+    [profileData?.min_age, profileData?.max_age]
   );
 
   useEffect(() => {
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
-  /** Keyboard listeners for ScrollView adjustment */
-  useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardWillShow", (e) => {
-      Animated.timing(keyboardHeight, {
-        toValue: e.endCoordinates.height,
-        duration: 250,
-        useNativeDriver: false,
-      }).start();
-    });
-    const hideSub = Keyboard.addListener("keyboardWillHide", () => {
-      Animated.timing(keyboardHeight, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: false,
-      }).start();
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /** Slider render functions */
+  const renderThumb = useCallback(() => <View style={styles.thumb} />, []);
+  const renderRail = useCallback(
+    () => <View style={styles.railBackground} />,
+    []
+  );
+  const renderRailSelected = useCallback(
+    () => <View style={styles.railSelected} />,
+    []
+  );
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
-    >
-      <Animated.ScrollView
-        contentContainerStyle={[
-          styles.container,
-          { paddingBottom: keyboardHeight },
-        ]}
-        keyboardShouldPersistTaps="handled"
-      >
-        {onBack && (
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={DARK} />
-          </TouchableOpacity>
-        )}
+    <View style={styles.container}>
+      {onBack && (
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={DARK} />
+        </TouchableOpacity>
+      )}
 
-        <View style={styles.contentContainer}>
-          <Text style={styles.title}>Profile Details</Text>
-          <Text style={styles.subtitle}>
-            Add a bio, profile picture, and interests
+      <Text style={styles.title}>Preferred Age Range</Text>
+      <Text style={styles.subtitle}>
+        Set the age range you are interested in
+      </Text>
+
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>Age Range</Text>
+        <View style={styles.ageRangeContainer}>
+          <Text style={styles.ageRangeDisplay}>
+            {profileData?.min_age ?? 18} - {profileData?.max_age ?? 26} years
+            old
           </Text>
-
-        {/* Profile Picture */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Profile Picture</Text>
-          <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-            <Ionicons name="camera" size={20} color="white" />
-            <Text style={styles.uploadButtonText}>Upload</Text>
-          </TouchableOpacity>
-          {photoUploaded && (
-            <Text style={styles.uploadSuccess}>Uploaded ✓</Text>
-          )}
-        </View>
-
-        {/* Bio */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Bio</Text>
-          <TextInput
-            style={styles.bioInput}
-            placeholder="Tell us about yourself..."
-            value={profileData?.bio ?? ""}
-            onChangeText={(text) => setProfileField("bio", text)}
-            multiline
-            maxLength={500}
-            placeholderTextColor={MUTED}
-            returnKeyType="default"
-          />
-          <Text style={styles.characterCount}>
-            {(profileData?.bio ?? "").length}/500
-          </Text>
-        </View>
-
-        {/* Interests */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Interests</Text>
-          <View style={styles.interestInputContainer}>
-            <TextInput
-              style={styles.interestInput}
-              placeholder="Type an interest"
-              value={interestInput}
-              onChangeText={setInterestInput}
-              placeholderTextColor={MUTED}
-              onSubmitEditing={addInterest}
-              returnKeyType="done"
-            />
-            <TouchableOpacity style={styles.addButton} onPress={addInterest}>
-              <Text style={styles.addButtonText}>Add</Text>
-            </TouchableOpacity>
+          <View style={styles.rangeSliderContainer}>
+            <View style={styles.sliderBox}>
+              <RangeSlider
+                style={styles.rangeSlider}
+                min={18}
+                max={26}
+                step={1}
+                low={Number(profileData?.min_age ?? 18)} // <-- coerce to number
+                high={Number(profileData?.max_age ?? 26)} // <-- coerce to number
+                onValueChanged={handleSliderChange}
+                renderThumb={renderThumb}
+                renderRail={renderRail}
+                renderRailSelected={renderRailSelected}
+              />
+            </View>
+            <Text style={styles.sliderDescription}>
+              Drag the handles to set your preferred age range
+            </Text>
           </View>
-
-          <FlatList
-            data={profileData?.interests || []}
-            keyExtractor={(item) => item}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginTop: 8 }}
-            renderItem={({ item }) => (
-              <View style={styles.interestTag}>
-                <Text style={styles.interestText}>{item}</Text>
-                <TouchableOpacity onPress={() => removeInterest(item)}>
-                  <Ionicons name="close-circle" size={18} color={DARK} />
-                </TouchableOpacity>
-              </View>
-            )}
-          />
         </View>
-        </View>
-      </Animated.ScrollView>
-    </KeyboardAvoidingView>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: "center",
     paddingHorizontal: 24,
     paddingVertical: 32,
     backgroundColor: BACKGROUND,
@@ -223,22 +110,24 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   contentContainer: {
+    flex: 1,
+    justifyContent: "center",
     paddingTop: 80,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     color: DARK,
-    marginBottom: 6,
+    marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
     color: MUTED,
-    marginBottom: 24,
+    marginBottom: 32,
     textAlign: "center",
   },
-  fieldContainer: { marginBottom: 24, alignItems: "center" },
+  fieldContainer: { marginBottom: 24 },
   label: {
     fontSize: 16,
     fontWeight: "500",
@@ -246,76 +135,45 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: "center",
   },
-  uploadButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: PRIMARY,
-    borderRadius: 12,
-  },
-  uploadButtonText: {
-    color: "white",
-    marginLeft: 6,
+  ageRangeContainer: { gap: 16 },
+  ageRangeDisplay: {
+    fontSize: 18,
     fontWeight: "600",
+    color: PRIMARY,
+    textAlign: "center",
   },
-  uploadSuccess: {
-    marginTop: 6,
-    color: SUCCESS,
-    fontWeight: "600",
-  },
-  bioInput: {
-    width: "100%",
-    minHeight: 120,
-    padding: 16,
+  rangeSliderContainer: { paddingHorizontal: 8 },
+  sliderBox: {
     backgroundColor: BACKGROUND,
     borderRadius: 12,
-    fontSize: 16,
-    color: DARK,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    textAlignVertical: "top",
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    marginBottom: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  characterCount: {
-    textAlign: "right",
-    marginTop: 4,
-    color: MUTED,
-    fontSize: 12,
+  rangeSlider: { width: "100%", height: 20 },
+  thumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: PRIMARY,
+    borderWidth: 2,
+    borderColor: "#ffffff",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  interestInputContainer: {
-    flexDirection: "row",
+  railBackground: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#e5e7eb",
     width: "100%",
   },
-  interestInput: {
-    flex: 1,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    marginRight: 8,
-    fontSize: 16,
-    color: DARK,
-  },
-  addButton: {
-    paddingHorizontal: 16,
-    backgroundColor: PRIMARY,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  addButtonText: { color: "white", fontWeight: "600" },
-  interestTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f0f0f0",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  interestText: {
-    marginRight: 6,
-    color: DARK,
-    fontSize: 14,
-  },
+  railSelected: { height: 4, borderRadius: 2, backgroundColor: PRIMARY },
+  sliderDescription: { fontSize: 12, color: MUTED, textAlign: "center" },
 });

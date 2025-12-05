@@ -3,262 +3,434 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
-  Image,
+  TextInput,
   StyleSheet,
-  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-
-import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
+import {
+  DARK,
+  MUTED,
+  BACKGROUND,
+  PRIMARY,
+} from "../../constants/theme";
 import { useProfileSetupStore } from "../../store/profileStore";
-import { handleSubmitProfile } from "./handleSubmitProfile";
-import { Profile } from "@/types/Profile";
-import { useAuthStore } from "../../store/authStore";
 
-type ProfileData = Partial<Profile> & {
-  university_name?: string;
-  campus_name?: string;
+// Canonical interest categories and popular interests for quick selection
+const INTEREST_CATEGORIES = {
+  Technology: [
+    "Coding",
+    "Web Development",
+    "AI",
+    "Tech",
+    "Startups",
+  ],
+  Gaming: [
+    "Gaming",
+    "Esports",
+    "Video Games",
+    "Board Games",
+    "Streaming",
+  ],
+  Entertainment: [
+    "Movies",
+    "TV Shows",
+    "Music",
+    "Comedy",
+    "Podcasts",
+  ],
+  Creative: [
+    "Photography",
+    "Art",
+    "Design",
+    "Writing",
+    "Music Production",
+  ],
+  Sports: [
+    "Basketball",
+    "Soccer",
+    "Fitness",
+    "Hiking",
+    "Gym",
+  ],
+  Wellness: [
+    "Yoga",
+    "Meditation",
+    "Running",
+    "Mental Health",
+    "Nutrition",
+  ],
+  Outdoor: [
+    "Hiking",
+    "Camping",
+    "Beach",
+    "Rock Climbing",
+    "Skiing",
+  ],
+  Culinary: [
+    "Cooking",
+    "Baking",
+    "Food",
+    "Coffee",
+    "Wine Tasting",
+  ],
+  Intellectual: [
+    "Reading",
+    "Philosophy",
+    "Science",
+    "History",
+    "Languages",
+  ],
+  Social: [
+    "Socializing",
+    "Parties",
+    "Networking",
+    "Traveling",
+    "Making Friends",
+  ],
+  Animals: [
+    "Dogs",
+    "Cats",
+    "Pet Lover",
+    "Wildlife",
+    "Conservation",
+  ],
+  Home: [
+    "Interior Design",
+    "Gardening",
+    "DIY",
+    "Home Improvement",
+    "Plants",
+  ],
+  Fashion: [
+    "Fashion",
+    "Shopping",
+    "Makeup",
+    "Thrifting",
+    "Style",
+  ],
+  Business: [
+    "Entrepreneurship",
+    "Marketing",
+    "Finance",
+    "Economics",
+    "Business",
+  ],
+  Music: [
+    "Live Music",
+    "Concerts",
+    "DJ",
+    "Indie Music",
+    "Pop",
+  ],
+  Lifestyle: [
+    "Travel",
+    "Adventure",
+    "Self-improvement",
+    "Spirituality",
+    "Minimalism",
+  ],
 };
 
-/** Format birthdate into readable string */
-function formatBirthdate(birthdate: string | Date | undefined) {
-  if (!birthdate) return "Not set";
-  const date = new Date(birthdate);
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-/** Format labels to remove underscores and capitalize */
-function formatLabel(field: string): string {
-  return field
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+interface ExpandedCategories {
+  [key: string]: boolean;
 }
 
 export default function Step7({
   onBack,
-  onNext,
   onValidityChange,
 }: {
   onBack?: () => void;
-  onNext: () => void;
   onValidityChange?: (isValid: boolean) => void;
 }) {
-  const authState = useAuthStore.getState();
-  const rawProfileData = useProfileSetupStore((state) => state.data);
-  const profileData: ProfileData = useMemo(() => rawProfileData ?? {}, [rawProfileData]);
+  const profileData = useProfileSetupStore((state) => state.data);
+  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
-  const [submitting, setSubmitting] = useState(false);
-  const router = useRouter();
+  const [interestInput, setInterestInput] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState<ExpandedCategories>({});
+  const keyboardHeight = useState(new Animated.Value(0))[0];
 
-  const fieldToStep: Record<string, string> = {
-    name: "step1",
-    birthdate: "step1",
-    gender: "step1",
-    pronouns: "step2",
-    intent: "step2",
-    min_age: "step4",
-    max_age: "step4",
-    sexual_orientation: "step3",
-    gender_preference: "step3",
-    bio: "step5",
-    avatar_url: "step5",
-    photos: "step6",
-    university_name: "step2",
-    campus_name: "step2",
-    major: "step2",
-    university_year: "step2",
-    grad_year: "step2",
-  };
+  // Popular interests for quick selection
+  const popularInterests = useMemo(() => {
+    return [
+      "Travel",
+      "Photography",
+      "Gaming",
+      "Hiking",
+      "Music",
+      "Cooking",
+      "Fitness",
+      "Reading",
+      "Yoga",
+      "Art",
+      "Movies",
+      "Socializing",
+    ];
+  }, []);
 
-  const goBackToStep = useCallback(
-    (step: string) => {
-      onBack?.();
+  /**
+   * Toggle category expansion
+   */
+  const toggleCategory = useCallback((category: string) => {
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [category]: !prev[category],
+    }));
+  }, []);
+
+  /**
+   * Add interest from category or custom input
+   */
+  const addInterest = useCallback(
+    (interest: string) => {
+      const trimmed = interest.trim();
+      if (trimmed && !profileData?.interests?.includes(trimmed)) {
+        setProfileField("interests", [...(profileData?.interests || []), trimmed]);
+      }
+      setInterestInput("");
+      Keyboard.dismiss();
     },
-    [onBack]
+    [profileData?.interests, setProfileField]
   );
 
-  const renderValue = useCallback(
-    (field: keyof ProfileData) => {
-      if (field === "birthdate") return formatBirthdate(profileData?.birthdate);
-      if (field === "university_name") return profileData?.university_name || "Not set";
-      if (field === "campus_name") return profileData?.campus_name || "Not set";
-      const value = profileData?.[field];
-      if (Array.isArray(value)) return value.join(", ");
-      if (value === null || value === undefined || value === "") return "Not set";
-      return String(value);
+  /**
+   * Remove interest
+   */
+  const removeInterest = useCallback(
+    (item: string) => {
+      setProfileField(
+        "interests",
+        (profileData?.interests || []).filter((i) => i !== item)
+      );
     },
-    [profileData]
+    [profileData?.interests, setProfileField]
   );
 
-  const isValid = useMemo(() => true, []);
+  /**
+   * Check if interest is already selected
+   */
+  const isInterestSelected = useCallback(
+    (interest: string) => profileData?.interests?.includes(interest),
+    [profileData?.interests]
+  );
+
+  /**
+   * Step validity: require at least one interest
+   */
+  const isValid = useMemo(
+    () => (profileData?.interests?.length || 0) > 0,
+    [profileData?.interests]
+  );
+
   useEffect(() => {
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
-  /** Handle finishing the profile submission */
-  const handleFinish = useCallback(async () => {
-    setSubmitting(true);
-    try {
-      const userId = authState.userId;
-      const token = authState.token;
-
-      if (!userId || !token) {
-        console.error("User not authenticated");
-        setSubmitting(false);
-        return;
-      }
-
-      await handleSubmitProfile(userId);
-      router.replace("/home/(tabs)/discover");
-    } catch (err) {
-      console.error("Error submitting profile:", err);
-    } finally {
-      setSubmitting(false);
-    }
-  }, [authState.userId, authState.token, router]);
+  /**
+   * Keyboard listeners for ScrollView adjustment
+   */
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardWillShow", (e) => {
+      Animated.timing(keyboardHeight, {
+        toValue: e.endCoordinates.height,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    });
+    const hideSub = Keyboard.addListener("keyboardWillHide", () => {
+      Animated.timing(keyboardHeight, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+    >
+      <Animated.ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: keyboardHeight },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         {onBack && (
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={DARK} />
           </TouchableOpacity>
         )}
-        <Text style={styles.title}>Review your profile</Text>
-        <Text style={styles.subtitle}>Tap any item to edit</Text>
-      </View>
 
-      <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
         <View style={styles.contentContainer}>
-        {/* Basic Info */}
-        <Text style={styles.sectionTitle}>Basic Info</Text>
-        {["name", "birthdate", "gender", "pronouns"].map((field) => (
-          <TouchableOpacity
-            key={field}
-            style={styles.infoRow}
-            onPress={() => goBackToStep(fieldToStep[field])}
-          >
-            <Text style={styles.infoLabel}>{formatLabel(field)}:</Text>
-            <Text style={styles.infoValue}>
-              {renderValue(field as keyof ProfileData)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-
-        {/* Academic Info */}
-        <Text style={styles.sectionTitle}>Academic Info</Text>
-        {["university_name", "campus_name", "major", "university_year", "grad_year"].map(
-          (field) => (
-            <TouchableOpacity
-              key={field}
-              style={styles.infoRow}
-              onPress={() => goBackToStep(fieldToStep[field])}
-            >
-              <Text style={styles.infoLabel}>{formatLabel(field)}:</Text>
-              <Text style={styles.infoValue}>
-                {renderValue(field as keyof ProfileData)}
-              </Text>
-            </TouchableOpacity>
-          )
-        )}
-
-        {/* Preferences */}
-        <Text style={styles.sectionTitle}>Preferences</Text>
-        {["intent", "min_age", "max_age", "sexual_orientation", "gender_preference"].map(
-          (field) => (
-            <TouchableOpacity
-              key={field}
-              style={styles.infoRow}
-              onPress={() => goBackToStep(fieldToStep[field])}
-            >
-              <Text style={styles.infoLabel}>{formatLabel(field)}:</Text>
-              <Text style={styles.infoValue}>
-                {renderValue(field as keyof ProfileData)}
-              </Text>
-            </TouchableOpacity>
-          )
-        )}
-
-        {/* Bio */}
-        <Text style={styles.sectionTitle}>Bio</Text>
-        <TouchableOpacity
-          style={styles.infoRow}
-          onPress={() => goBackToStep("step5")}
-        >
-          <Text style={styles.infoLabel}>Bio:</Text>
-          <Text style={styles.infoValue}>{profileData?.bio || "Not set"}</Text>
-        </TouchableOpacity>
-
-        {/* Avatar */}
-        <Text style={styles.sectionTitle}>Profile Picture</Text>
-        <TouchableOpacity
-          style={styles.infoRow}
-          onPress={() => goBackToStep("step5")}
-        >
-          {profileData?.avatar_url ? (
-            <Image
-              source={{ uri: profileData.avatar_url }}
-              style={styles.avatar}
-            />
-          ) : (
-            <Text style={{ color: MUTED }}>No avatar selected</Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Photos */}
-        <Text style={styles.sectionTitle}>Photos</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.photosContainer}
-        >
-          {profileData?.photos && profileData.photos.length > 0 ? (
-            profileData.photos.map((uri: string, idx: number) => (
-              <TouchableOpacity key={idx} onPress={() => goBackToStep("step6")}>
-                <Image source={{ uri }} style={styles.photo} />
-              </TouchableOpacity>
-            ))
-          ) : (
-            <Text style={{ color: MUTED }}>No photos added</Text>
-          )}
-        </ScrollView>
-        </View>
-      </ScrollView>
-
-      {/* Finish Button */}
-      <TouchableOpacity
-        onPress={handleFinish}
-        disabled={submitting || !isValid}
-        style={[styles.button, (!isValid || submitting) && styles.buttonDisabled]}
-      >
-        {submitting ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text
-            style={[
-              styles.buttonText,
-              (!isValid || submitting) && styles.buttonTextDisabled,
-            ]}
-          >
-            Finish
+          <Text style={styles.title}>Your Interests</Text>
+          <Text style={styles.subtitle}>
+            Select interests that define you
           </Text>
-        )}
-      </TouchableOpacity>
-    </View>
+
+          {/* Popular Interests Pills */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Popular</Text>
+            <View style={styles.pillContainer}>
+              {popularInterests.map((interest) => (
+                <TouchableOpacity
+                  key={interest}
+                  onPress={() =>
+                    isInterestSelected(interest)
+                      ? removeInterest(interest)
+                      : addInterest(interest)
+                  }
+                  style={[
+                    styles.pill,
+                    isInterestSelected(interest) && styles.pillSelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.pillText,
+                      isInterestSelected(interest) && styles.pillTextSelected,
+                    ]}
+                  >
+                    {interest}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Category Bubbles */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Categories</Text>
+            {Object.entries(INTEREST_CATEGORIES).map(([category, interests]) => (
+              <View key={category}>
+                {/* Category Bubble */}
+                <TouchableOpacity
+                  onPress={() => toggleCategory(category)}
+                  style={[
+                    styles.categoryBubble,
+                    expandedCategories[category] && styles.categoryBubbleExpanded,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      expandedCategories[category] && styles.categoryTextExpanded,
+                    ]}
+                  >
+                    {category}
+                  </Text>
+                  <Ionicons
+                    name={expandedCategories[category] ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color={expandedCategories[category] ? "white" : DARK}
+                  />
+                </TouchableOpacity>
+
+                {/* Expanded Category Items */}
+                {expandedCategories[category] && (
+                  <View style={styles.expandedItemsContainer}>
+                    {interests.map((interest) => (
+                      <TouchableOpacity
+                        key={interest}
+                        onPress={() =>
+                          isInterestSelected(interest)
+                            ? removeInterest(interest)
+                            : addInterest(interest)
+                        }
+                        style={[
+                          styles.categoryItem,
+                          isInterestSelected(interest) && styles.categoryItemSelected,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.categoryItemText,
+                            isInterestSelected(interest) && styles.categoryItemTextSelected,
+                          ]}
+                        >
+                          {interest}
+                        </Text>
+                        {isInterestSelected(interest) && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={18}
+                            color={PRIMARY}
+                          />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+
+          {/* Custom Interest Input */}
+          <View style={styles.customInputContainer}>
+            <Text style={styles.sectionTitle}>Add Custom Interest</Text>
+            <View style={styles.interestInputContainer}>
+              <TextInput
+                style={styles.interestInput}
+                placeholder="Type an interest..."
+                value={interestInput}
+                onChangeText={setInterestInput}
+                placeholderTextColor={MUTED}
+                onSubmitEditing={() => addInterest(interestInput)}
+                returnKeyType="done"
+              />
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => addInterest(interestInput)}
+              >
+                <Text style={styles.addButtonText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Selected Interests Display */}
+          {(profileData?.interests?.length || 0) > 0 && (
+            <View style={styles.selectedContainer}>
+              <Text style={styles.sectionTitle}>
+                Selected ({profileData?.interests?.length})
+              </Text>
+              <FlatList
+                data={profileData?.interests || []}
+                keyExtractor={(item) => item}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginTop: 8 }}
+                renderItem={({ item }) => (
+                  <View style={styles.interestTag}>
+                    <Text style={styles.interestText}>{item}</Text>
+                    <TouchableOpacity onPress={() => removeInterest(item)}>
+                      <Ionicons name="close-circle" size={18} color={DARK} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
+            </View>
+          )}
+        </View>
+      </Animated.ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingVertical: 32,
     backgroundColor: BACKGROUND,
@@ -272,55 +444,207 @@ const styles = StyleSheet.create({
     left: 24,
     zIndex: 10,
   },
+  contentContainer: {
+    paddingTop: 80,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     color: DARK,
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
     color: MUTED,
+    marginBottom: 24,
     textAlign: "center",
-    marginBottom: 16,
   },
-  form: { flex: 1 },
-  contentContainer: {
-    paddingTop: 80,
+  sectionContainer: {
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "600",
     color: DARK,
     marginBottom: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  infoRow: {
+  pillContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "flex-start",
   },
-  infoLabel: { fontSize: 14, color: MUTED, fontWeight: "500" },
-  infoValue: { fontSize: 14, color: DARK, fontWeight: "500" },
-  avatar: { width: 100, height: 100, borderRadius: 12 },
-  photosContainer: { flexDirection: "row", gap: 12 },
-  photo: { width: 100, height: 100, borderRadius: 12 },
-  button: {
-    width: "100%",
+  pill: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: "#ffffff",
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: "#e5e7eb",
+  },
+  pillSelected: {
     backgroundColor: PRIMARY,
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginTop: 32,
+    borderColor: PRIMARY,
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  buttonDisabled: { backgroundColor: "#d1d5db" },
-  buttonText: {
+  pillText: {
+    fontSize: 14,
+    color: DARK,
+    fontWeight: "500",
+  },
+  pillTextSelected: {
     color: "white",
-    fontSize: 18,
     fontWeight: "600",
-    textAlign: "center",
   },
-  buttonTextDisabled: { color: MUTED },
+  categoryBubble: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 14,
+    marginBottom: 10,
+    borderWidth: 1.5,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  categoryBubbleExpanded: {
+    backgroundColor: PRIMARY,
+    borderColor: PRIMARY,
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  categoryText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: DARK,
+    flex: 1,
+  },
+  categoryTextExpanded: {
+    color: "white",
+  },
+  expandedItemsContainer: {
+    backgroundColor: "#ffffff",
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    marginLeft: 2,
+    marginRight: 2,
+    borderWidth: 1.5,
+    borderColor: PRIMARY,
+    borderTopWidth: 0,
+  },
+  categoryItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginVertical: 5,
+    backgroundColor: "#f9fafb",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  categoryItemSelected: {
+    backgroundColor: "#eff6ff",
+    borderColor: PRIMARY,
+    borderWidth: 1.5,
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  categoryItemText: {
+    flex: 1,
+    fontSize: 14,
+    color: DARK,
+    fontWeight: "500",
+  },
+  categoryItemTextSelected: {
+    color: PRIMARY,
+    fontWeight: "600",
+  },
+  customInputContainer: {
+    marginBottom: 28,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#e5e7eb",
+  },
+  interestInputContainer: {
+    flexDirection: "row",
+    width: "100%",
+  },
+  interestInput: {
+    flex: 1,
+    padding: 13,
+    borderWidth: 1.5,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    marginRight: 10,
+    fontSize: 14,
+    color: DARK,
+    backgroundColor: "white",
+  },
+  addButton: {
+    paddingHorizontal: 18,
+    backgroundColor: PRIMARY,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addButtonText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  selectedContainer: {
+    marginBottom: 24,
+  },
+  interestTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: PRIMARY,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 24,
+    marginRight: 10,
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  interestText: {
+    marginRight: 8,
+    color: "white",
+    fontSize: 14,
+    fontWeight: "600",
+  },
 });

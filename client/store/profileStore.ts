@@ -5,16 +5,19 @@ import { Profile } from "@/types/Profile";
 // For display purposes of uni name
 interface ProfileSetupState {
   data: Partial<Profile> & { university_name?: string; campus_name?: string } | null;
+  campuses: { label: string; value: string }[];
   setProfileField: <K extends keyof (Profile & { university_name?: string; campus_name?: string })>(
     key: K,
     value: (Profile & { university_name?: string; campus_name?: string })[K]
   ) => void;
   setProfileData: (data: Partial<Profile & { university_name?: string; campus_name?: string }>) => void;
+  setCampuses: (campuses: { label: string; value: string }[]) => void;
   reset: () => void;
 }
 
 export const useProfileSetupStore = create<ProfileSetupState>((set) => ({
   data: null,
+  campuses: [],
 
   setProfileField: (key, value) => {
     set((state) => {
@@ -34,8 +37,12 @@ export const useProfileSetupStore = create<ProfileSetupState>((set) => ({
     });
   },
 
+  setCampuses: (campuses) => {
+    set({ campuses });
+  },
+
   reset: () => {
     logger.info("Store reset");
-    set({ data: null });
+    set({ data: null, campuses: [] });
   },
 }));
