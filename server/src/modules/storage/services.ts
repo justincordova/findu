@@ -36,18 +36,46 @@ const deleteAllUserFiles = async (userId: string): Promise<void> => {
  * Delete a single file for a user from the "profiles" bucket.
  * Typically used when replacing an existing file (e.g., avatar update).
  *
+ * Handles extension mismatches: if the base filename exists with a different
+ * extension (e.g., photo_3.jpg vs photo_3.png), it will find and delete the
+ * existing file regardless of extension.
+ *
  * @param userId - ID of the user.
- * @param filename - Name of the file to delete.
+ * @param filename - Name of the file to delete (used to extract base name).
  */
 const deleteSingleUserFile = async (userId: string, filename: string): Promise<void> => {
   try {
-    const path = `${userId}/${filename}`;
-    logger.info("[deleteSingleUserFile] Deleting file", { path });
+    // Extract base filename without extension
+    const baseFilename = filename.split('.')[0];
+
+    // List all files in user's folder
+    const { data: files, error: listError } = await supabaseAdmin.storage
+      .from("profiles")
+      .list(userId);
+
+    if (listError) {
+      logger.error("[deleteSingleUserFile] Failed to list files", { userId, listError });
+      return;
+    }
+
+    // Find any file matching the base filename (handles extension differences)
+    const fileToDelete = files?.find(f => f.name.split('.')[0] === baseFilename);
+
+    if (!fileToDelete) {
+      logger.info("[deleteSingleUserFile] No existing file found to delete", { userId, baseFilename });
+      return;
+    }
+
+    const path = `${userId}/${fileToDelete.name}`;
+    logger.info("[deleteSingleUserFile] Attempting to delete file", { path, baseFilename });
 
     const { error } = await supabaseAdmin.storage.from("profiles").remove([path]);
     if (error) {
-      logger.warn("[deleteSingleUserFile] Could not delete file (may not exist)", { path, error });
+      logger.error("[deleteSingleUserFile] Failed to delete file", { path, error });
+      return;
     }
+
+    logger.info("[deleteSingleUserFile] File deleted successfully", { path });
   } catch (err: any) {
     logger.error("[deleteSingleUserFile] Exception", { error: err });
   }

@@ -96,23 +96,29 @@ describe("Storage Service", () => {
     });
 
     it("should generate a signed URL in 'update' mode", async () => {
-        (supabaseAdmin.storage.from("profiles").remove as jest.Mock).mockResolvedValue({ data: [], error: null });
+        (supabaseAdmin.storage.from("profiles").list as jest.Mock).mockResolvedValue({ data: [{ name: "avatar.png" }], error: null });
+        (supabaseAdmin.storage.from("profiles").remove as jest.Mock).mockResolvedValue({ data: {}, error: null });
         (supabaseAdmin.storage.from("profiles").createSignedUploadUrl as jest.Mock).mockResolvedValue({
           data: { signedUrl: "signed-url" },
           error: null,
         });
-  
+
         const result = await generateSignedUploadUrl(userId, filename, "update");
-  
+
         expect(supabaseAdmin.storage.from).toHaveBeenCalledWith("profiles");
+        expect(supabaseAdmin.storage.from("profiles").list).toHaveBeenCalledWith(userId);
         expect(supabaseAdmin.storage.from("profiles").remove).toHaveBeenCalledWith([`${userId}/${filename}`]);
         expect(supabaseAdmin.storage.from("profiles").createSignedUploadUrl).toHaveBeenCalledWith(`${userId}/${filename}`);
         expect(result).toEqual({ uploadUrl: "signed-url", path: `${userId}/${filename}` });
         expect(logger.info).toHaveBeenCalledWith("[generateSignedUploadUrl] Start", { userId, filename, mode: "update" });
       });
 
-    it("should log a warning if deleting a single file fails in 'update' mode", async () => {
+    it("should handle error when deleting a single file fails in 'update' mode", async () => {
       const removeError = new Error("Remove error");
+      (supabaseAdmin.storage.from("profiles").list as jest.Mock).mockResolvedValue({
+        data: [{ name: "avatar.png" }],
+        error: null,
+      });
       (supabaseAdmin.storage.from("profiles").remove as jest.Mock).mockResolvedValue({
         data: null,
         error: removeError,
@@ -125,8 +131,8 @@ describe("Storage Service", () => {
       const result = await generateSignedUploadUrl(userId, filename, "update");
 
       expect(result).toEqual({ uploadUrl: "signed-url", path: `${userId}/${filename}` });
-      expect(logger.warn).toHaveBeenCalledWith(
-        "[deleteSingleUserFile] Could not delete file (may not exist)",
+      expect(logger.error).toHaveBeenCalledWith(
+        "[deleteSingleUserFile] Failed to delete file",
         {
           path: `${userId}/${filename}`,
           error: removeError,
@@ -136,7 +142,7 @@ describe("Storage Service", () => {
 
     it("should handle exceptions in 'update' mode and still proceed", async () => {
       const removeError = new Error("Forced exception");
-      (supabaseAdmin.storage.from("profiles").remove as jest.Mock).mockImplementation(() => {
+      (supabaseAdmin.storage.from("profiles").list as jest.Mock).mockImplementation(() => {
         throw removeError;
       });
       (supabaseAdmin.storage.from("profiles").createSignedUploadUrl as jest.Mock).mockResolvedValue({
@@ -208,6 +214,46 @@ describe("Storage Service", () => {
         expect(logger.error).toHaveBeenCalledWith("[generateSignedUploadUrl] Exception", {
             error,
         });
+    });
+
+    it("should handle extension mismatch when updating a file in 'update' mode", async () => {
+      // User has photo_3.jpg, uploading new photo_3.png should delete the .jpg
+      (supabaseAdmin.storage.from("profiles").list as jest.Mock).mockResolvedValue({
+        data: [{ name: "photo_3.jpg" }],
+        error: null,
+      });
+      (supabaseAdmin.storage.from("profiles").remove as jest.Mock).mockResolvedValue({ data: {}, error: null });
+      (supabaseAdmin.storage.from("profiles").createSignedUploadUrl as jest.Mock).mockResolvedValue({
+        data: { signedUrl: "signed-url" },
+        error: null,
+      });
+
+      const result = await generateSignedUploadUrl(userId, "photo_3.png", "update");
+
+      // Should have deleted the .jpg file found by base name match
+      expect(supabaseAdmin.storage.from("profiles").remove).toHaveBeenCalledWith([`${userId}/photo_3.jpg`]);
+      expect(result).toEqual({ uploadUrl: "signed-url", path: `${userId}/photo_3.png` });
+    });
+
+    it("should handle missing file gracefully when no file with base name exists", async () => {
+      (supabaseAdmin.storage.from("profiles").list as jest.Mock).mockResolvedValue({
+        data: [{ name: "avatar.jpg" }],
+        error: null,
+      });
+      (supabaseAdmin.storage.from("profiles").createSignedUploadUrl as jest.Mock).mockResolvedValue({
+        data: { signedUrl: "signed-url" },
+        error: null,
+      });
+
+      const result = await generateSignedUploadUrl(userId, "photo_1.png", "update");
+
+      // Should not call remove since no photo_1 file exists
+      expect(supabaseAdmin.storage.from("profiles").remove).not.toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith(
+        "[deleteSingleUserFile] No existing file found to delete",
+        { userId, baseFilename: "photo_1" }
+      );
+      expect(result).toEqual({ uploadUrl: "signed-url", path: `${userId}/photo_1.png` });
     });
   });
 });
