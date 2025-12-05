@@ -23,6 +23,14 @@ export default function Step4({
     null
   );
 
+ const handleSliderChange = useCallback(
+    (low: number, high: number) => {
+      setProfileField("min_age", low);
+      setProfileField("max_age", high);
+    },
+    [setProfileField]
+  );
+
   /** Dropdown items */
   const orientationItems: ItemType<string>[] = useMemo(
     () =>
@@ -155,12 +163,6 @@ export default function Step4({
 
       {/* Gender Preference (multi-select tap boxes) */}
       <View style={styles.fieldContainer}>
-        <Text style={styles.label}>Age Range</Text>
-        <AgeRangeSlider
-          minAge={profileData?.min_age ?? 18}
-          maxAge={profileData?.max_age ?? 26}
-          onAgeRangeChange={handleSliderChange}
-        />
         <Text style={styles.label}>Preferred Gender(s)</Text>
         <View style={styles.intentContainer}>
           {genderOptions.map((gender) => (
