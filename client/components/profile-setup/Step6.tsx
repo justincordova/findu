@@ -5,140 +5,21 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
   Animated,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import {
   DARK,
   MUTED,
   BACKGROUND,
   PRIMARY,
+  SUCCESS,
 } from "../../constants/theme";
 import { useProfileSetupStore } from "../../store/profileStore";
-
-// Canonical interest categories and popular interests for quick selection
-const INTEREST_CATEGORIES = {
-  Technology: [
-    "Coding",
-    "Web Development",
-    "AI",
-    "Tech",
-    "Startups",
-  ],
-  Gaming: [
-    "Gaming",
-    "Esports",
-    "Video Games",
-    "Board Games",
-    "Streaming",
-  ],
-  Entertainment: [
-    "Movies",
-    "TV Shows",
-    "Music",
-    "Comedy",
-    "Podcasts",
-  ],
-  Creative: [
-    "Photography",
-    "Art",
-    "Design",
-    "Writing",
-    "Music Production",
-  ],
-  Sports: [
-    "Basketball",
-    "Soccer",
-    "Fitness",
-    "Hiking",
-    "Gym",
-  ],
-  Wellness: [
-    "Yoga",
-    "Meditation",
-    "Running",
-    "Mental Health",
-    "Nutrition",
-  ],
-  Outdoor: [
-    "Hiking",
-    "Camping",
-    "Beach",
-    "Rock Climbing",
-    "Skiing",
-  ],
-  Culinary: [
-    "Cooking",
-    "Baking",
-    "Food",
-    "Coffee",
-    "Wine Tasting",
-  ],
-  Intellectual: [
-    "Reading",
-    "Philosophy",
-    "Science",
-    "History",
-    "Languages",
-  ],
-  Social: [
-    "Socializing",
-    "Parties",
-    "Networking",
-    "Traveling",
-    "Making Friends",
-  ],
-  Animals: [
-    "Dogs",
-    "Cats",
-    "Pet Lover",
-    "Wildlife",
-    "Conservation",
-  ],
-  Home: [
-    "Interior Design",
-    "Gardening",
-    "DIY",
-    "Home Improvement",
-    "Plants",
-  ],
-  Fashion: [
-    "Fashion",
-    "Shopping",
-    "Makeup",
-    "Thrifting",
-    "Style",
-  ],
-  Business: [
-    "Entrepreneurship",
-    "Marketing",
-    "Finance",
-    "Economics",
-    "Business",
-  ],
-  Music: [
-    "Live Music",
-    "Concerts",
-    "DJ",
-    "Indie Music",
-    "Pop",
-  ],
-  Lifestyle: [
-    "Travel",
-    "Adventure",
-    "Self-improvement",
-    "Spirituality",
-    "Minimalism",
-  ],
-};
-
-interface ExpandedCategories {
-  [key: string]: boolean;
-}
 
 export default function Step6({
   onBack,
@@ -150,89 +31,43 @@ export default function Step6({
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
-  const [interestInput, setInterestInput] = useState("");
-  const [expandedCategories, setExpandedCategories] = useState<ExpandedCategories>({});
+  const [photoUploaded, setPhotoUploaded] = useState(false);
   const keyboardHeight = useState(new Animated.Value(0))[0];
 
-  // Popular interests for quick selection
-  const popularInterests = useMemo(() => {
-    return [
-      "Travel",
-      "Photography",
-      "Gaming",
-      "Hiking",
-      "Music",
-      "Cooking",
-      "Fitness",
-      "Reading",
-      "Yoga",
-      "Art",
-      "Movies",
-      "Socializing",
-    ];
-  }, []);
+  /** Pick image from library */
+  const pickImage = useCallback(async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) return;
 
-  /**
-   * Toggle category expansion
-   */
-  const toggleCategory = useCallback((category: string) => {
-    setExpandedCategories((prev) => ({
-      ...prev,
-      [category]: !prev[category],
-    }));
-  }, []);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
 
-  /**
-   * Add interest from category or custom input
-   */
-  const addInterest = useCallback(
-    (interest: string) => {
-      const trimmed = interest.trim();
-      if (trimmed && !profileData?.interests?.includes(trimmed)) {
-        setProfileField("interests", [...(profileData?.interests || []), trimmed]);
-      }
-      setInterestInput("");
-      Keyboard.dismiss();
-    },
-    [profileData?.interests, setProfileField]
-  );
+    if (!result.canceled && result.assets?.length) {
+      const uri = result.assets[0].uri;
+      setProfileField("avatar_url", uri);
+      setPhotoUploaded(true);
+      setTimeout(() => setPhotoUploaded(false), 2000); // hide indicator after 2s
+    }
+  }, [setProfileField]);
 
-  /**
-   * Remove interest
-   */
-  const removeInterest = useCallback(
-    (item: string) => {
-      setProfileField(
-        "interests",
-        (profileData?.interests || []).filter((i) => i !== item)
-      );
-    },
-    [profileData?.interests, setProfileField]
-  );
-
-  /**
-   * Check if interest is already selected
-   */
-  const isInterestSelected = useCallback(
-    (interest: string) => profileData?.interests?.includes(interest),
-    [profileData?.interests]
-  );
-
-  /**
-   * Step validity: require at least one interest
-   */
+  /** Step validity: require profile picture, bio */
   const isValid = useMemo(
-    () => (profileData?.interests?.length || 0) > 0,
-    [profileData?.interests]
+    () =>
+      !!profileData?.avatar_url &&
+      !!profileData?.bio?.trim(),
+    [profileData?.avatar_url, profileData?.bio]
   );
 
   useEffect(() => {
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
-  /**
-   * Keyboard listeners for ScrollView adjustment
-   */
+  /** Keyboard listeners for ScrollView adjustment */
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardWillShow", (e) => {
       Animated.timing(keyboardHeight, {
@@ -275,153 +110,40 @@ export default function Step6({
         )}
 
         <View style={styles.contentContainer}>
-          <Text style={styles.title}>Your Interests</Text>
+          <Text style={styles.title}>Profile Details</Text>
           <Text style={styles.subtitle}>
-            Select interests that define you
+            Add a bio and profile picture
           </Text>
 
-          {/* Popular Interests Pills */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Popular</Text>
-            <View style={styles.pillContainer}>
-              {popularInterests.map((interest) => (
-                <TouchableOpacity
-                  key={interest}
-                  onPress={() =>
-                    isInterestSelected(interest)
-                      ? removeInterest(interest)
-                      : addInterest(interest)
-                  }
-                  style={[
-                    styles.pill,
-                    isInterestSelected(interest) && styles.pillSelected,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.pillText,
-                      isInterestSelected(interest) && styles.pillTextSelected,
-                    ]}
-                  >
-                    {interest}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Category Bubbles */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Categories</Text>
-            {Object.entries(INTEREST_CATEGORIES).map(([category, interests]) => (
-              <View key={category}>
-                {/* Category Bubble */}
-                <TouchableOpacity
-                  onPress={() => toggleCategory(category)}
-                  style={[
-                    styles.categoryBubble,
-                    expandedCategories[category] && styles.categoryBubbleExpanded,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      expandedCategories[category] && styles.categoryTextExpanded,
-                    ]}
-                  >
-                    {category}
-                  </Text>
-                  <Ionicons
-                    name={expandedCategories[category] ? "chevron-up" : "chevron-down"}
-                    size={18}
-                    color={expandedCategories[category] ? "white" : DARK}
-                  />
-                </TouchableOpacity>
-
-                {/* Expanded Category Items */}
-                {expandedCategories[category] && (
-                  <View style={styles.expandedItemsContainer}>
-                    {interests.map((interest) => (
-                      <TouchableOpacity
-                        key={interest}
-                        onPress={() =>
-                          isInterestSelected(interest)
-                            ? removeInterest(interest)
-                            : addInterest(interest)
-                        }
-                        style={[
-                          styles.categoryItem,
-                          isInterestSelected(interest) && styles.categoryItemSelected,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.categoryItemText,
-                            isInterestSelected(interest) && styles.categoryItemTextSelected,
-                          ]}
-                        >
-                          {interest}
-                        </Text>
-                        {isInterestSelected(interest) && (
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={18}
-                            color={PRIMARY}
-                          />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              </View>
-            ))}
-          </View>
-
-          {/* Custom Interest Input */}
-          <View style={styles.customInputContainer}>
-            <Text style={styles.sectionTitle}>Add Custom Interest</Text>
-            <View style={styles.interestInputContainer}>
-              <TextInput
-                style={styles.interestInput}
-                placeholder="Type an interest..."
-                value={interestInput}
-                onChangeText={setInterestInput}
-                placeholderTextColor={MUTED}
-                onSubmitEditing={() => addInterest(interestInput)}
-                returnKeyType="done"
-              />
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => addInterest(interestInput)}
-              >
-                <Text style={styles.addButtonText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Selected Interests Display */}
-          {(profileData?.interests?.length || 0) > 0 && (
-            <View style={styles.selectedContainer}>
-              <Text style={styles.sectionTitle}>
-                Selected ({profileData?.interests?.length})
-              </Text>
-              <FlatList
-                data={profileData?.interests || []}
-                keyExtractor={(item) => item}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginTop: 8 }}
-                renderItem={({ item }) => (
-                  <View style={styles.interestTag}>
-                    <Text style={styles.interestText}>{item}</Text>
-                    <TouchableOpacity onPress={() => removeInterest(item)}>
-                      <Ionicons name="close-circle" size={18} color={DARK} />
-                    </TouchableOpacity>
-                  </View>
-                )}
-              />
-            </View>
+        {/* Profile Picture */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>Profile Picture</Text>
+          <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
+            <Ionicons name="camera" size={20} color="white" />
+            <Text style={styles.uploadButtonText}>Upload</Text>
+          </TouchableOpacity>
+          {photoUploaded && (
+            <Text style={styles.uploadSuccess}>Uploaded ✓</Text>
           )}
+        </View>
+
+        {/* Bio */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>Bio</Text>
+          <TextInput
+            style={styles.bioInput}
+            placeholder="Tell us about yourself..."
+            value={profileData?.bio ?? ""}
+            onChangeText={(text) => setProfileField("bio", text)}
+            multiline
+            maxLength={500}
+            placeholderTextColor={MUTED}
+            returnKeyType="default"
+          />
+          <Text style={styles.characterCount}>
+            {(profileData?.bio ?? "").length}/500
+          </Text>
+        </View>
         </View>
       </Animated.ScrollView>
     </KeyboardAvoidingView>
@@ -430,7 +152,7 @@ export default function Step6({
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
+    flex: 1,
     paddingHorizontal: 24,
     paddingVertical: 32,
     backgroundColor: BACKGROUND,
@@ -457,107 +179,49 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: "center",
   },
-  sectionContainer: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: DARK,
-    marginBottom: 12,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  pillContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    justifyContent: "flex-start",
-  },
-  pill: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-  pillSelected: {
-    backgroundColor: PRIMARY,
-    borderColor: PRIMARY,
-  },
-  pillText: {
-    fontSize: 13,
-    color: DARK,
+  fieldContainer: { marginBottom: 24, alignItems: "center" },
+  label: {
+    fontSize: 16,
     fontWeight: "500",
-  },
-  pillTextSelected: {
-    color: "white",
-    fontWeight: "600",
-  },
-  categoryBubble: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: "#f3f4f6",
-    borderRadius: 12,
+    color: DARK,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
+    textAlign: "center",
   },
-  categoryBubbleExpanded: {
-    backgroundColor: PRIMARY,
-    borderColor: PRIMARY,
-  },
-  categoryText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: DARK,
-    flex: 1,
-  },
-  categoryTextExpanded: {
-    color: "white",
-  },
-  expandedItemsContainer: {
-    backgroundColor: "#fafafa",
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    marginBottom: 12,
-    marginLeft: 4,
-    marginRight: 4,
-  },
-  categoryItem: {
+  uploadButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 10,
     paddingHorizontal: 12,
-    marginVertical: 4,
-    backgroundColor: "white",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
+    paddingVertical: 6,
+    backgroundColor: PRIMARY,
+    borderRadius: 12,
   },
-  categoryItemSelected: {
-    backgroundColor: "#eff6ff",
-    borderColor: PRIMARY,
-  },
-  categoryItemText: {
-    flex: 1,
-    fontSize: 13,
-    color: DARK,
-    fontWeight: "500",
-  },
-  categoryItemTextSelected: {
-    color: PRIMARY,
+  uploadButtonText: {
+    color: "white",
+    marginLeft: 6,
     fontWeight: "600",
   },
-  customInputContainer: {
-    marginBottom: 24,
+  uploadSuccess: {
+    marginTop: 6,
+    color: SUCCESS,
+    fontWeight: "600",
+  },
+  bioInput: {
+    width: "100%",
+    minHeight: 120,
+    padding: 16,
+    backgroundColor: BACKGROUND,
+    borderRadius: 12,
+    fontSize: 16,
+    color: DARK,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    textAlignVertical: "top",
+  },
+  characterCount: {
+    textAlign: "right",
+    marginTop: 4,
+    color: MUTED,
+    fontSize: 12,
   },
   interestInputContainer: {
     flexDirection: "row",
@@ -570,7 +234,7 @@ const styles = StyleSheet.create({
     borderColor: "#e5e7eb",
     borderRadius: 12,
     marginRight: 8,
-    fontSize: 14,
+    fontSize: 16,
     color: DARK,
   },
   addButton: {
@@ -580,14 +244,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  addButtonText: {
-    color: "white",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  selectedContainer: {
-    marginBottom: 24,
-  },
+  addButtonText: { color: "white", fontWeight: "600" },
   interestTag: {
     flexDirection: "row",
     alignItems: "center",
@@ -600,7 +257,6 @@ const styles = StyleSheet.create({
   interestText: {
     marginRight: 6,
     color: DARK,
-    fontSize: 13,
-    fontWeight: "500",
+    fontSize: 14,
   },
 });
