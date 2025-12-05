@@ -13,7 +13,8 @@
     "seed": "ts-node -r tsconfig-paths/register src/scripts/seed.ts",
     "cleanup": "ts-node -r tsconfig-paths/register src/scripts/cleanup_seed.ts",
     "cleanup:likes-matches": "ts-node -r tsconfig-paths/register src/scripts/cleanup_likes_matches.ts",
-    "seed:uni": "ts-node -r tsconfig-paths/register src/scripts/setup_universities.ts"
+    "seed:uni": "ts-node -r tsconfig-paths/register src/scripts/setup_universities.ts",
+    "getuser": "ts-node -r tsconfig-paths/register src/scripts/getuser.ts"
   },
   "keywords": [],
   "author": "",

@@ -8,6 +8,7 @@ import {
 } from "@/types/Discover";
 import { differenceInYears, subYears, addDays } from 'date-fns';
 import { getInterestCategory } from "@/constants/interests";
+import { genderPreferencesToIdentities } from "@/utils/genderMapping";
 
 // Algorithm weights - adjust based on testing/feedback
 // Updated: 35% interests, 30% intent, 15% orientation, 10% major, 10% age
@@ -417,15 +418,11 @@ export const getEligibleCandidates = async (userId: string, userProfile: Profile
     // Ensure candidate's age preference includes current user
     min_age: { lte: userAge },
     max_age: { gte: userAge },
-    // Ensure candidate's gender preference includes current user OR is 'All'
-    OR: [
-      { gender_preference: { has: userProfile.gender } },
-      { gender_preference: { has: 'All' } },
-    ],
   }
 
   if (!userProfile.gender_preference.includes('All')) {
-    where.gender = { in: userProfile.gender_preference };
+    const genderIdentities = genderPreferencesToIdentities(userProfile.gender_preference);
+    where.gender = { in: genderIdentities };
   }
 
   logger.info(`Discover: Querying profiles with filters`, { 
