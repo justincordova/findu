@@ -10,6 +10,7 @@ import Step4 from "../../components/profile-setup/Step4";
 import Step5 from "../../components/profile-setup/Step5";
 import Step6 from "../../components/profile-setup/Step6";
 import Step7 from "../../components/profile-setup/Step7";
+import Step8 from "../../components/profile-setup/Step8";
 
 import { useProfileSetupStore } from "../../store/profileStore";
 import Button from "@/components/shared/Button"; // <-- use shared Button component
@@ -22,6 +23,7 @@ const STEPS = [
   "step5",
   "step6",
   "step7",
+  "step8",
 ] as const;
 type Step = (typeof STEPS)[number];
 
@@ -69,6 +71,8 @@ export default function ProfileSetupStep() {
         return <Step6 {...stepProps} />;
       case "step7":
         return <Step7 {...stepProps} />;
+      case "step8":
+        return <Step8 {...stepProps} />;
       default:
         return null;
     }
