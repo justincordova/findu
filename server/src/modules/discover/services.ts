@@ -1,18 +1,22 @@
 import prisma from "@/lib/prismaClient";
 import logger from "@/config/logger";
 import { Profile } from "@/types/Profile";
-import { 
-  ProfileWithScore, 
-  CompatibilityWeights, 
-  IntentCompatibilityMatrix 
+import {
+  ProfileWithScore,
+  CompatibilityWeights,
+  IntentCompatibilityMatrix
 } from "@/types/Discover";
 import { differenceInYears, subYears, addDays } from 'date-fns';
+import { getInterestCategory } from "@/constants/interests";
 
 // Algorithm weights - adjust based on testing/feedback
+// Updated: 35% interests, 30% intent, 15% orientation, 10% major, 10% age
 const COMPATIBILITY_WEIGHTS: CompatibilityWeights = {
-  sharedInterests: 0.6,        // 60% - shared hobbies/interests
-  intentCompatibility: 0.25,   // 25% - relationship goals alignment
+  sharedInterests: 0.35,        // 35% - shared hobbies/interests
+  intentCompatibility: 0.30,    // 30% - relationship goals alignment
   orientationCompatibility: 0.15, // 15% - sexual orientation match
+  majorCompatibility: 0.10,     // 10% - same major/academic context
+  ageCompatibility: 0.10,       // 10% - age alignment
 };
 
 /**
@@ -64,77 +68,143 @@ export const isWithinAgePreference = (
 
 
 /**
- * Calculate shared interests score based on overlap.
+ * Calculate shared interests score based on exact matches and category matches.
+ * Exact matches score 1.0 point each.
+ * Category matches (when exact match doesn't exist) score 0.5 points.
+ * Query-time matching: interests are never normalized; matching logic applied during discovery.
+ * Case-insensitive exact matching with category fallback for niche interests.
+ *
+ * Formula: sharedPoints / max(3, min(len(interests1), len(interests2)))
+ * - Minimum denominator of 3 prevents penalizing users with diverse interests
+ * - Uses minimum to avoid penalizing breadth; max ensures fair baseline
  */
 export const calculateSharedInterestsScore = (interests1: string[], interests2: string[]): number => {
   if (!interests1?.length || !interests2?.length) return 0;
 
-  const sharedCount = getSharedInterests(interests1, interests2).length;
-  const totalUniqueInterests = new Set([...interests1, ...interests2]).size;
-  
-  // Jaccard similarity coefficient
-  return sharedCount / totalUniqueInterests;
+  let sharedPoints = 0;
+  const interests2Lower = interests2.map(i => i.toLowerCase());
+
+  // For each interest in interests1, try to find exact match or category match in interests2
+  for (const interest1 of interests1) {
+    const interest1Lower = interest1.toLowerCase();
+
+    // Try exact match (case-insensitive)
+    if (interests2Lower.includes(interest1Lower)) {
+      sharedPoints += 1.0;
+      continue;
+    }
+
+    // Try category match for interests not found exactly
+    const category1 = getInterestCategory(interest1);
+    const category2Of2 = interests2.find(i => getInterestCategory(i) === category1);
+
+    if (category1 && category2Of2) {
+      sharedPoints += 0.5;
+    }
+  }
+
+  // Normalization: use minimum with floor of 3
+  const denominator = Math.max(3, Math.min(interests1.length, interests2.length));
+  return sharedPoints / denominator;
+};
+
+/**
+ * 8x8 Intent Compatibility Matrix
+ * Allows cross-intent matching: Dating + Study Buddy = 0.5 (can match, but different intents)
+ * Same intent = 1.0; compatible = 0.8; different = 0.5; incompatible = 0.2
+ * User autonomy: users decide if they want to like someone with different intent
+ */
+const INTENT_MATRIX: IntentCompatibilityMatrix = {
+  'Dating': {
+    'Dating': 1.0,
+    'Casual Dating': 0.8,
+    'Serious Relationship': 0.8,
+    'Friendship': 0.5,
+    'Study Buddy': 0.5,
+    'Hookup': 0.6,
+    'Networking': 0.2,
+    'Unsure': 0.6
+  },
+  'Casual Dating': {
+    'Dating': 0.8,
+    'Casual Dating': 1.0,
+    'Serious Relationship': 0.5,
+    'Friendship': 0.5,
+    'Study Buddy': 0.4,
+    'Hookup': 0.8,
+    'Networking': 0.2,
+    'Unsure': 0.7
+  },
+  'Serious Relationship': {
+    'Dating': 0.8,
+    'Casual Dating': 0.5,
+    'Serious Relationship': 1.0,
+    'Friendship': 0.4,
+    'Study Buddy': 0.3,
+    'Hookup': 0.2,
+    'Networking': 0.2,
+    'Unsure': 0.6
+  },
+  'Friendship': {
+    'Dating': 0.5,
+    'Casual Dating': 0.5,
+    'Serious Relationship': 0.4,
+    'Friendship': 1.0,
+    'Study Buddy': 0.8,
+    'Hookup': 0.3,
+    'Networking': 0.6,
+    'Unsure': 0.5
+  },
+  'Study Buddy': {
+    'Dating': 0.5,
+    'Casual Dating': 0.4,
+    'Serious Relationship': 0.3,
+    'Friendship': 0.8,
+    'Study Buddy': 1.0,
+    'Hookup': 0.2,
+    'Networking': 0.7,
+    'Unsure': 0.5
+  },
+  'Hookup': {
+    'Dating': 0.6,
+    'Casual Dating': 0.8,
+    'Serious Relationship': 0.2,
+    'Friendship': 0.3,
+    'Study Buddy': 0.2,
+    'Hookup': 1.0,
+    'Networking': 0.2,
+    'Unsure': 0.5
+  },
+  'Networking': {
+    'Dating': 0.2,
+    'Casual Dating': 0.2,
+    'Serious Relationship': 0.2,
+    'Friendship': 0.6,
+    'Study Buddy': 0.7,
+    'Hookup': 0.2,
+    'Networking': 1.0,
+    'Unsure': 0.4
+  },
+  'Unsure': {
+    'Dating': 0.6,
+    'Casual Dating': 0.7,
+    'Serious Relationship': 0.6,
+    'Friendship': 0.5,
+    'Study Buddy': 0.5,
+    'Hookup': 0.5,
+    'Networking': 0.4,
+    'Unsure': 0.7
+  }
 };
 
 /**
  * Calculate intent compatibility (relationship goals).
+ * Uses 8x8 matrix allowing cross-intent matching.
  */
 export const calculateIntentCompatibilityScore = (intent1: string, intent2: string): number => {
-  if (!intent1 || !intent2) return 0.3; // Neutral score if intent missing
+  if (!intent1 || !intent2) return 0.5; // Neutral score if intent missing
 
-  // Define intent compatibility matrix
-  const intentCompatibility: IntentCompatibilityMatrix = {
-    'serious_relationship': {
-      'serious_relationship': 1.0,
-      'casual_dating': 0.3,
-      'friendship': 0.1,
-      'study_buddy': 0.2,
-      'hookups': 0.1,
-      'unsure': 0.5
-    },
-    'casual_dating': {
-      'serious_relationship': 0.3,
-      'casual_dating': 1.0,
-      'friendship': 0.4,
-      'study_buddy': 0.3,
-      'hookups': 0.6,
-      'unsure': 0.7
-    },
-    'friendship': {
-      'serious_relationship': 0.1,
-      'casual_dating': 0.4,
-      'friendship': 1.0,
-      'study_buddy': 0.8,
-      'hookups': 0.2,
-      'unsure': 0.5
-    },
-    'study_buddy': {
-      'serious_relationship': 0.2,
-      'casual_dating': 0.3,
-      'friendship': 0.8,
-      'study_buddy': 1.0,
-      'hookups': 0.1,
-      'unsure': 0.4
-    },
-    'hookups': {
-      'serious_relationship': 0.1,
-      'casual_dating': 0.6,
-      'friendship': 0.2,
-      'study_buddy': 0.1,
-      'hookups': 1.0,
-      'unsure': 0.4
-    },
-    'unsure': {
-      'serious_relationship': 0.5,
-      'casual_dating': 0.7,
-      'friendship': 0.5,
-      'study_buddy': 0.4,
-      'hookups': 0.4,
-      'unsure': 0.6
-    }
-  };
-
-  return intentCompatibility[intent1]?.[intent2] ?? 0.5;
+  return INTENT_MATRIX[intent1]?.[intent2] ?? 0.5;
 };
 
 /**
@@ -196,7 +266,42 @@ export const calculateOrientationCompatibilityScore = (
 };
 
 /**
+ * Calculate age compatibility score based on age difference.
+ * Stepped formula: 0-2 year diff = 1.0, 3-5 years = 0.8, 6+ years = 0.6 + soft penalty
+ * This is NOT a hard filter; it's a soft preference that decreases score gradually.
+ *
+ * @param age1 - First user's age in years
+ * @param age2 - Second user's age in years
+ * @returns Compatibility score (0-1)
+ */
+export const calculateAgeScore = (age1: number, age2: number): number => {
+  const ageDiff = Math.abs(age1 - age2);
+
+  if (ageDiff <= 2) return 1.0;
+  if (ageDiff <= 5) return 0.8;
+
+  // For differences > 5 years: 0.6 baseline with small penalty per additional year
+  // At 10 year diff: 0.6 - (5 * 0.02) = 0.5
+  // At 15 year diff: 0.6 - (10 * 0.02) = 0.4
+  return Math.max(0.6, 1.0 - (ageDiff - 5) * 0.02);
+};
+
+/**
+ * Calculate major compatibility score (binary: same major or not).
+ * Reflects shared academic context (classes, labs, study groups).
+ *
+ * @param major1 - First user's major
+ * @param major2 - Second user's major
+ * @returns 1.0 if same major, 0.0 otherwise
+ */
+export const calculateMajorCompatibilityScore = (major1?: string, major2?: string): number => {
+  if (!major1 || !major2) return 0;
+  return major1.toLowerCase() === major2.toLowerCase() ? 1.0 : 0.0;
+};
+
+/**
  * Calculates compatibility score between two users based on multiple factors.
+ * Weights: 35% interests, 30% intent, 15% orientation, 10% major, 10% age
  *
  * @param userProfile - Current user's profile
  * @param candidateProfile - Potential match's profile
@@ -205,21 +310,21 @@ export const calculateOrientationCompatibilityScore = (
 export const calculateCompatibilityScore = (userProfile: Profile, candidateProfile: Profile): number => {
   let totalScore = 0;
 
-  // 1. Shared Interests Score (60% weight)
+  // 1. Shared Interests Score (35% weight)
   const sharedInterestsScore = calculateSharedInterestsScore(
-    userProfile.interests, 
+    userProfile.interests,
     candidateProfile.interests
   );
   totalScore += sharedInterestsScore * COMPATIBILITY_WEIGHTS.sharedInterests;
 
-  // 2. Intent Compatibility Score (25% weight)
+  // 2. Intent Compatibility Score (30% weight)
   const intentScore = calculateIntentCompatibilityScore(
-    userProfile.intent, 
+    userProfile.intent,
     candidateProfile.intent
   );
   totalScore += intentScore * COMPATIBILITY_WEIGHTS.intentCompatibility;
 
-  // 3. Sexual Orientation Compatibility (15% weight) - now includes gender preferences
+  // 3. Sexual Orientation Compatibility (15% weight) - includes gender preferences
   const orientationScore = calculateOrientationCompatibilityScore(
     userProfile.sexual_orientation,
     candidateProfile.sexual_orientation,
@@ -229,6 +334,19 @@ export const calculateCompatibilityScore = (userProfile: Profile, candidateProfi
     candidateProfile.gender_preference
   );
   totalScore += orientationScore * COMPATIBILITY_WEIGHTS.orientationCompatibility;
+
+  // 4. Major Compatibility (10% weight) - binary: same major or not
+  const majorScore = calculateMajorCompatibilityScore(
+    userProfile.major,
+    candidateProfile.major
+  );
+  totalScore += majorScore * COMPATIBILITY_WEIGHTS.majorCompatibility;
+
+  // 5. Age Compatibility (10% weight) - soft preference, not hard filter
+  const userAge = calculateAge(userProfile.birthdate);
+  const candidateAge = calculateAge(candidateProfile.birthdate);
+  const ageScore = calculateAgeScore(userAge, candidateAge);
+  totalScore += ageScore * COMPATIBILITY_WEIGHTS.ageCompatibility;
 
   return Math.round(totalScore * 100); // Convert to 0-100 scale
 };
@@ -340,17 +458,40 @@ export const getEligibleCandidates = async (userId: string, userProfile: Profile
 };
 
 /**
+ * Get users who have already liked the current user.
+ * Used for TIER 1 priority ranking in discovery feed.
+ *
+ * @param userId - Current user ID
+ * @returns Array of user IDs who liked this user
+ */
+export const getMutualLikedUsers = async (userId: string): Promise<string[]> => {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+
+  const likers = await prisma.likes.findMany({
+    where: { to_user: userId },
+    select: { from_user: true }
+  });
+
+  return likers
+    .map(liker => liker.from_user)
+    .filter((id): id is string => Boolean(id));
+};
+
+/**
  * Main discovery feed - returns potential matches for a user.
- * Uses compatibility scoring with randomization within score tiers.
+ * TIER 1 (Priority): Users who already liked this user appear first
+ * TIER 2+: Remaining candidates ranked by compatibility score
  *
  * @param userId - ID of the user requesting matches
  * @param limit - Number of profiles to return (default: 10)
  * @param offset - For pagination (default: 0)
- * @returns Array of potential match profiles with compatibility scores
+ * @returns Array of potential match profiles with compatibility scores and likedByUser flag
  */
 export const getDiscoverProfiles = async (
-  userId: string, 
-  limit: number = 10, 
+  userId: string,
+  limit: number = 10,
   offset: number = 0
 ): Promise<ProfileWithScore[]> => {
   if (!userId) {
@@ -366,21 +507,41 @@ export const getDiscoverProfiles = async (
     throw new Error('User profile not found');
   }
 
+  // TIER 1: Get users who already liked this user (priority candidates)
+  const mutualLikedUserIds = await getMutualLikedUsers(userId);
+
   // Get eligible candidates
   const candidates = await getEligibleCandidates(userId, currentUser);
 
-  // Calculate compatibility scores for each candidate
+  // Calculate compatibility scores and mark mutual likes
   const scoredCandidates = candidates.map(candidate => ({
     ...candidate,
-    compatibilityScore: calculateCompatibilityScore(currentUser, candidate)
+    compatibilityScore: calculateCompatibilityScore(currentUser, candidate),
+    likedByUser: mutualLikedUserIds.includes(candidate.user_id)
   }));
 
-  // Sort by compatibility score (highest first), then by user_id for stability
+  // Sort with TIER 1 (mutual likes) first, then by compatibility score
+  // Priority: likedByUser (true first), then compatibilityScore (highest first), then stable sort by user_id
   const rankedCandidates = scoredCandidates.sort((a, b) => {
+    // TIER 1: Mutual likes come first
+    if (a.likedByUser !== b.likedByUser) {
+      return a.likedByUser ? -1 : 1; // true comes before false
+    }
+
+    // TIER 2+: Sort by compatibility score (highest first)
     if (b.compatibilityScore !== a.compatibilityScore) {
       return b.compatibilityScore - a.compatibilityScore;
     }
+
+    // Stable sort by user_id for deterministic ordering
     return a.user_id.localeCompare(b.user_id);
+  });
+
+  logger.info(`Discover: Ranked ${rankedCandidates.length} candidates`, {
+    totalCandidates: rankedCandidates.length,
+    mutualLikes: mutualLikedUserIds.length,
+    offset,
+    limit
   });
 
   // Apply pagination

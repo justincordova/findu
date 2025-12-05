@@ -4,283 +4,213 @@ import {
   Text,
   StyleSheet,
   Dimensions,
-  ActivityIndicator,
+  TextInput,
   TouchableOpacity,
+  Keyboard,
 } from "react-native";
-import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
-import { Ionicons } from "@expo/vector-icons";
-import { DARK, MUTED, BACKGROUND } from "../../constants/theme";
+import DropDownPicker from "react-native-dropdown-picker";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { DARK, MUTED, BACKGROUND, DANGER } from "../../constants/theme";
 import { useProfileSetupStore } from "../../store/profileStore";
-import { useAuthStore } from "../../store/authStore";
-import { profileApi } from "@/api/profile";
 
 interface Step2Props {
   onBack?: () => void;
+  onNext?: () => void;
   onValidityChange?: (isValid: boolean) => void;
 }
 
-type DropdownKey =
-  | "university_id"
-  | "major"
-  | "university_year"
-  | "grad_year"
-  | "campus_id"
-  | null;
+type DropdownKey = "gender" | "pronouns" | null;
 
-export default function Step2({ onBack, onValidityChange }: Step2Props) {
+export default function Step2({ onBack, onNext, onValidityChange }: Step2Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
-  const email = useAuthStore((state) => state.email);
-  const { data } = useProfileSetupStore();
-  const universityName = data?.university_name;
 
   const [activeDropdown, setActiveDropdown] = useState<DropdownKey>(null);
-  const [campusItems, setCampusItems] = useState<ItemType<string>[]>([]);
-  const [loadingCampus, setLoadingCampus] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [birthdateError, setBirthdateError] = useState<string | null>(null);
 
   const screenHeight = Dimensions.get("window").height;
-  const emptyCallback = useCallback(() => {}, []);
 
-  const isValid = useMemo(
-    () =>
-      !!profileData?.university_id &&
-      !!profileData?.major &&
-      !!profileData?.university_year &&
-      !!profileData?.grad_year,
-    [profileData]
-  );
+  /** Max birthdate = today minus 18 years */
+  const maxBirthdate = useMemo(() => {
+    const today = new Date();
+    return new Date(
+      today.getFullYear() - 18,
+      today.getMonth(),
+      today.getDate()
+    );
+  }, []);
+
+  /** Validity check */
+  const isValid = useMemo(() => {
+    const nameValid = (profileData?.name ?? "").trim() !== "";
+    const birthValid = profileData?.birthdate
+      ? new Date(profileData.birthdate) <= maxBirthdate
+      : false;
+    const genderValid = (profileData?.gender ?? "") !== "";
+    const pronounValid = (profileData?.pronouns ?? "") !== "";
+    return nameValid && birthValid && genderValid && pronounValid;
+  }, [profileData, maxBirthdate]);
 
   useEffect(() => {
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
-  // Fetch university/campuses using auth email
-  useEffect(() => {
-    const fetchUniversityData = async () => {
-      if (!email) return;
-
-      try {
-        setLoadingCampus(true);
-
-        const { university, campuses } = await profileApi.domainMap(email);
-
-        // Store the university id and name
-        setProfileField("university_id", university.id);
-        setProfileField("university_name", university.name);
-
-        if (campuses.length > 0) {
-          // Prepare items for the dropdown
-          setCampusItems(campuses.map((c) => ({ label: c.name, value: c.id })));
-
-          // Set default campus if not already selected
-          const defaultCampus = campuses[0];
-          if (!profileData?.campus_id) {
-            setProfileField("campus_id", defaultCampus.id);
-          }
-
-          // Store campus name in the store
-          setProfileField("campus_name", defaultCampus.name);
-        } else {
-          // No campuses available
-          setProfileField("campus_id", null);
-          setProfileField("campus_name", undefined);
-          setCampusItems([]);
-        }
-      } catch (err) {
-        console.error("Error fetching university data:", err);
-      } finally {
-        setLoadingCampus(false);
-      }
-    };
-
-    fetchUniversityData();
-  }, [email, profileData?.campus_id, setProfileField]);
-
-  const universityYearItems: ItemType<string>[] = useMemo(
+  /** Dropdown items */
+  const genderItems = useMemo(
     () => [
-      { label: "Freshman", value: "1" },
-      { label: "Sophomore", value: "2" },
-      { label: "Junior", value: "3" },
-      { label: "Senior", value: "4" },
-      { label: "Graduate", value: "5" },
-    ],
-    []
-  );
-
-  const majorItems: ItemType<string>[] = useMemo(
-    () => [
-      { label: "Computer Science", value: "Computer Science" },
-      { label: "Engineering", value: "Engineering" },
-      { label: "Business", value: "Business" },
-      { label: "Psychology", value: "Psychology" },
-      { label: "Biology", value: "Biology" },
-      { label: "Mathematics", value: "Mathematics" },
-      { label: "Economics", value: "Economics" },
+      { label: "Male", value: "Male" },
+      { label: "Female", value: "Female" },
+      { label: "Non-binary", value: "Non-binary" },
       { label: "Other", value: "Other" },
     ],
     []
   );
 
-  const handleOpen = (key: DropdownKey) => {
-    setActiveDropdown((prev) => (prev === key ? null : key));
-  };
+  const pronounItems = useMemo(
+    () => [
+      { label: "they/them", value: "they/them" },
+      { label: "he/him", value: "he/him" },
+      { label: "she/her", value: "she/her" },
+      { label: "xe/xem", value: "xe/xem" },
+      { label: "ze/zir", value: "ze/zir" },
+      { label: "other", value: "other" },
+    ],
+    []
+  );
 
+  const emptyCallback = useCallback(() => {}, []);
+
+  const handleOpen = (key: DropdownKey) =>
+    setActiveDropdown((prev) => (prev === key ? null : key));
   const getZIndex = (key: DropdownKey, baseZ: number) =>
     activeDropdown === key ? 5000 : baseZ;
 
+  /** Date picker handlers */
+  const handleDateConfirm = (date: Date) => {
+    if (date > maxBirthdate) {
+      setBirthdateError("You must be at least 18 years old");
+    } else {
+      setBirthdateError(null);
+      setProfileField("birthdate", date.toISOString());
+    }
+    setShowDatePicker(false);
+  };
+
+  const handleDatePickerOpen = () => {
+    Keyboard.dismiss();
+    setShowDatePicker(true);
+  };
+
   return (
     <View style={styles.container}>
-      {onBack && (
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={DARK} />
-        </TouchableOpacity>
-      )}
-
-      <Text style={styles.title}>Education</Text>
+      <Text style={styles.title}>Basic Information</Text>
       <Text style={styles.subtitle}>
-        Tell us about your academic background
+        Please enter your name, birthdate, gender, and pronouns
       </Text>
 
-      {/* University (read-only display) */}
-      <View
-        style={[
-          styles.fieldContainer,
-          { zIndex: getZIndex("university_id", 4) },
-        ]}
-      >
-        <Text style={styles.label}>University *</Text>
-        {loadingCampus ? (
-          <ActivityIndicator size="small" color={DARK} />
-        ) : (
-          <View style={styles.universityDisplay}>
-            <Text style={styles.universityText}>
-              {universityName || "No university found"}
-            </Text>
-          </View>
-        )}
+      {/* Name */}
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>First Name *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter your first name"
+          placeholderTextColor={MUTED}
+          value={profileData?.name ?? ""}
+          onChangeText={(text) => setProfileField("name", text)}
+          returnKeyType="done"
+          onSubmitEditing={Keyboard.dismiss}
+          blurOnSubmit
+        />
       </View>
 
-      {/* Campus */}
-      {campusItems.length > 0 && (
-        <View
-          style={[styles.fieldContainer, { zIndex: getZIndex("campus_id", 3) }]}
+      {/* Birthdate */}
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>Birthdate *</Text>
+        <TouchableOpacity
+          style={styles.datePickerButton}
+          onPress={handleDatePickerOpen}
         >
-          <Text style={styles.label}>Campus *</Text>
-          <DropDownPicker<string>
-            open={activeDropdown === "campus_id"}
-            value={profileData?.campus_id ?? null}
-            items={campusItems}
-            setOpen={() => handleOpen("campus_id")}
-            setValue={(callback) => {
-              const value =
-                typeof callback === "function"
-                  ? callback(profileData?.campus_id ?? "")
-                  : callback;
-              setProfileField("campus_id", value ?? "");
-            }}
-            setItems={emptyCallback}
-            listMode="SCROLLVIEW"
-            style={styles.dropdown}
-            dropDownContainerStyle={[
-              styles.dropdownContainer,
-              { maxHeight: screenHeight * 0.35 },
+          <Text
+            style={[
+              styles.datePickerText,
+              !profileData?.birthdate && { color: MUTED },
             ]}
-          />
-        </View>
-      )}
-
-      {/* Major */}
-      <View style={[styles.fieldContainer, { zIndex: getZIndex("major", 2) }]}>
-        <Text style={styles.label}>Major *</Text>
-        <DropDownPicker<string>
-          open={activeDropdown === "major"}
-          value={profileData?.major ?? null}
-          items={majorItems}
-          setOpen={() => handleOpen("major")}
-          setValue={(callback) => {
-            const value =
-              typeof callback === "function"
-                ? callback(profileData?.major ?? "")
-                : callback;
-            setProfileField("major", value ?? "");
-          }}
-          setItems={emptyCallback}
-          listMode="SCROLLVIEW"
-          style={styles.dropdown}
-          dropDownContainerStyle={[
-            styles.dropdownContainer,
-            { maxHeight: screenHeight * 0.35 },
-          ]}
-        />
-      </View>
-
-      {/* University Year */}
-      <View
-        style={[
-          styles.fieldContainer,
-          { zIndex: getZIndex("university_year", 1) },
-        ]}
-      >
-        <Text style={styles.label}>Year *</Text>
-        <DropDownPicker<string>
-          open={activeDropdown === "university_year"}
-          value={
-            profileData?.university_year
-              ? String(profileData.university_year)
-              : null
+          >
+            {profileData?.birthdate
+              ? new Date(profileData.birthdate).toLocaleDateString()
+              : "Select your birthdate"}
+          </Text>
+        </TouchableOpacity>
+        {birthdateError && (
+          <Text style={styles.errorText}>{birthdateError}</Text>
+        )}
+        <DateTimePickerModal
+          isVisible={showDatePicker}
+          mode="date"
+          date={
+            profileData?.birthdate
+              ? new Date(profileData.birthdate)
+              : maxBirthdate
           }
-          items={universityYearItems}
-          setOpen={() => handleOpen("university_year")}
+          maximumDate={maxBirthdate}
+          onConfirm={handleDateConfirm}
+          onCancel={() => setShowDatePicker(false)}
+        />
+      </View>
+
+      {/* Gender */}
+      <View style={[styles.fieldContainer, { zIndex: getZIndex("gender", 2) }]}>
+        <Text style={styles.label}>Gender *</Text>
+        <DropDownPicker<string>
+          placeholder="Select your gender"
+          open={activeDropdown === "gender"}
+          value={profileData?.gender ?? ""}
+          items={genderItems}
+          setOpen={() => handleOpen("gender")}
           setValue={(callback) => {
-            const value =
+            const val =
               typeof callback === "function"
-                ? callback(
-                    profileData?.university_year
-                      ? String(profileData.university_year)
-                      : ""
-                  )
+                ? callback(profileData?.gender ?? "")
                 : callback;
-            setProfileField("university_year", value ? parseInt(value) : 0);
+            setProfileField("gender", val ?? "");
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
           style={styles.dropdown}
           dropDownContainerStyle={[
             styles.dropdownContainer,
-            { maxHeight: screenHeight * 0.35 },
+            { maxHeight: screenHeight * 0.4 },
           ]}
         />
       </View>
 
-      {/* Graduation Year */}
+      {/* Pronouns */}
       <View
-        style={[styles.fieldContainer, { zIndex: getZIndex("grad_year", 0) }]}
+        style={[styles.fieldContainer, { zIndex: getZIndex("pronouns", 1) }]}
       >
-        <Text style={styles.label}>Graduation Year *</Text>
+        <Text style={styles.label}>Pronouns *</Text>
         <DropDownPicker<string>
-          open={activeDropdown === "grad_year"}
-          value={profileData?.grad_year ? String(profileData.grad_year) : null}
-          items={Array.from({ length: 10 }, (_, i) => {
-            const year = new Date().getFullYear() + i;
-            return { label: `${year}`, value: `${year}` };
-          })}
-          setOpen={() => handleOpen("grad_year")}
+          placeholder="Select your pronouns"
+          open={activeDropdown === "pronouns"}
+          value={profileData?.pronouns ?? ""}
+          items={pronounItems}
+          setOpen={() => handleOpen("pronouns")}
           setValue={(callback) => {
-            const value =
+            const val =
               typeof callback === "function"
-                ? callback(
-                    profileData?.grad_year ? String(profileData.grad_year) : ""
-                  )
+                ? callback(profileData?.pronouns ?? "")
                 : callback;
-            setProfileField("grad_year", value ? parseInt(value) : 0);
+            setProfileField("pronouns", val ?? "");
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
           style={styles.dropdown}
           dropDownContainerStyle={[
             styles.dropdownContainer,
-            { maxHeight: screenHeight * 0.35 },
+            { maxHeight: screenHeight * 0.4 },
           ]}
+          dropDownDirection="TOP" // opens upward
         />
       </View>
     </View>
@@ -294,17 +224,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 32,
     backgroundColor: BACKGROUND,
-  },
-  backButton: {
-    position: "absolute",
-    top: 48,
-    left: 24,
-    zIndex: 10,
-  },
-  contentContainer: {
-    flex: 1,
-    justifyContent: "center",
-    paddingTop: 80,
   },
   title: {
     fontSize: 24,
@@ -327,6 +246,28 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: "center",
   },
+  input: {
+    width: "100%",
+    padding: 16,
+    backgroundColor: BACKGROUND,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    fontSize: 16,
+    color: DARK,
+  },
+  datePickerButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    backgroundColor: BACKGROUND,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  datePickerText: { fontSize: 16, color: DARK },
+  errorText: { color: DANGER, marginTop: 4, fontSize: 14, textAlign: "center" },
   dropdown: {
     backgroundColor: BACKGROUND,
     borderColor: "#e5e7eb",
@@ -339,25 +280,5 @@ const styles = StyleSheet.create({
     backgroundColor: BACKGROUND,
     borderColor: "#e5e7eb",
     borderRadius: 12,
-  },
-  universityDisplay: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    backgroundColor: "#eef2f5",
-    borderRadius: 16,
-    borderColor: "#d1d5db",
-    borderWidth: 1,
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  universityText: {
-    fontSize: 16,
-    color: DARK,
-    fontWeight: "500",
-    textAlign: "center",
   },
 });

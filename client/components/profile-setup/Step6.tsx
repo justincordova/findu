@@ -1,19 +1,25 @@
-import React, { useCallback, useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  Image,
+  TextInput,
   StyleSheet,
-  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  Animated,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
+import {
+  DARK,
+  MUTED,
+  BACKGROUND,
+  PRIMARY,
+  SUCCESS,
+} from "../../constants/theme";
 import { useProfileSetupStore } from "../../store/profileStore";
-
-const SCREEN_WIDTH = Dimensions.get("window").width;
-const PHOTO_SIZE = (SCREEN_WIDTH - 64) / 2.5; // Bigger photos, 2.5 per row conceptually
 
 export default function Step6({
   onBack,
@@ -25,95 +31,122 @@ export default function Step6({
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
-  /** Pick multiple photos up to 6 */
-  const pickImages = useCallback(async () => {
-    const remaining = 6 - (profileData?.photos?.length || 0);
-    if (remaining <= 0) return;
+  const [photoUploaded, setPhotoUploaded] = useState(false);
+  const keyboardHeight = useState(new Animated.Value(0))[0];
+
+  /** Pick image from library */
+  const pickImage = useCallback(async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      // @ts-ignore
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      quality: 0.7,
-      selectionLimit: remaining,
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
     });
 
     if (!result.canceled && result.assets?.length) {
-      const uris = result.assets.map((asset) => asset.uri);
-      setProfileField("photos", [...(profileData?.photos || []), ...uris].slice(0, 6));
+      const uri = result.assets[0].uri;
+      setProfileField("avatar_url", uri);
+      setPhotoUploaded(true);
+      setTimeout(() => setPhotoUploaded(false), 2000); // hide indicator after 2s
     }
-  }, [profileData?.photos, setProfileField]);
+  }, [setProfileField]);
 
-  /** Remove a photo by index */
-  const removePhoto = useCallback(
-    (index: number) => {
-      const updatedPhotos = [...(profileData?.photos || [])];
-      updatedPhotos.splice(index, 1);
-      setProfileField("photos", updatedPhotos);
-    },
-    [profileData?.photos, setProfileField]
-  );
-
-  /** Step validity: at least 6 photos required */
+  /** Step validity: require profile picture, bio */
   const isValid = useMemo(
-    () => (profileData?.photos?.length || 0) >= 2,
-    [profileData?.photos]
+    () =>
+      !!profileData?.avatar_url &&
+      !!profileData?.bio?.trim(),
+    [profileData?.avatar_url, profileData?.bio]
   );
 
   useEffect(() => {
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      {onBack && (
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={DARK} />
-        </TouchableOpacity>
-      )}
-      <Text style={styles.title}>Add your photos</Text>
-      <Text style={styles.subtitle}>Add up to 6 photos for your profile</Text>
+  /** Keyboard listeners for ScrollView adjustment */
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardWillShow", (e) => {
+      Animated.timing(keyboardHeight, {
+        toValue: e.endCoordinates.height,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    });
+    const hideSub = Keyboard.addListener("keyboardWillHide", () => {
+      Animated.timing(keyboardHeight, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-      {/* 3x2 Grid of photos */}
-      <View style={styles.gridContainer}>
-        {Array.from({ length: 6 }).map((_, idx) => {
-          const photo = (profileData?.photos || [])[idx];
-          
-          if (photo) {
-            // Show photo with remove button
-            return (
-              <View key={idx} style={styles.photoWrapper}>
-                <Image source={{ uri: photo }} style={styles.photo} />
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => removePhoto(idx)}
-                >
-                  <Ionicons name="close-circle" size={24} color="red" />
-                </TouchableOpacity>
-              </View>
-            );
-          } else if (idx === (profileData?.photos?.length || 0)) {
-            // Show add button for next empty slot
-            return (
-              <TouchableOpacity
-                key={idx}
-                style={styles.addPhotoButton}
-                onPress={pickImages}
-              >
-                <Ionicons name="add" size={36} color={PRIMARY} />
-                <Text style={styles.addPhotoText}>Add Photo</Text>
-              </TouchableOpacity>
-            );
-          } else {
-            // Show empty placeholder
-            return (
-              <View key={idx} style={styles.emptySlot} />
-            );
-          }
-        })}
-      </View>
-    </View>
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+    >
+      <Animated.ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: keyboardHeight },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        {onBack && (
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={DARK} />
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.contentContainer}>
+          <Text style={styles.title}>Profile Details</Text>
+          <Text style={styles.subtitle}>
+            Add a bio and profile picture
+          </Text>
+
+        {/* Profile Picture */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>Profile Picture</Text>
+          <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
+            <Ionicons name="camera" size={20} color="white" />
+            <Text style={styles.uploadButtonText}>Upload</Text>
+          </TouchableOpacity>
+          {photoUploaded && (
+            <Text style={styles.uploadSuccess}>Uploaded ✓</Text>
+          )}
+        </View>
+
+        {/* Bio */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>Bio</Text>
+          <TextInput
+            style={styles.bioInput}
+            placeholder="Tell us about yourself..."
+            value={profileData?.bio ?? ""}
+            onChangeText={(text) => setProfileField("bio", text)}
+            multiline
+            maxLength={500}
+            placeholderTextColor={MUTED}
+            returnKeyType="default"
+          />
+          <Text style={styles.characterCount}>
+            {(profileData?.bio ?? "").length}/500
+          </Text>
+        </View>
+        </View>
+      </Animated.ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -131,70 +164,99 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   contentContainer: {
-    flex: 1,
     paddingTop: 80,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     color: DARK,
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
     color: MUTED,
+    marginBottom: 24,
     textAlign: "center",
-    marginBottom: 32,
   },
-  gridContainer: {
+  fieldContainer: { marginBottom: 24, alignItems: "center" },
+  label: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: DARK,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  uploadButton: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-    paddingHorizontal: 8,
-    justifyContent: "center",
-  },
-  photoWrapper: {
-    position: "relative",
-    width: PHOTO_SIZE,
-    height: PHOTO_SIZE,
-  },
-  photo: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 12,
-  },
-  removeButton: {
-    position: "absolute",
-    top: -8,
-    right: -8,
-    backgroundColor: "white",
-    borderRadius: 12,
-  },
-  addPhotoButton: {
-    width: PHOTO_SIZE,
-    height: PHOTO_SIZE,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: PRIMARY,
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f9f9f9",
-  },
-  addPhotoText: {
-    fontSize: 12,
-    color: PRIMARY,
-    marginTop: 4,
-    textAlign: "center",
-  },
-  emptySlot: {
-    width: PHOTO_SIZE,
-    height: PHOTO_SIZE,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: PRIMARY,
     borderRadius: 12,
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: "#e0e0e0",
-    backgroundColor: "#fafafa",
+  },
+  uploadButtonText: {
+    color: "white",
+    marginLeft: 6,
+    fontWeight: "600",
+  },
+  uploadSuccess: {
+    marginTop: 6,
+    color: SUCCESS,
+    fontWeight: "600",
+  },
+  bioInput: {
+    width: "100%",
+    minHeight: 120,
+    padding: 16,
+    backgroundColor: BACKGROUND,
+    borderRadius: 12,
+    fontSize: 16,
+    color: DARK,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    textAlignVertical: "top",
+  },
+  characterCount: {
+    textAlign: "right",
+    marginTop: 4,
+    color: MUTED,
+    fontSize: 12,
+  },
+  interestInputContainer: {
+    flexDirection: "row",
+    width: "100%",
+  },
+  interestInput: {
+    flex: 1,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    marginRight: 8,
+    fontSize: 16,
+    color: DARK,
+  },
+  addButton: {
+    paddingHorizontal: 16,
+    backgroundColor: PRIMARY,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addButtonText: { color: "white", fontWeight: "600" },
+  interestTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  interestText: {
+    marginRight: 6,
+    color: DARK,
+    fontSize: 14,
   },
 });

@@ -1,9 +1,11 @@
-import React, { useCallback, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
+import { DARK, MUTED, BACKGROUND, PRIMARY } from "../../constants/theme";
 import { useProfileSetupStore } from "../../store/profileStore";
 import AgeRangeSlider from "../shared/AgeRangeSlider";
+import { useConstantsStore } from "../../store/constantsStore";
 
 export default function Step4({
   onBack,
@@ -14,30 +16,101 @@ export default function Step4({
 }) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
+  const constants = useConstantsStore((state) => state.constants);
 
-  /** Slider change handler */
-  const handleSliderChange = useCallback(
-    (low: number, high: number) => {
-      setProfileField("min_age", low);
-      setProfileField("max_age", high);
-    },
+  /** Active dropdown state for orientation */
+  const [activeDropdown, setActiveDropdown] = useState<"orientation" | null>(
+    null
+  );
+
+  /** Dropdown items */
+  const orientationItems: ItemType<string>[] = useMemo(
+    () =>
+      constants?.sexualOrientations?.map((orientation) => ({
+        label: orientation,
+        value: orientation,
+      })) ?? [],
+    [constants?.sexualOrientations]
+  );
+
+  /** Gender preference options (multi-select tap boxes) */
+  const genderOptions = useMemo(
+    () => constants?.genderPreferences ?? [],
+    [constants?.genderPreferences]
+  );
+
+  /** Intent options (tap boxes) - aligned with discovery algorithm intent matrix (8 intents) */
+  const intentOptions = useMemo(
+    () => constants?.intents ?? [],
+    [constants?.intents]
+  );
+
+  /** Dropdown handlers */
+  const handleOpen = (key: "orientation") =>
+    setActiveDropdown((prev) => (prev === key ? null : key));
+  const getZIndex = (key: "orientation", baseZ: number) =>
+    activeDropdown === key ? 5000 : baseZ;
+
+  /** Intent selection */
+  const toggleIntent = useCallback(
+    (intent: string) => setProfileField("intent", intent),
     [setProfileField]
+  );
+  const isIntentSelected = useCallback(
+    (intent: string) => profileData?.intent === intent,
+    [profileData?.intent]
+  );
+
+  /** Gender preference selection */
+  const toggleGenderPreference = useCallback(
+    (gender: string) => {
+      const current = profileData?.gender_preference ?? [];
+      const isAllSelected = current.includes("All");
+
+      if (gender === "All") {
+        if (isAllSelected) {
+          setProfileField("gender_preference", []);
+        } else {
+          setProfileField("gender_preference", ["All"]);
+        }
+      } else {
+        if (isAllSelected) {
+          setProfileField("gender_preference", [gender]);
+        } else {
+          if (current.includes(gender)) {
+            setProfileField(
+              "gender_preference",
+              current.filter((g) => g !== gender)
+            );
+          } else {
+            setProfileField("gender_preference", [...current, gender]);
+          }
+        }
+      }
+    },
+    [profileData?.gender_preference, setProfileField]
+  );
+  const isGenderSelected = useCallback(
+    (gender: string) => profileData?.gender_preference?.includes(gender),
+    [profileData?.gender_preference]
   );
 
   /** Validity check */
   const isValid = useMemo(
     () =>
-      typeof profileData?.min_age === "number" &&
-      typeof profileData?.max_age === "number" &&
-      profileData?.min_age > 0 &&
-      profileData?.max_age > 0 &&
-      profileData?.min_age <= profileData?.max_age,
-    [profileData?.min_age, profileData?.max_age]
+      !!profileData?.sexual_orientation &&
+      Array.isArray(profileData?.gender_preference) &&
+      profileData.gender_preference.length > 0 &&
+      !!profileData?.intent,
+    [profileData]
   );
 
   useEffect(() => {
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
+
+  /** DropDownPicker requires setItems even if unused */
+  const emptyCallback = useCallback(() => {}, []);
 
   return (
     <View style={styles.container}>
@@ -46,12 +119,41 @@ export default function Step4({
           <Ionicons name="arrow-back" size={24} color={DARK} />
         </TouchableOpacity>
       )}
+      <Text style={styles.title}>Preferences</Text>
+      <Text style={styles.subtitle}>Tell us about yourself</Text>
 
-      <Text style={styles.title}>Preferred Age Range</Text>
-      <Text style={styles.subtitle}>
-        Set the age range you are interested in
-      </Text>
+      {/* Sexual Orientation */}
+      <View
+        style={[
+          styles.fieldContainer,
+          { zIndex: getZIndex("orientation", 2000) },
+        ]}
+      >
+        <Text style={styles.label}>Sexual Orientation</Text>
+        <DropDownPicker<string>
+          placeholder="Select orientation"
+          open={activeDropdown === "orientation"}
+          value={profileData?.sexual_orientation ?? ""}
+          items={orientationItems}
+          setOpen={() => handleOpen("orientation")}
+          setValue={(callback) => {
+            const val =
+              typeof callback === "function"
+                ? callback(profileData?.sexual_orientation ?? "")
+                : callback;
+            setProfileField("sexual_orientation", val ?? "");
+          }}
+          setItems={emptyCallback}
+          listMode="SCROLLVIEW"
+          style={styles.dropdown}
+          dropDownContainerStyle={[
+            styles.dropdownContainer,
+            { position: "absolute", zIndex: getZIndex("orientation", 2000) },
+          ]}
+        />
+      </View>
 
+      {/* Gender Preference (multi-select tap boxes) */}
       <View style={styles.fieldContainer}>
         <Text style={styles.label}>Age Range</Text>
         <AgeRangeSlider
@@ -59,6 +161,56 @@ export default function Step4({
           maxAge={profileData?.max_age ?? 26}
           onAgeRangeChange={handleSliderChange}
         />
+        <Text style={styles.label}>Preferred Gender(s)</Text>
+        <View style={styles.intentContainer}>
+          {genderOptions.map((gender) => (
+            <TouchableOpacity
+              key={gender}
+              onPress={() => toggleGenderPreference(gender)}
+              style={[
+                styles.intentBox,
+                isGenderSelected(gender) && styles.intentBoxSelected,
+                (profileData?.gender_preference?.includes("All") && gender !== "All") && styles.disabled,
+              ]}
+              disabled={profileData?.gender_preference?.includes("All") && gender !== "All"}
+            >
+              <Text
+                style={[
+                  styles.intentText,
+                  isGenderSelected(gender) && styles.intentTextSelected,
+                ]}
+              >
+                {gender}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Intent Selection */}
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>Looking For</Text>
+        <View style={styles.intentContainer}>
+          {intentOptions.map((intent) => (
+            <TouchableOpacity
+              key={intent}
+              onPress={() => toggleIntent(intent)}
+              style={[
+                styles.intentBox,
+                isIntentSelected(intent) && styles.intentBoxSelected,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.intentText,
+                  isIntentSelected(intent) && styles.intentTextSelected,
+                ]}
+              >
+                {intent}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -96,12 +248,54 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     textAlign: "center",
   },
-  fieldContainer: { marginBottom: 24 },
+  fieldContainer: { marginBottom: 24, position: "relative" },
   label: {
     fontSize: 16,
     fontWeight: "500",
     color: DARK,
     marginBottom: 8,
     textAlign: "center",
+  },
+  dropdown: {
+    backgroundColor: BACKGROUND,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    minHeight: 44,
+    paddingHorizontal: 8,
+    marginBottom: 8,
+  },
+  dropdownContainer: {
+    backgroundColor: BACKGROUND,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+  },
+  intentContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "center",
+  },
+  intentBox: {
+    minWidth: 80,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    margin: 4,
+    backgroundColor: BACKGROUND,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  intentBoxSelected: {
+    backgroundColor: PRIMARY,
+    borderColor: PRIMARY,
+  },
+  intentText: { fontSize: 14, color: DARK, textAlign: "center" },
+  intentTextSelected: { color: "white", fontWeight: "600" },
+  disabled: {
+    backgroundColor: "#f3f4f6",
+    borderColor: "#e5e7eb",
+    opacity: 0.5,
   },
 });
