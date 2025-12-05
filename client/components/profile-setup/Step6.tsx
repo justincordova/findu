@@ -5,11 +5,15 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
+  Dimensions,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
 import { useProfileSetupStore } from "../../store/profileStore";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const PHOTO_SIZE = (SCREEN_WIDTH - 64) / 2.5; // Bigger photos, 2.5 per row conceptually
 
 export default function Step6({
   onBack,
@@ -71,7 +75,7 @@ export default function Step6({
       <Text style={styles.title}>Add your photos</Text>
       <Text style={styles.subtitle}>Add up to 6 photos for your profile</Text>
 
-      {/* 2x3 Grid of photos */}
+      {/* 3x2 Grid of photos */}
       <View style={styles.gridContainer}>
         {Array.from({ length: 6 }).map((_, idx) => {
           const photo = (profileData?.photos || [])[idx];
@@ -146,14 +150,14 @@ const styles = StyleSheet.create({
   gridContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    gap: 16,
     paddingHorizontal: 8,
+    justifyContent: "center",
   },
   photoWrapper: {
     position: "relative",
-    width: "48%",
-    aspectRatio: 1,
-    marginBottom: 16,
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
   },
   photo: {
     width: "100%",
@@ -168,9 +172,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   addPhotoButton: {
-    width: "48%",
-    aspectRatio: 1,
-    marginBottom: 16,
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
     borderRadius: 12,
     borderWidth: 2,
     borderStyle: "dashed",
@@ -186,9 +189,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   emptySlot: {
-    width: "48%",
-    aspectRatio: 1,
-    marginBottom: 16,
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
     borderRadius: 12,
     borderWidth: 2,
     borderStyle: "dashed",
