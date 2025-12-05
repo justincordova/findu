@@ -128,20 +128,56 @@ export async function updatePhoto(
   photoUri: string,
   photoIndex: number
 ): Promise<string> {
-  if (photoUri.startsWith("https://")) return photoUri;
+  if (photoUri.startsWith("https://")) {
+    logger.info("[upload] Photo already has public URL, skipping upload", {
+      userId,
+      photoIndex,
+      url: photoUri
+    });
+    return photoUri;
+  }
 
-  const ext = getImageType(photoUri);
-  const photoName = `photo_${photoIndex}.${ext}`; // Fixed filename
-  const photoBlob = await compressImage(photoUri);
+  logger.info("[upload] Starting photo update", {
+    userId,
+    photoIndex,
+    uri: photoUri
+  });
 
-  const publicUrl = await uploadViaSignedUrl(userId, photoName, photoBlob, "update");
-  logger.info("[upload] Photo updated", { userId, url: publicUrl, index: photoIndex });
+  try {
+    const ext = getImageType(photoUri);
+    const photoName = `photo_${photoIndex}.${ext}`; // Fixed filename
 
-  // Update the specific photo in the store
-  const currentPhotos = useProfileSetupStore.getState().data.photos ?? [];
-  const updatedPhotos = [...currentPhotos];
-  updatedPhotos[photoIndex] = publicUrl;
-  useProfileSetupStore.getState().setProfileField("photos", updatedPhotos);
+    logger.info("[upload] Compressing photo", {
+      userId,
+      photoIndex,
+      targetFilename: photoName
+    });
 
-  return publicUrl;
+    const photoBlob = await compressImage(photoUri);
+
+    logger.info("[upload] Requesting signed URL for photo update", {
+      userId,
+      photoIndex,
+      fileName: photoName,
+      compressedSize: photoBlob.size
+    });
+
+    const publicUrl = await uploadViaSignedUrl(userId, photoName, photoBlob, "update");
+
+    logger.info("[upload] Photo updated successfully", {
+      userId,
+      photoIndex,
+      url: publicUrl,
+      fileName: photoName
+    });
+
+    return publicUrl;
+  } catch (error: any) {
+    logger.error("[upload] Failed to update photo", {
+      userId,
+      photoIndex,
+      error: error?.message || String(error)
+    });
+    throw error;
+  }
 }
