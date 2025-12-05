@@ -236,3 +236,14 @@ model university_domains {
 
   @@unique([university_id, domain], map: "university_domain_unique")
 }
+
+// PostgreSQL Trigger: Automatic Match Creation on Mutual Likes
+// When a user likes another user, this trigger checks if the recipient already liked them.
+// If mutual likes are found, a match record is automatically created.
+//
+// Trigger Function: create_match_on_mutual_like()
+// Trigger Name: on_mutual_like_trigger
+// Event: AFTER INSERT ON likes
+//
+// This ensures that matches are created as soon as mutual likes are detected.
+// Migration: 20251205_add_mutual_likes_trigger.sql
