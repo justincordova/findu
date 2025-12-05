@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { DANGER } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfileSetupStore } from "@/store/profileStore";
 import Button from "../shared/Button";
 
 export default function SignupForm() {
@@ -16,6 +17,7 @@ export default function SignupForm() {
   
   const router = useRouter();
   const { sendOtp, verifyAndSignup, isLoading } = useAuth();
+  const resetProfile = useProfileSetupStore((state) => state.reset);
 
   const handleSendOtp = async () => {
     setError("");
@@ -31,6 +33,8 @@ export default function SignupForm() {
     setError("");
     const result = await verifyAndSignup(email, password, otp);
     if (result.success) {
+      // Clear any existing profile data before starting setup
+      resetProfile();
       router.replace("/profile-setup/1");
     } else {
       setError(result.error || "Signup failed.");

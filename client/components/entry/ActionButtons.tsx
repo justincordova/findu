@@ -1,10 +1,12 @@
 // components/entry/ActionButtons.tsx
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import { useAuth } from "@/hooks/useAuth";
 import Button from "../shared/Button";
 
 export default function ActionButtons() {
   const router = useRouter();
+  const { login } = useAuth();
 
   return (
     <View style={styles.container}>
