@@ -14,7 +14,13 @@
     "cleanup": "ts-node -r tsconfig-paths/register src/scripts/cleanup_seed.ts",
     "cleanup:likes-matches": "ts-node -r tsconfig-paths/register src/scripts/cleanup_likes_matches.ts",
     "seed:uni": "ts-node -r tsconfig-paths/register src/scripts/setup_universities.ts",
-    "getuser": "ts-node -r tsconfig-paths/register src/scripts/getuser.ts"
+    "getuser": "ts-node -r tsconfig-paths/register src/scripts/getuser.ts",
+    "test:likes": "ts-node -r tsconfig-paths/register src/scripts/testLikes.ts",
+    "create:likes": "ts-node -r tsconfig-paths/register src/scripts/createLikes.ts",
+    "create:mutual": "ts-node -r tsconfig-paths/register src/scripts/createMutualLikes.ts",
+    "show:likes": "ts-node -r tsconfig-paths/register src/scripts/showLikes.ts",
+    "check:matches": "ts-node -r tsconfig-paths/register src/scripts/checkMatches.ts",
+    "cleanup:test-likes": "ts-node -r tsconfig-paths/register src/scripts/cleanupTestLikes.ts"
   },
   "keywords": [],
   "author": "",
