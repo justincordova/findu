@@ -31,7 +31,7 @@ export default function LoginForm() {
           await profileApi.me();
           // Profile exists, go to discover
           router.replace("/home/(tabs)/discover");
-        } catch (err) {
+        } catch {
           // Profile doesn't exist (404), go to setup
           router.replace("/profile-setup/1");
         }
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 16,
     top: "50%",
-    transform: [{ translateY: -10 }],
+    transform: [{ translateY: -14 }],
     padding: 4,
   },
 });
