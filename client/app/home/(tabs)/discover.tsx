@@ -13,7 +13,7 @@ export default function DiscoverScreen() {
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  logger.info(`DiscoverScreen: Rendering with currentIndex=${currentIndex}, profiles.length=${profiles.length}`);
+  logger.debug("DiscoverScreen rendered", { currentIndex, profilesCount: profiles.length });
 
   const fetchProfiles = useCallback(async () => {
     setLoading(true);
@@ -32,8 +32,10 @@ export default function DiscoverScreen() {
 
   const handleSwipeLeft = useCallback(() => {
     // Discard - just move to next
+    const currentProfile = profiles[currentIndex];
+    logger.debug("Swiped left", { discardedUserId: currentProfile?.user_id });
     setCurrentIndex((prev) => prev + 1);
-  }, []);
+  }, [profiles, currentIndex]);
 
   const handleSwipeRight = useCallback(async () => {
     const currentProfile = profiles[currentIndex];
@@ -44,8 +46,12 @@ export default function DiscoverScreen() {
 
     // Send like API call
     const res = await sendLike(currentProfile.user_id);
-    if (res.success && res.match) {
-      Alert.alert("It's a Match!", `You matched with ${currentProfile.name}`);
+    if (res.success) {
+      logger.info("Like sent", { likedUserId: currentProfile.user_id });
+      if (res.match) {
+        logger.info("Match found", { matchedUserId: currentProfile.user_id, matchedName: currentProfile.name });
+        Alert.alert("It's a Match!", `You matched with ${currentProfile.name}`);
+      }
     }
   }, [profiles, currentIndex]);
 
