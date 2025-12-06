@@ -6,11 +6,11 @@ const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/storage`;
 
 /**
  * Get authorization headers with current auth token
- * @returns {{Authorization: string}} Headers object with Bearer token
+ * @returns {{Authorization?: string}} Headers object with Bearer token (if available)
  */
 const getAuthHeaders = () => {
   const token = useAuthStore.getState().token;
-  return { Authorization: token ? `Bearer ${token}` : "" };
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 export const storageApi = {
