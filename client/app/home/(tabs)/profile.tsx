@@ -127,12 +127,6 @@ export default function ProfileScreen() {
   const photos = Array.isArray(profileData?.photos) ? profileData.photos : [];
   const displayPhotos = photos.length > 0 ? photos : [];
 
-  // Log current photos for debugging
-  logger.debug("[profile] Current photos", {
-    count: photos.length,
-    photos: photos
-  });
-  
   const calculateAge = (birthdate: string | undefined): number | null => {
     if (!birthdate) return null;
     try {
