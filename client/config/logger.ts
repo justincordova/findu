@@ -1,4 +1,4 @@
-import { logger, consoleTransport, fileAsyncTransport, transportFunctionType } from "react-native-logs";
+import { logger as createLoggerFn, consoleTransport, fileAsyncTransport, transportFunctionType } from "react-native-logs";
 import * as FileSystem from "expo-file-system";
 
 // CATEGORIES
@@ -78,7 +78,7 @@ const filteredTransport: transportFunctionType<any> = (props: any) => {
 // This works with the modern expo-file-system API (SDK 54+)
 const documentDir = FileSystem.Paths.document.uri;
 
-const Ilogger = logger.createLogger({
+const baseLogger = createLoggerFn.createLogger({
   levels: {
     debug: 0,
     info: 1,
@@ -98,4 +98,33 @@ const Ilogger = logger.createLogger({
   async: true,
 });
 
-export default Ilogger;
+/**
+ * Logger instance with methods matching server-side API
+ * Usage:
+ *   logger.error("message", "Category")
+ *   logger.info("message", "Category", metadata)
+ *   logger.debug("message", { data }) // old API still supported
+ */
+interface AppLogger {
+  error(message: string, ...args: any[]): void;
+  warn(message: string, ...args: any[]): void;
+  info(message: string, ...args: any[]): void;
+  debug(message: string, ...args: any[]): void;
+}
+
+const logger: AppLogger = {
+  error: (message: string, ...args: any[]) => {
+    baseLogger.error(message, ...args);
+  },
+  warn: (message: string, ...args: any[]) => {
+    baseLogger.warn(message, ...args);
+  },
+  info: (message: string, ...args: any[]) => {
+    baseLogger.info(message, ...args);
+  },
+  debug: (message: string, ...args: any[]) => {
+    baseLogger.debug(message, ...args);
+  },
+};
+
+export default logger;
