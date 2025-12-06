@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   DARK,
@@ -16,7 +16,7 @@ interface WelcomeStepProps {
   onNext: () => void;
 }
 
-export default function Step1({ onNext }: WelcomeStepProps) {
+export default function Step1(_props: WelcomeStepProps) {
   const email = useAuthStore((state) => state.email);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
   const setCampuses = useProfileSetupStore((state) => state.setCampuses);

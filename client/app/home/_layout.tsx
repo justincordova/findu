@@ -1,7 +1,7 @@
 import { Tabs, useNavigation } from "expo-router";
 import { Compass, Users, MessageCircle, User } from "lucide-react-native";
-import { PRIMARY } from "../../constants/theme";
-import CustomTabBar from "../../components/shared/CustomTabBar";
+import { PRIMARY } from "@/constants/theme";
+import CustomTabBar from "@/components/shared/CustomTabBar";
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 

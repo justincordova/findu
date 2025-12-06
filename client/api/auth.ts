@@ -1,14 +1,24 @@
 const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/auth`;
 
-/** Helper to extract JSON and handle errors */
-async function handleResponse(res: Response) {
+/**
+ * Helper to extract JSON response and handle errors
+ * @template T
+ * @param {Response} res - Fetch response object
+ * @returns {Promise<T>} Parsed JSON response or empty object
+ * @throws {unknown} Throws response data if response is not ok
+ */
+async function handleResponse<T = unknown>(res: Response): Promise<T> {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw data;
-  return data;
+  return data as T;
 }
 
 export const AuthAPI = {
-  // Request OTP for signup
+  /**
+   * Request OTP for passwordless signup
+   * @param {string} email - User email address
+   * @returns {Promise<{success: boolean; error?: string}>}
+   */
   sendOtp: async (email: string) => {
     const res = await fetch(`${API_BASE}/send-otp`, {
       method: "POST",
@@ -18,7 +28,13 @@ export const AuthAPI = {
     return handleResponse(res);
   },
 
-  // Signup with email, password, and OTP
+  /**
+   * Create account with email, password, and OTP verification
+   * @param {string} email - User email address
+   * @param {string} password - User password
+   * @param {string} otp - One-time password from email
+   * @returns {Promise<{success: boolean; token: string; user: {id: string; email: string}; error?: string}>}
+   */
   signup: async (email: string, password: string, otp: string) => {
     const res = await fetch(`${API_BASE}/signup`, {
       method: "POST",
@@ -28,7 +44,12 @@ export const AuthAPI = {
     return handleResponse(res);
   },
 
-  // Signin with email and password
+  /**
+   * Authenticate user with email and password
+   * @param {string} email - User email address
+   * @param {string} password - User password
+   * @returns {Promise<{success: boolean; token: string; user: {id: string; email: string}; error?: string}>}
+   */
   signin: async (email: string, password: string) => {
     const res = await fetch(`${API_BASE}/signin`, {
       method: "POST",
@@ -38,7 +59,11 @@ export const AuthAPI = {
     return handleResponse(res);
   },
 
-  // Get current user info using a token
+  /**
+   * Validate token and get current user session info
+   * @param {string} token - Authentication token
+   * @returns {Promise<{user: {id: string; email: string}; error?: string}>}
+   */
   getMe: async (token: string) => {
     const res = await fetch(`${API_BASE}/session`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -46,7 +71,11 @@ export const AuthAPI = {
     return handleResponse(res);
   },
 
-  // Signout the user
+  /**
+   * Invalidate user session on backend
+   * @param {string} token - Authentication token
+   * @returns {Promise<{success: boolean; error?: string}>}
+   */
   signout: async (token: string) => {
     const res = await fetch(`${API_BASE}/signout`, {
       method: "POST",

@@ -79,7 +79,7 @@ export default function SignupForm() {
             </TouchableOpacity>
           </View>
           <Button
-            label={isLoading ? "Sending OTP..." : "Send OTP"}
+            label={isLoading ? "Sending OTP..." : "Create Account"}
             onPress={handleSendOtp}
             style={{ opacity: isLoading ? 0.7 : 1 }}
           />
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 16,
     top: "50%",
-    transform: [{ translateY: -10 }],
+    transform: [{ translateY: -14 }],
     padding: 4,
   },
 });

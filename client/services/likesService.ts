@@ -2,7 +2,17 @@ import { LikesAPI } from "@/api/likes";
 import { useAuthStore } from "@/store/authStore";
 import logger from "@/config/logger";
 
-export async function sendLike(toUserId: string, isSuperlike: boolean = false) {
+/**
+ * Send a like or superlike to another user
+ * Checks if action creates a mutual match and logs match events
+ * @param {string} toUserId - ID of user to like
+ * @param {boolean} isSuperlike - Whether this is a superlike action (default: false)
+ * @returns {Promise<{success: boolean; match?: boolean; error?: string}>} Like result with match status
+ */
+export async function sendLike(
+  toUserId: string,
+  isSuperlike: boolean = false
+): Promise<{ success: boolean; match?: boolean; error?: string }> {
   const { token, userId } = useAuthStore.getState();
   if (!token || !userId) {
     logger.warn("Not authenticated for like action");
