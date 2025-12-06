@@ -9,7 +9,7 @@ import * as ImageManipulator from "expo-image-manipulator";
  * Compress image using Expo ImageManipulator
  */
 async function compressImage(uri: string): Promise<Blob> {
-  logger.info("[upload] compressImage input:", uri);
+  logger.debug("Compressing image", { uri });
 
   const result = await ImageManipulator.manipulateAsync(
     uri,
@@ -21,7 +21,7 @@ async function compressImage(uri: string): Promise<Blob> {
   const response = await fetch(result.uri);
   const blob = await response.blob();
 
-  logger.info("[upload] compressImage blob size:", blob.size);
+  logger.debug("Image compressed", { size: blob.size });
   return blob;
 }
 
@@ -34,8 +34,7 @@ async function uploadViaSignedUrl(
   fileData: Blob,
   mode: "setup" | "update"
 ): Promise<string> {
-  logger.info("[upload] uploadViaSignedUrl start", {
-    userId,
+  logger.debug("Uploading via signed URL", {
     fileName,
     size: fileData.size,
     mode,
@@ -55,7 +54,7 @@ async function uploadViaSignedUrl(
     throw new Error(`[upload] Failed to upload file: ${res.status}`);
   }
 
-  logger.info("[upload] File uploaded successfully", { uploadUrl });
+  logger.info("File uploaded", { uploadUrl });
 
   // Construct public URL (make sure bucket name is correct & public)
   const publicUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profiles/${path}`;
@@ -79,7 +78,7 @@ export async function uploadAvatar(
   const publicUrl = await uploadViaSignedUrl(userId, avatarName, avatarBlob, mode);
 
   useProfileSetupStore.getState().setProfileField("avatar_url", publicUrl);
-  logger.info("[upload] Avatar uploaded", { userId, url: publicUrl, mode });
+  logger.info("Avatar uploaded", { userId, url: publicUrl });
 
   return publicUrl;
 }
@@ -93,12 +92,12 @@ export async function uploadPhotos(
   mode: "setup" | "update"
 ): Promise<string[]> {
   // Get existing photos from the store
-  const existingPhotos = mode === "update" 
+  const existingPhotos = mode === "update"
     ? (useProfileSetupStore.getState().data.photos ?? [])
     : [];
-  
+
   const startIndex = existingPhotos.length;
-  
+
   const uploadedPhotos = await Promise.all(
     photoUris.map(async (uri, i) => {
       if (uri.startsWith("https://")) return uri;
@@ -108,7 +107,7 @@ export async function uploadPhotos(
       const photoBlob = await compressImage(uri);
 
       const publicUrl = await uploadViaSignedUrl(userId, photoName, photoBlob, mode);
-      logger.info("[upload] Photo uploaded", { userId, url: publicUrl, mode });
+      logger.info("Photo uploaded", { userId, url: publicUrl });
 
       return publicUrl;
     })
@@ -129,16 +128,14 @@ export async function updatePhoto(
   photoIndex: number
 ): Promise<string> {
   if (photoUri.startsWith("https://")) {
-    logger.info("[upload] Photo already has public URL, skipping upload", {
-      userId,
+    logger.debug("Photo already uploaded, skipping", {
       photoIndex,
       url: photoUri
     });
     return photoUri;
   }
 
-  logger.info("[upload] Starting photo update", {
-    userId,
+  logger.debug("Starting photo update", {
     photoIndex,
     uri: photoUri
   });
@@ -147,16 +144,14 @@ export async function updatePhoto(
     const ext = getImageType(photoUri);
     const photoName = `photo_${photoIndex}.${ext}`; // Fixed filename
 
-    logger.info("[upload] Compressing photo", {
-      userId,
+    logger.debug("Compressing photo", {
       photoIndex,
       targetFilename: photoName
     });
 
     const photoBlob = await compressImage(photoUri);
 
-    logger.info("[upload] Requesting signed URL for photo update", {
-      userId,
+    logger.debug("Requesting signed URL", {
       photoIndex,
       fileName: photoName,
       compressedSize: photoBlob.size
@@ -164,11 +159,9 @@ export async function updatePhoto(
 
     const publicUrl = await uploadViaSignedUrl(userId, photoName, photoBlob, "update");
 
-    logger.info("[upload] Photo updated successfully", {
-      userId,
+    logger.info("Photo updated", {
       photoIndex,
-      url: publicUrl,
-      fileName: photoName
+      url: publicUrl
     });
 
     return publicUrl;
