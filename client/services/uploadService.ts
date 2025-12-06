@@ -1,4 +1,3 @@
-// uploadService.ts
 import { storageApi } from "@/api/storage";
 import { useProfileSetupStore } from "@/store/profileStore";
 import logger from "@/config/logger";
@@ -7,6 +6,8 @@ import * as ImageManipulator from "expo-image-manipulator";
 
 /**
  * Compress image using Expo ImageManipulator
+ * @param {string} uri - Local image URI to compress
+ * @returns {Promise<Blob>} Compressed image blob
  */
 async function compressImage(uri: string): Promise<Blob> {
   logger.debug("Compressing image", { uri });
@@ -27,6 +28,12 @@ async function compressImage(uri: string): Promise<Blob> {
 
 /**
  * Upload a file using signed URL and return the full public URL
+ * @param {string} userId - User ID for upload path
+ * @param {string} fileName - Name of file to upload
+ * @param {Blob} fileData - File blob to upload
+ * @param {"setup" | "update"} mode - Upload mode (setup during profile creation, update for existing profile)
+ * @returns {Promise<string>} Public URL of uploaded file
+ * @throws {Error} If upload fails
  */
 async function uploadViaSignedUrl(
   userId: string,
@@ -62,7 +69,12 @@ async function uploadViaSignedUrl(
 }
 
 /**
- * Upload avatar
+ * Upload user avatar image
+ * Skips upload if already a URL, otherwise compresses and uploads to Supabase
+ * @param {string} userId - User ID for upload path
+ * @param {string | undefined} avatarUri - Local URI or HTTPS URL of avatar
+ * @param {"setup" | "update"} mode - Upload mode
+ * @returns {Promise<string>} Public URL of uploaded avatar
  */
 export async function uploadAvatar(
   userId: string,
@@ -84,7 +96,12 @@ export async function uploadAvatar(
 }
 
 /**
- * Upload multiple photos
+ * Upload multiple profile photos
+ * Compresses and uploads photos in parallel, preserves existing photos on update
+ * @param {string} userId - User ID for upload path
+ * @param {string[]} photoUris - Array of local URIs or HTTPS URLs
+ * @param {"setup" | "update"} mode - Upload mode
+ * @returns {Promise<string[]>} Array of public URLs for uploaded photos
  */
 export async function uploadPhotos(
   userId: string,
@@ -120,7 +137,12 @@ export async function uploadPhotos(
 }
 
 /**
- * Upload a single photo and update it in the store
+ * Upload a single photo to replace an existing one at given index
+ * @param {string} userId - User ID for upload path
+ * @param {string} photoUri - Local URI or HTTPS URL of photo
+ * @param {number} photoIndex - Index position in photos array
+ * @returns {Promise<string>} Public URL of uploaded photo
+ * @throws {Error} If photo compression or upload fails
  */
 export async function updatePhoto(
   userId: string,
