@@ -5,7 +5,7 @@ import logger from "@/config/logger";
 export async function getMatches() {
   const { token } = useAuthStore.getState();
   if (!token) {
-    logger.warn("MatchesService: No token found");
+    logger.warn("Not authenticated for matches");
     return { success: false, error: "Not authenticated" };
   }
 
@@ -13,7 +13,7 @@ export async function getMatches() {
     const data = await MatchesAPI.getMatches(token);
     return { success: true, data };
   } catch (err) {
-    logger.error("MatchesService: getMatches error", { err });
+    logger.error("Failed to fetch matches", { err });
     return { success: false, error: "Failed to fetch matches" };
   }
 }
