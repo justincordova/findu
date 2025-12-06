@@ -19,7 +19,7 @@ export const storageApi = {
    */
   getUploadUrl: async (userId: string, filename: string, mode: "setup" | "update") => {
     const headers = getAuthHeaders();
-    logger.info("[storageApi] Requesting signed URL", { userId, filename, mode });
+    logger.debug("Requesting signed URL", { filename });
 
     const response = await axios.post(
       `${API_BASE}/url`,
@@ -27,8 +27,7 @@ export const storageApi = {
       { headers }
     );
 
-    logger.info("[storageApi] Signed URL received", {
-      userId,
+    logger.debug("Signed URL received", {
       filename,
       path: response.data.path,
     });
@@ -40,8 +39,7 @@ export const storageApi = {
    * Upload a file to Supabase using signed URL
    */
   uploadFile: async (uploadUrl: string, file: Blob | File) => {
-    logger.info("[storageApi] Uploading file via signed URL", {
-      uploadUrl,
+    logger.debug("Uploading file", {
       size: file.size,
       type: file.type,
     });
@@ -50,7 +48,7 @@ export const storageApi = {
       headers: { "Content-Type": file.type },
     });
 
-    logger.info("[storageApi] File uploaded successfully", { uploadUrl });
+    logger.info("File uploaded", { uploadUrl });
   },
 };
 
