@@ -6,7 +6,7 @@ const ENABLE_PERSISTENCE = process.env.EXPO_PUBLIC_ENABLE_PERSISTENCE !== "false
 //Save a value under a given key
 export async function saveSecureItem(key: string, value: string) {
   if (!ENABLE_PERSISTENCE) {
-    logger.warn("SecureStore persistence disabled", { key });
+    logger.debug("SecureStore persistence disabled; skipping save", { key });
     return;
   }
   try {
@@ -21,7 +21,7 @@ export async function saveSecureItem(key: string, value: string) {
 //Retrieve a value by key
 export async function getSecureItem(key: string): Promise<string | null> {
   if (!ENABLE_PERSISTENCE) {
-    logger.warn("SecureStore persistence disabled", { key });
+    logger.debug("SecureStore persistence disabled; skipping get", { key });
     return null;
   }
   try {
@@ -37,7 +37,7 @@ export async function getSecureItem(key: string): Promise<string | null> {
 //Delete a value by key
 export async function deleteSecureItem(key: string) {
   if (!ENABLE_PERSISTENCE) {
-    logger.warn("SecureStore persistence disabled", { key });
+    logger.debug("SecureStore persistence disabled; skipping delete", { key });
     return;
   }
   try {
