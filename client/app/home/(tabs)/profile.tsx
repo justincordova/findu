@@ -379,10 +379,8 @@ export default function ProfileScreen() {
       }
       
       setUploadingPhotos(false);
-      logger.info('Setting alert modal:', {
+      logger.debug("Alert modal state changed", {
         visible: true,
-        title: 'Success',
-        message: `Photo${newPhotosCount === 1 ? '' : 's'} added successfully`,
         type: 'success'
       });
       setAlertModal({
@@ -417,8 +415,7 @@ export default function ProfileScreen() {
       return;
     }
 
-    logger.info("[photo] Launching image picker for photo replacement", {
-      userId: profileData.user_id,
+    logger.debug("Image picker launched for photo replacement", {
       photoIndex: currentPhotoIndex
     });
 
@@ -430,28 +427,24 @@ export default function ProfileScreen() {
     });
 
     if (result.canceled) {
-      logger.info("[photo] Image picker cancelled by user", { photoIndex: currentPhotoIndex });
+      logger.debug("Image picker cancelled", { photoIndex: currentPhotoIndex });
       return;
     }
 
     const newPhotoUri = result.assets[0].uri;
-    logger.info("[photo] Image selected for replacement", {
-      userId: profileData.user_id,
-      photoIndex: currentPhotoIndex,
-      uri: newPhotoUri
+    logger.debug("Image selected for replacement", {
+      photoIndex: currentPhotoIndex
     });
 
     setReplacingPhotoIndex(currentPhotoIndex);
     try {
-      logger.info("[photo] Starting photo upload", {
-        userId: profileData.user_id,
+      logger.info("Photo upload started", {
         photoIndex: currentPhotoIndex
       });
 
       const newPhotoUrl = await updatePhoto(profileData.user_id, newPhotoUri, currentPhotoIndex);
 
-      logger.info("[photo] Photo replaced successfully", {
-        userId: profileData.user_id,
+      logger.info("Photo replaced", {
         photoIndex: currentPhotoIndex,
         newUrl: newPhotoUrl
       });
@@ -468,22 +461,17 @@ export default function ProfileScreen() {
         [currentPhotoIndex]: (prev[currentPhotoIndex] || 0) + 1
       }));
 
-      logger.info("[photo] Updated local profile data with new photo URL", {
-        userId: profileData.user_id,
-        photoIndex: currentPhotoIndex,
-        newUrl: newPhotoUrl
+      logger.debug("Updated local profile data", {
+        photoIndex: currentPhotoIndex
       });
 
       // Update the profile in the database with the new photo URL
-      logger.info("[photo] Updating profile in database with new photo URL", {
-        userId: profileData.user_id,
-        photoIndex: currentPhotoIndex,
-        newUrl: newPhotoUrl
+      logger.debug("Updating profile in database", {
+        photoIndex: currentPhotoIndex
       });
       await profileApi.update(profileData.user_id, { photos: currentPhotos });
 
-      logger.info("[photo] Profile updated in database with new photo URL", {
-        userId: profileData.user_id,
+      logger.info("Profile updated in database", {
         photoIndex: currentPhotoIndex
       });
 
