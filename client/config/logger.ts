@@ -1,33 +1,5 @@
-import { logger, consoleTransport, fileAsyncTransport, transportFunctionType } from "react-native-logs";
+import { logger as createLoggerFn, consoleTransport, fileAsyncTransport } from "react-native-logs";
 import * as FileSystem from "expo-file-system";
-
-// CATEGORIES
-// These are the "Tags" you might use in your app.
-const CATEGORIES = [
-  // Core Features
-  "Auth",
-  "Profile",
-  "Discover",
-  "Likes",
-  "Matches",
-  "Blocks",
-  "Messages",
-  "Storage",
-
-  // Technical
-  "API",
-  "Photos",
-  "Cache",
-  "Navigation",
-  "State",
-  "Validation",
-  "Error",
-  "Performance"
-] as const;
-
-// IGNORE
-// Add categories here to silence all logs tagged with them
-const IGNORED_CATEGORIES = [] as const;
 
 const consoleColors = {
   debug: "cyanBright",
@@ -36,49 +8,16 @@ const consoleColors = {
   error: "redBright",
 } as const;
 
-/**
- * CUSTOM TRANSPORT
- * Checks if the 2nd argument (or any argument) is a banned category.
- */
-const filteredTransport: transportFunctionType<any> = (props: any) => {
-  // props.rawMsg is an array of everything you passed to the log function.
-  // e.g. logger.debug("Hi", "Photos") -> rawMsg is ["Hi", "Photos"]
-
-  // Check if ANY argument in this log matches an ignored category
-  const rawMsgArray = Array.isArray(props.rawMsg) ? props.rawMsg : [];
-  const isIgnored = rawMsgArray.some((arg: any) =>
-    typeof arg === 'string' && IGNORED_CATEGORIES.includes(arg as typeof IGNORED_CATEGORIES[number])
-  );
-
-  if (isIgnored) {
-    // Ignore this log by performing no side effects in the transport
-    return;
-  }
-
-  // OPTIONAL: Formatting
-  // If you want to make it look nice (e.g. "[Photos] Message") automatically:
-  // We can look for a valid category in args and prepend it.
-  const category = rawMsgArray.find((arg: any) =>
-    typeof arg === 'string' && CATEGORIES.includes(arg as typeof CATEGORIES[number])
-  ) as string | undefined;
-
-  if (category) {
-    // Modify the message to show the tag clearly
-    props.msg = `[${category}] ${props.msg}`;
-  }
-
-  if (__DEV__) {
-    consoleTransport(props);
-  } else {
-    fileAsyncTransport(props);
-  }
-};
-
 // Use Paths.document.uri for a synchronous directory path
 // This works with the modern expo-file-system API (SDK 54+)
 const documentDir = FileSystem.Paths.document.uri;
 
-const Ilogger = logger.createLogger({
+// Simple transport: use console in dev, file in production
+const transport = __DEV__
+  ? consoleTransport
+  : fileAsyncTransport;
+
+const baseLogger = createLoggerFn.createLogger({
   levels: {
     debug: 0,
     info: 1,
@@ -86,7 +25,7 @@ const Ilogger = logger.createLogger({
     error: 3
   },
   severity: __DEV__ ? "debug" : "error",
-  transport: filteredTransport,
+  transport,
   transportOptions: {
     colors: consoleColors,
     FS: FileSystem,
@@ -98,4 +37,34 @@ const Ilogger = logger.createLogger({
   async: true,
 });
 
-export default Ilogger;
+/**
+ * Logger instance with methods matching server-side Winston API
+ * Usage: logger.error("message", metadata?)
+ * @example
+ *   logger.info("[Profile] User loaded", { userId: 123 })
+ *   logger.error("Failed to fetch", err)
+ *   logger.debug("[API] Request sent")
+ */
+interface AppLogger {
+  error(message: string, metadata?: any): void;
+  warn(message: string, metadata?: any): void;
+  info(message: string, metadata?: any): void;
+  debug(message: string, metadata?: any): void;
+}
+
+const logger: AppLogger = {
+  error: (message: string, metadata?: any) => {
+    baseLogger.error(message, metadata);
+  },
+  warn: (message: string, metadata?: any) => {
+    baseLogger.warn(message, metadata);
+  },
+  info: (message: string, metadata?: any) => {
+    baseLogger.info(message, metadata);
+  },
+  debug: (message: string, metadata?: any) => {
+    baseLogger.debug(message, metadata);
+  },
+};
+
+export default logger;

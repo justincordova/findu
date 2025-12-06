@@ -12,7 +12,7 @@ import { Profile } from "@/types/Profile";
 export async function handleSubmitProfile(userId?: string) {
   try {
     const authState = useAuthStore.getState();
-    logger.info("[handleSubmitProfile] Auth state", { authState });
+    logger.debug("Checking auth state");
 
     const currentUserId = userId ?? authState.userId;
     if (!currentUserId) {
@@ -29,7 +29,7 @@ export async function handleSubmitProfile(userId?: string) {
       throw new Error("Profile data is empty");
     }
 
-    logger.info("[handleSubmitProfile] Submitting profile", { currentUserId, profileData });
+    logger.info("Profile submission started", { userId: currentUserId });
 
     // Upload avatar & photos in "setup" mode
     const [avatarUrl, uploadedPhotos] = await Promise.all([
@@ -37,7 +37,7 @@ export async function handleSubmitProfile(userId?: string) {
       uploadPhotos(currentUserId, profileData.photos ?? [], "setup"),
     ]);
 
-    logger.info("[handleSubmitProfile] Upload completed", { avatarUrl, uploadedPhotos });
+    logger.debug("Upload completed");
 
     // Build final profile object
     const finalProfile: Profile = {
@@ -64,11 +64,11 @@ export async function handleSubmitProfile(userId?: string) {
 
     // Validate before submission
     validateProfile(finalProfile);
-    logger.info("[handleSubmitProfile] Validation passed", { finalProfile });
+    logger.debug("Validation passed");
 
     // Submit via API
     await profileApi.create(finalProfile);
-    logger.info("[handleSubmitProfile] Profile submitted successfully", { currentUserId });
+    logger.info("Profile submitted successfully", { userId: currentUserId });
 
     // Reset local store
     useProfileSetupStore.getState().reset();

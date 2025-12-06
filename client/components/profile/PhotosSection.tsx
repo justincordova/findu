@@ -62,13 +62,11 @@ export default function PhotosSection() {
       return;
     }
 
-    logger.info("[PhotosSection] Modal opened for photo replacement", {
-      userId,
+    logger.debug("Modal opened for photo replacement", {
       photoIndex: currentIndex
     });
 
-    logger.info("[PhotosSection] Requesting media library permission", {
-      userId,
+    logger.debug("Requesting media library permission", {
       photoIndex: currentIndex
     });
 
@@ -82,8 +80,7 @@ export default function PhotosSection() {
       return;
     }
 
-    logger.info("[PhotosSection] Permission granted, launching image picker", {
-      userId,
+    logger.debug("Permission granted, launching picker", {
       photoIndex: currentIndex
     });
 
@@ -95,34 +92,28 @@ export default function PhotosSection() {
     });
 
     if (pickerResult.canceled) {
-      logger.info("[PhotosSection] Image picker cancelled by user", {
-        userId,
+      logger.debug("Image picker cancelled", {
         photoIndex: currentIndex
       });
       return;
     }
 
     const newUri = pickerResult.assets[0].uri;
-    logger.info("[PhotosSection] Image selected for replacement", {
-      userId,
-      photoIndex: currentIndex,
-      uri: newUri
+    logger.debug("Image selected", {
+      photoIndex: currentIndex
     });
 
     setIsUploading(true);
 
     try {
-      logger.info("[PhotosSection] Starting photo upload", {
-        userId,
+      logger.info("Photo upload started", {
         photoIndex: currentIndex
       });
 
       const newPhotoUrl = await updatePhoto(userId, newUri, currentIndex);
 
-      logger.info("[PhotosSection] Photo replaced successfully", {
-        userId,
-        photoIndex: currentIndex,
-        newUrl: newPhotoUrl
+      logger.info("Photo replaced", {
+        photoIndex: currentIndex
       });
 
       // Update the store with the new photo URL
@@ -131,22 +122,17 @@ export default function PhotosSection() {
       currentPhotos[currentIndex] = newPhotoUrl;
       useProfileSetupStore.getState().setProfileField("photos", currentPhotos);
 
-      logger.info("[PhotosSection] Updated store with new photo URL", {
-        userId,
-        photoIndex: currentIndex,
-        newUrl: newPhotoUrl
+      logger.debug("Updated store with new URL", {
+        photoIndex: currentIndex
       });
 
       // Update the profile in the database with the new photo URL
-      logger.info("[PhotosSection] Updating profile in database with new photo URL", {
-        userId,
-        photoIndex: currentIndex,
-        newUrl: newPhotoUrl
+      logger.debug("Updating profile in database", {
+        photoIndex: currentIndex
       });
       await profileApi.update(userId, { photos: currentPhotos });
 
-      logger.info("[PhotosSection] Profile updated in database with new photo URL", {
-        userId,
+      logger.info("Profile updated in database", {
         photoIndex: currentIndex
       });
 
