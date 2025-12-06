@@ -24,7 +24,7 @@ if (!(Text as any).defaultProps) (Text as any).defaultProps = {};
 (Text as any).defaultProps.style = [{ fontFamily: "Inter_400Regular" }];
 
 export default function RootLayout() {
-  logger.info("RootLayout: Rendering...");
+  logger.debug("RootLayout rendered");
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -39,7 +39,7 @@ export default function RootLayout() {
   // Restore session and fetch constants on app start
   useEffect(() => {
     (async () => {
-      logger.info("RootLayout: Restoring session and fetching constants...");
+      logger.debug("Restoring session and fetching constants");
       await restoreSession();
       await fetchConstants();
     })();
@@ -48,7 +48,7 @@ export default function RootLayout() {
   // Hide splash screen once fonts and auth check are ready
   useEffect(() => {
     if (fontsLoaded) {
-      logger.info("RootLayout: Fonts loaded, hiding splash screen");
+      logger.debug("Fonts loaded, hiding splash screen");
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
