@@ -26,11 +26,11 @@ export async function login(email: string, password: string) {
       setToken(token);
       setLoggedIn(true);
 
-      logger.info("AuthService: login success", { userId: res.user.id });
+      logger.info("Login successful", { userId: res.user.id });
       return { success: true };
     }
 
-    logger.warn("AuthService: login failed", { error: res?.error });
+    logger.debug("Login failed", { error: res?.error });
     return { success: false, error: res?.error || "Login failed" };
   } catch (err) {
     logger.error("AuthService: login error", { err });
@@ -48,12 +48,12 @@ export async function sendOtp(email: string) {
     const res = await AuthAPI.sendOtp(email);
 
     if (!res?.success) {
-      logger.warn("AuthService: sendOtp failed", { error: res?.error });
+      logger.debug("Send OTP failed", { error: res?.error });
       return { success: false, error: res?.error || "Failed to send OTP" };
     }
 
     setEmail(email);
-    logger.info("AuthService: sendOtp success", { email });
+    logger.info("OTP sent", { email });
     return { success: true };
   } catch (err) {
     logger.error("AuthService: sendOtp error", { err });
@@ -84,11 +84,11 @@ export async function verifyAndSignup(
       setToken(token);
       setLoggedIn(true);
 
-      logger.info("AuthService: signup success", { userId: res.user.id });
+      logger.info("Signup successful", { userId: res.user.id });
       return { success: true };
     }
 
-    logger.warn("AuthService: signup failed", { error: res?.error });
+    logger.debug("Signup failed", { error: res?.error });
     return { success: false, error: res?.error || "Signup failed" };
   } catch (err) {
     logger.error("AuthService: signup error", { err });
@@ -107,10 +107,10 @@ export async function signOut() {
     if (token) {
       try {
         await AuthAPI.signout(token);
-        logger.info("AuthService: signout API call successful");
+        logger.debug("Signout API call successful");
       } catch (err) {
         // Log but don't fail - the session might already be invalid
-        logger.warn("AuthService: signout API call failed", { err });
+        logger.debug("Signout API call failed", { err });
       }
     }
 
@@ -120,7 +120,7 @@ export async function signOut() {
     // Reset auth store state
     reset();
 
-    logger.info("AuthService: signout success");
+    logger.info("Logout successful");
     return { success: true };
   } catch (err) {
     logger.error("AuthService: signout error", { err });
@@ -141,7 +141,7 @@ export async function restoreSession() {
   try {
     const token = await getSecureItem(ACCESS_TOKEN_KEY);
     if (!token) {
-      logger.info("AuthService: no token found");
+      logger.debug("No token found");
       reset();
       return;
     }
@@ -156,11 +156,11 @@ export async function restoreSession() {
       setEmail(user.email || null);
       setToken(token); // Use the existing token, as getMe doesn't return a new one directly
       setLoggedIn(true);
-      logger.info("AuthService: session restored", { userId: user.id });
+      logger.info("Session restored", { userId: user.id });
     } else {
       await deleteSecureItem(ACCESS_TOKEN_KEY);
       reset();
-      logger.warn("AuthService: invalid/expired token; cleared");
+      logger.warn("Invalid or expired token cleared");
     }
   } catch (err) {
     logger.error("AuthService: restore session error", { err });
