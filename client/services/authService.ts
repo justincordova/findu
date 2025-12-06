@@ -9,6 +9,12 @@ import logger from "@/config/logger";
 
 const ACCESS_TOKEN_KEY = "accessToken";
 
+/**
+ * Authenticate user with email and password
+ * @param {string} email - User email address
+ * @param {string} password - User password
+ * @returns {Promise<{success: boolean; error?: string}>} Login result
+ */
 export async function login(email: string, password: string) {
   const { setUserId, setEmail, setToken, setLoggedIn, setLoading } =
     useAuthStore.getState();
@@ -40,6 +46,11 @@ export async function login(email: string, password: string) {
   }
 }
 
+/**
+ * Send OTP to user email for passwordless signup flow
+ * @param {string} email - User email address
+ * @returns {Promise<{success: boolean; error?: string}>} OTP send result
+ */
 export async function sendOtp(email: string) {
   const { setLoading, setEmail } = useAuthStore.getState();
   setLoading(true);
@@ -63,6 +74,13 @@ export async function sendOtp(email: string) {
   }
 }
 
+/**
+ * Verify OTP and create new user account
+ * @param {string} email - User email address
+ * @param {string} password - User password
+ * @param {string} otp - One-time password
+ * @returns {Promise<{success: boolean; error?: string}>} Signup result
+ */
 export async function verifyAndSignup(
   email: string,
   password: string,
@@ -98,6 +116,11 @@ export async function verifyAndSignup(
   }
 }
 
+/**
+ * Sign out current user and clear local auth state
+ * Calls backend logout if token exists, but clears state regardless
+ * @returns {Promise<{success: boolean; error?: string}>} Signout result
+ */
 export async function signOut() {
   const { token, reset, setLoading } = useAuthStore.getState();
   setLoading(true);
@@ -133,6 +156,11 @@ export async function signOut() {
   }
 }
 
+/**
+ * Restore user session from secure storage and validate token
+ * Called on app startup to check if user is still authenticated
+ * @returns {Promise<void>}
+ */
 export async function restoreSession() {
   const { setUserId, setEmail, setToken, setLoggedIn, setLoading, reset } =
     useAuthStore.getState();
@@ -147,14 +175,12 @@ export async function restoreSession() {
     }
 
     const res = await AuthAPI.getMe(token);
-
-    // The session object from better-auth is nested.
-    const user = res?.user; // Access user directly
+    const user = res?.user;
 
     if (user?.id) {
       setUserId(user.id);
       setEmail(user.email || null);
-      setToken(token); // Use the existing token, as getMe doesn't return a new one directly
+      setToken(token);
       setLoggedIn(true);
       logger.info("Session restored", { userId: user.id });
     } else {

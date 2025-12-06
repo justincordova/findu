@@ -3,8 +3,15 @@ import logger from "@/config/logger";
 
 const ENABLE_PERSISTENCE = process.env.EXPO_PUBLIC_ENABLE_PERSISTENCE !== "false";
 
-//Save a value under a given key
-export async function saveSecureItem(key: string, value: string) {
+/**
+ * Save a secure item (e.g., authentication token)
+ * Uses device native secure storage; respects persistence configuration
+ * @param {string} key - Storage key
+ * @param {string} value - Value to store
+ * @returns {Promise<void>}
+ * @throws {Error} If SecureStore operation fails
+ */
+export async function saveSecureItem(key: string, value: string): Promise<void> {
   if (!ENABLE_PERSISTENCE) {
     logger.debug("SecureStore persistence disabled; skipping save", { key });
     return;
@@ -18,7 +25,12 @@ export async function saveSecureItem(key: string, value: string) {
   }
 }
 
-//Retrieve a value by key
+/**
+ * Retrieve a secure item from device native storage
+ * Returns null if not found or if persistence is disabled
+ * @param {string} key - Storage key
+ * @returns {Promise<string | null>} Stored value or null if not found
+ */
 export async function getSecureItem(key: string): Promise<string | null> {
   if (!ENABLE_PERSISTENCE) {
     logger.debug("SecureStore persistence disabled; skipping get", { key });
@@ -34,8 +46,13 @@ export async function getSecureItem(key: string): Promise<string | null> {
   }
 }
 
-//Delete a value by key
-export async function deleteSecureItem(key: string) {
+/**
+ * Delete a secure item from device native storage
+ * Silently fails if key doesn't exist or persistence is disabled
+ * @param {string} key - Storage key to delete
+ * @returns {Promise<void>}
+ */
+export async function deleteSecureItem(key: string): Promise<void> {
   if (!ENABLE_PERSISTENCE) {
     logger.debug("SecureStore persistence disabled; skipping delete", { key });
     return;
