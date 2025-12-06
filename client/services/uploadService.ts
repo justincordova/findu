@@ -93,7 +93,7 @@ export async function uploadPhotos(
 ): Promise<string[]> {
   // Get existing photos from the store
   const existingPhotos = mode === "update"
-    ? (useProfileSetupStore.getState().data.photos ?? [])
+    ? (useProfileSetupStore.getState().data?.photos ?? [])
     : [];
 
   const startIndex = existingPhotos.length;
