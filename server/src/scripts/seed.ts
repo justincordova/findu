@@ -3,7 +3,7 @@ import * as bcrypt from "bcrypt";
 import * as fs from "fs";
 import * as path from "path";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { CANONICAL_INTERESTS } from "@/constants/interests";
+import { INTERESTS } from "@/constants/interests";
 import { INTENTS } from "@/constants/intents";
 import { MAJORS } from "@/constants/majors";
 import { GENDER_PREFERENCES } from "@/constants/genderPreferences";
@@ -18,20 +18,20 @@ password123
 const prisma = new PrismaClient();
 
 /**
- * Pick diverse canonical interests for seed data.
- * Dynamically selects interests from the canonical interests library.
+ * Pick diverse interests for seed data from organized interests categories.
+ * Each user gets 3 interests, selecting from different categories.
  * All users have at least 3 diverse interests to ensure a complete profile.
  */
 function getInterestsForUser(userIndex: number): string[] {
-  // Use a deterministic approach: distribute interests evenly across all canonical interests
-  // Each user gets 3 interests, starting from different positions in the array
-  const interestCount = 3;
-  const startIndex = (userIndex * interestCount) % CANONICAL_INTERESTS.length;
-
+  const categories = Object.values(INTERESTS);
   const selected: string[] = [];
-  for (let i = 0; i < interestCount; i++) {
-    const idx = (startIndex + i) % CANONICAL_INTERESTS.length;
-    selected.push(CANONICAL_INTERESTS[idx]);
+
+  // Get one interest from each of the first 3 categories (cycling through if needed)
+  for (let i = 0; i < 3; i++) {
+    const categoryIdx = (userIndex + i) % categories.length;
+    const category = categories[categoryIdx];
+    const interestIdx = userIndex % category.length;
+    selected.push(category[interestIdx]);
   }
 
   return selected;
