@@ -17,12 +17,11 @@ import DropDownPicker from "react-native-dropdown-picker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 // Project imports
-import { BACKGROUND, DANGER, DARK, MUTED } from "@/constants/theme";
+import { BACKGROUND, DANGER, DARK, MUTED, SECONDARY } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
 
 // Types
 interface Step2Props {
-  onBack?: () => void;
   onNext?: () => void;
   onValidityChange?: (isValid: boolean) => void;
 }
@@ -32,7 +31,7 @@ type DropdownKey = "gender" | "pronouns" | null;
 /**
  * Step 2: Personal information - name, gender, pronouns, and birthdate
  */
-export default function Step2({ onBack, onNext, onValidityChange }: Step2Props) {
+export default function Step2({ onNext, onValidityChange }: Step2Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
@@ -122,9 +121,14 @@ export default function Step2({ onBack, onNext, onValidityChange }: Step2Props) 
 
       {/* Name */}
       <View style={styles.fieldContainer}>
-        <Text style={styles.label}>First Name *</Text>
+        <View style={styles.labelWithIcon}>
+          <Text style={styles.label}>First Name</Text>
+        </View>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            profileData?.name?.trim() && styles.inputCompleted,
+          ]}
           placeholder="Enter your first name"
           placeholderTextColor={MUTED}
           value={profileData?.name ?? ""}
@@ -137,9 +141,14 @@ export default function Step2({ onBack, onNext, onValidityChange }: Step2Props) 
 
       {/* Birthdate */}
       <View style={styles.fieldContainer}>
-        <Text style={styles.label}>Birthdate *</Text>
+        <View style={styles.labelWithIcon}>
+          <Text style={styles.label}>Birthdate</Text>
+        </View>
         <TouchableOpacity
-          style={styles.datePickerButton}
+          style={[
+            styles.datePickerButton,
+            profileData?.birthdate && styles.datePickerButtonCompleted,
+          ]}
           onPress={handleDatePickerOpen}
         >
           <Text
@@ -172,7 +181,9 @@ export default function Step2({ onBack, onNext, onValidityChange }: Step2Props) 
 
       {/* Gender */}
       <View style={[styles.fieldContainer, { zIndex: getZIndex("gender", 2) }]}>
-        <Text style={styles.label}>Gender *</Text>
+        <View style={styles.labelWithIcon}>
+          <Text style={styles.label}>Gender</Text>
+        </View>
         <DropDownPicker<string>
           placeholder="Select your gender"
           open={activeDropdown === "gender"}
@@ -188,7 +199,10 @@ export default function Step2({ onBack, onNext, onValidityChange }: Step2Props) 
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
-          style={styles.dropdown}
+          style={[
+            styles.dropdown,
+            profileData?.gender && { borderColor: SECONDARY, borderWidth: 2 },
+          ]}
           dropDownContainerStyle={[
             styles.dropdownContainer,
             { maxHeight: screenHeight * 0.4 },
@@ -200,7 +214,9 @@ export default function Step2({ onBack, onNext, onValidityChange }: Step2Props) 
       <View
         style={[styles.fieldContainer, { zIndex: getZIndex("pronouns", 1) }]}
       >
-        <Text style={styles.label}>Pronouns *</Text>
+        <View style={styles.labelWithIcon}>
+          <Text style={styles.label}>Pronouns</Text>
+        </View>
         <DropDownPicker<string>
           placeholder="Select your pronouns"
           open={activeDropdown === "pronouns"}
@@ -216,7 +232,10 @@ export default function Step2({ onBack, onNext, onValidityChange }: Step2Props) 
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
-          style={styles.dropdown}
+          style={[
+            styles.dropdown,
+            profileData?.pronouns && { borderColor: SECONDARY, borderWidth: 2 },
+          ]}
           dropDownContainerStyle={[
             styles.dropdownContainer,
             { maxHeight: screenHeight * 0.4 },
@@ -231,9 +250,9 @@ export default function Step2({ onBack, onNext, onValidityChange }: Step2Props) 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingVertical: 12,
     backgroundColor: BACKGROUND,
   },
   title: {
@@ -249,47 +268,78 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     textAlign: "center",
   },
-  fieldContainer: { marginBottom: 24, position: "relative" },
-  label: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: DARK,
+  fieldContainer: { marginBottom: 22, position: "relative" },
+  labelWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 8,
     marginBottom: 8,
-    textAlign: "center",
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: DARK,
+    marginBottom: 0,
+    textAlign: "left",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   input: {
     width: "100%",
-    padding: 16,
-    backgroundColor: BACKGROUND,
+    padding: 14,
+    backgroundColor: "#FAFAFA",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: "#E5E7EB",
     fontSize: 16,
     color: DARK,
   },
+  inputCompleted: {
+    borderColor: SECONDARY,
+    borderWidth: 2,
+  },
   datePickerButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: BACKGROUND,
-    alignItems: "center",
+    borderColor: "#E5E7EB",
+    backgroundColor: "#FAFAFA",
+    alignItems: "flex-start",
     justifyContent: "center",
+    flexDirection: "row",
+    gap: 10,
   },
-  datePickerText: { fontSize: 16, color: DARK },
-  errorText: { color: DANGER, marginTop: 4, fontSize: 14, textAlign: "center" },
+  datePickerButtonCompleted: {
+    borderColor: SECONDARY,
+    borderWidth: 2,
+  },
+  datePickerText: {
+    fontSize: 16,
+    color: DARK,
+    fontWeight: "500",
+  },
+  errorText: {
+    color: DANGER,
+    marginTop: 6,
+    fontSize: 13,
+    textAlign: "left",
+    fontWeight: "500",
+  },
   dropdown: {
-    backgroundColor: BACKGROUND,
-    borderColor: "#e5e7eb",
+    backgroundColor: "#FAFAFA",
+    borderColor: "#E5E7EB",
     borderRadius: 12,
-    minHeight: 44,
-    paddingHorizontal: 8,
-    marginBottom: 8,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 0,
   },
   dropdownContainer: {
-    backgroundColor: BACKGROUND,
-    borderColor: "#e5e7eb",
+    backgroundColor: "white",
+    borderColor: "#E5E7EB",
     borderRadius: 12,
+    borderWidth: 1,
   },
 });

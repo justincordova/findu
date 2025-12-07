@@ -25,7 +25,6 @@ const PHOTO_SIZE = (SCREEN_WIDTH - 64) / 2.5; // Bigger photos, 2.5 per row conc
 
 // Types
 interface Step8Props {
-  onBack?: () => void;
   onValidityChange?: (isValid: boolean) => void;
 }
 
@@ -33,7 +32,6 @@ interface Step8Props {
  * Step 8: Photos - upload up to 6 profile photos
  */
 export default function Step8({
-  onBack,
   onValidityChange,
 }: Step8Props) {
   const profileData = useProfileSetupStore((state) => state.data);
@@ -80,12 +78,6 @@ export default function Step8({
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      {onBack && (
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={DARK} />
-        </TouchableOpacity>
-      )}
       <Text style={styles.title}>Add your photos</Text>
       <Text style={styles.subtitle}>Add up to 6 photos for your profile</Text>
 
@@ -137,12 +129,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 32,
     backgroundColor: BACKGROUND,
-  },
-  backButton: {
-    position: "absolute",
-    top: 48,
-    left: 24,
-    zIndex: 10,
   },
   contentContainer: {
     flex: 1,

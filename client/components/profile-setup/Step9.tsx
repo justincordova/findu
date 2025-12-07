@@ -11,10 +11,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
 
 // Third-party
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 
 // Project imports
 import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
@@ -30,9 +29,9 @@ type ProfileData = Partial<Profile> & {
 };
 
 interface Step9Props {
-  onBack?: () => void;
   onNext: () => void;
   onValidityChange?: (isValid: boolean) => void;
+  goToStep?: (step: string) => void;
 }
 
 /**
@@ -60,44 +59,38 @@ function formatLabel(field: string): string {
 }
 
 export default function Step9({
-  onBack,
   onNext,
   onValidityChange,
+  goToStep,
 }: Step9Props) {
+  const router = useRouter();
   const authState = useAuthStore.getState();
   const rawProfileData = useProfileSetupStore((state) => state.data);
   const profileData: ProfileData = useMemo(() => rawProfileData ?? {}, [rawProfileData]);
 
   const [submitting, setSubmitting] = useState(false);
-  const router = useRouter();
 
   const fieldToStep: Record<string, string> = {
-    name: "step1",
-    birthdate: "step1",
-    gender: "step1",
+    name: "step2",
+    birthdate: "step2",
+    gender: "step2",
     pronouns: "step2",
-    intent: "step3",
-    min_age: "step4",
-    max_age: "step4",
-    sexual_orientation: "step3",
-    gender_preference: "step3",
-    bio: "step5",
-    avatar_url: "step5",
-    interests: "step6",
-    photos: "step7",
-    university_name: "step2",
-    campus_name: "step2",
-    major: "step2",
-    university_year: "step2",
-    grad_year: "step2",
+    university_name: "step3",
+    campus_name: "step3",
+    major: "step3",
+    university_year: "step3",
+    grad_year: "step3",
+    sexual_orientation: "step4",
+    gender_preference: "step4",
+    intent: "step4",
+    min_age: "step5",
+    max_age: "step5",
+    bio: "step6",
+    avatar_url: "step6",
+    interests: "step7",
+    photos: "step8",
   };
 
-  const goBackToStep = useCallback(
-    (step: string) => {
-      onBack?.();
-    },
-    [onBack]
-  );
 
   const renderValue = useCallback(
     (field: keyof ProfileData) => {
@@ -117,6 +110,7 @@ export default function Step9({
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
+
   /** Handle finishing the profile submission */
   const handleFinish = useCallback(async () => {
     setSubmitting(true);
@@ -131,142 +125,188 @@ export default function Step9({
       }
 
       await handleSubmitProfile(userId);
+      // Navigate to main app after successful submission
       router.replace("/home/(tabs)/discover");
     } catch (err) {
       console.error("Error submitting profile:", err);
-    } finally {
       setSubmitting(false);
     }
   }, [authState.userId, authState.token, router]);
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        {onBack && (
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={DARK} />
-          </TouchableOpacity>
-        )}
-        <Text style={styles.title}>Review your profile</Text>
-        <Text style={styles.subtitle}>Tap any item to edit</Text>
-      </View>
-
-      <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-        <View style={styles.contentContainer}>
-        {/* Basic Info */}
-        <Text style={styles.sectionTitle}>Basic Info</Text>
-        {["name", "birthdate", "gender", "pronouns"].map((field) => (
-          <TouchableOpacity
-            key={field}
-            style={styles.infoRow}
-            onPress={() => goBackToStep(fieldToStep[field])}
-          >
-            <Text style={styles.infoLabel}>{formatLabel(field)}:</Text>
-            <Text style={styles.infoValue}>
-              {renderValue(field as keyof ProfileData)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-
-        {/* Academic Info */}
-        <Text style={styles.sectionTitle}>Academic Info</Text>
-        {["university_name", "campus_name", "major", "university_year", "grad_year"].map(
-          (field) => (
-            <TouchableOpacity
-              key={field}
-              style={styles.infoRow}
-              onPress={() => goBackToStep(fieldToStep[field])}
-            >
-              <Text style={styles.infoLabel}>{formatLabel(field)}:</Text>
-              <Text style={styles.infoValue}>
-                {renderValue(field as keyof ProfileData)}
-              </Text>
-            </TouchableOpacity>
-          )
-        )}
-
-        {/* Preferences */}
-        <Text style={styles.sectionTitle}>Preferences</Text>
-        {["intent", "min_age", "max_age", "sexual_orientation", "gender_preference"].map(
-          (field) => (
-            <TouchableOpacity
-              key={field}
-              style={styles.infoRow}
-              onPress={() => goBackToStep(fieldToStep[field])}
-            >
-              <Text style={styles.infoLabel}>{formatLabel(field)}:</Text>
-              <Text style={styles.infoValue}>
-                {renderValue(field as keyof ProfileData)}
-              </Text>
-            </TouchableOpacity>
-          )
-        )}
-
-        {/* Bio */}
-        <Text style={styles.sectionTitle}>Bio</Text>
-        <TouchableOpacity
-          style={styles.infoRow}
-          onPress={() => goBackToStep("step5")}
-        >
-          <Text style={styles.infoLabel}>Bio:</Text>
-          <Text style={styles.infoValue}>{profileData?.bio || "Not set"}</Text>
-        </TouchableOpacity>
-
-        {/* Avatar */}
-        <Text style={styles.sectionTitle}>Profile Picture</Text>
-        <TouchableOpacity
-          style={styles.infoRow}
-          onPress={() => goBackToStep("step5")}
-        >
-          {profileData?.avatar_url ? (
-            <Image
-              source={{ uri: profileData.avatar_url }}
-              style={styles.avatar}
-            />
-          ) : (
-            <Text style={{ color: MUTED }}>No avatar selected</Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Photos */}
-        <Text style={styles.sectionTitle}>Photos</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.photosContainer}
-        >
-          {profileData?.photos && profileData.photos.length > 0 ? (
-            profileData.photos.map((uri: string, idx: number) => (
-              <TouchableOpacity key={idx} onPress={() => goBackToStep("step6")}>
-                <Image source={{ uri }} style={styles.photo} />
-              </TouchableOpacity>
-            ))
-          ) : (
-            <Text style={{ color: MUTED }}>No photos added</Text>
-          )}
-        </ScrollView>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Review your profile</Text>
+          <Text style={styles.subtitle}>Tap any section to edit</Text>
         </View>
+
+        {/* Basic Info Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Basic Information</Text>
+            <View style={styles.sectionDivider} />
+          </View>
+          <View style={styles.sectionContent}>
+            {["name", "birthdate", "gender", "pronouns"].map((field, idx) => (
+              <TouchableOpacity
+                key={field}
+                style={[
+                  styles.fieldRow,
+                  idx !== 3 && styles.fieldRowBorder,
+                ]}
+                onPress={() => goToStep?.(fieldToStep[field])}
+                activeOpacity={0.6}
+              >
+                <View style={styles.fieldLeft}>
+                  <Text style={styles.fieldLabel}>{formatLabel(field)}</Text>
+                </View>
+                <Text style={styles.fieldValue} numberOfLines={2}>
+                  {renderValue(field as keyof ProfileData)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Academic Info Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Academic Details</Text>
+            <View style={styles.sectionDivider} />
+          </View>
+          <View style={styles.sectionContent}>
+            {["university_name", "campus_name", "major", "university_year", "grad_year"].map(
+              (field, idx) => (
+                <TouchableOpacity
+                  key={field}
+                  style={[
+                    styles.fieldRow,
+                    idx !== 4 && styles.fieldRowBorder,
+                  ]}
+                  onPress={() => goToStep?.(fieldToStep[field])}
+                  activeOpacity={0.6}
+                >
+                  <View style={styles.fieldLeft}>
+                    <Text style={styles.fieldLabel}>{formatLabel(field)}</Text>
+                  </View>
+                  <Text style={styles.fieldValue} numberOfLines={2}>
+                    {renderValue(field as keyof ProfileData)}
+                  </Text>
+                </TouchableOpacity>
+              )
+            )}
+          </View>
+        </View>
+
+        {/* Preferences Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Preferences</Text>
+            <View style={styles.sectionDivider} />
+          </View>
+          <View style={styles.sectionContent}>
+            {["sexual_orientation", "gender_preference", "intent", "min_age", "max_age"].map(
+              (field, idx) => (
+                <TouchableOpacity
+                  key={field}
+                  style={[
+                    styles.fieldRow,
+                    idx !== 4 && styles.fieldRowBorder,
+                  ]}
+                  onPress={() => goToStep?.(fieldToStep[field])}
+                  activeOpacity={0.6}
+                >
+                  <View style={styles.fieldLeft}>
+                    <Text style={styles.fieldLabel}>{formatLabel(field)}</Text>
+                  </View>
+                  <Text style={styles.fieldValue} numberOfLines={2}>
+                    {renderValue(field as keyof ProfileData)}
+                  </Text>
+                </TouchableOpacity>
+              )
+            )}
+          </View>
+        </View>
+
+        {/* Visual Content Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Your Story</Text>
+            <View style={styles.sectionDivider} />
+          </View>
+          <View style={styles.sectionContent}>
+            {/* Bio */}
+            <TouchableOpacity
+              style={styles.bioSection}
+              onPress={() => goToStep?.("step6")}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.bioLabel}>Bio</Text>
+              <Text style={styles.bioValue}>
+                {profileData?.bio || "No bio added"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Avatar */}
+            {profileData?.avatar_url && (
+              <TouchableOpacity
+                style={styles.avatarSection}
+                onPress={() => goToStep?.("step6")}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.avatarLabel}>Profile Picture</Text>
+                <Image
+                  source={{ uri: profileData.avatar_url }}
+                  style={styles.avatar}
+                />
+              </TouchableOpacity>
+            )}
+
+            {/* Photos */}
+            {profileData?.photos && profileData.photos.length > 0 && (
+              <View style={styles.photosSection}>
+                <Text style={styles.photosLabel}>Photos ({profileData.photos.length})</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.photosContainer}
+                >
+                  {profileData.photos.map((uri: string, idx: number) => (
+                    <TouchableOpacity
+                      key={idx}
+                      onPress={() => goToStep?.("step8")}
+                      activeOpacity={0.7}
+                    >
+                      <Image source={{ uri }} style={styles.photoItem} />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Spacer */}
+        <View style={styles.bottomSpacer} />
       </ScrollView>
 
       {/* Finish Button */}
-      <TouchableOpacity
-        onPress={handleFinish}
-        disabled={submitting || !isValid}
-        style={[styles.button, (!isValid || submitting) && styles.buttonDisabled]}
-      >
-        {submitting ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text
-            style={[
-              styles.buttonText,
-              (!isValid || submitting) && styles.buttonTextDisabled,
-            ]}
-          >
-            Finish
-          </Text>
-        )}
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          onPress={handleFinish}
+          disabled={submitting || !isValid}
+          style={[styles.button, (submitting) && styles.buttonDisabled]}
+          activeOpacity={0.8}
+        >
+          {submitting ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.buttonText}>Complete Profile</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -274,22 +314,19 @@ export default function Step9({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 32,
     backgroundColor: BACKGROUND,
   },
-  header: {
-    marginBottom: 16,
+  scrollView: {
+    flex: 1,
   },
-  backButton: {
-    position: "absolute",
-    top: 48,
-    left: 24,
-    zIndex: 10,
+  header: {
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    paddingBottom: 24,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 32,
+    fontWeight: "800",
     color: DARK,
     marginBottom: 8,
     textAlign: "center",
@@ -298,44 +335,174 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: MUTED,
     textAlign: "center",
-    marginBottom: 16,
+    fontWeight: "500",
   },
-  form: { flex: 1 },
-  contentContainer: {
-    paddingTop: 80,
+  // Section styling
+  section: {
+    marginHorizontal: 24,
+    marginBottom: 28,
+    backgroundColor: "white",
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sectionHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#f9fafb",
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
     color: DARK,
-    marginBottom: 12,
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  infoRow: {
+  sectionDivider: {
+    height: 3,
+    backgroundColor: PRIMARY,
+    borderRadius: 1.5,
+    width: 32,
+    marginTop: 4,
+  },
+  sectionContent: {
+    paddingHorizontal: 0,
+  },
+  // Field row styling
+  fieldRow: {
     flexDirection: "row",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    gap: 12,
   },
-  infoLabel: { fontSize: 14, color: MUTED, fontWeight: "500" },
-  infoValue: { fontSize: 14, color: DARK, fontWeight: "500" },
-  avatar: { width: 100, height: 100, borderRadius: 12 },
-  photosContainer: { flexDirection: "row", gap: 12 },
-  photo: { width: 100, height: 100, borderRadius: 12 },
+  fieldRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  fieldLeft: {
+    flex: 0,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: MUTED,
+    textTransform: "capitalize",
+    minWidth: 100,
+  },
+  fieldValue: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "500",
+    color: DARK,
+    textAlign: "right",
+  },
+  // Bio section
+  bioSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  bioLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: MUTED,
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  bioValue: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: DARK,
+    lineHeight: 22,
+  },
+  // Avatar section
+  avatarSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  avatarLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: MUTED,
+    marginBottom: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 16,
+    backgroundColor: "#f3f4f6",
+  },
+  // Photos section
+  photosSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  photosLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: MUTED,
+    marginBottom: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  photosContainer: {
+    flexDirection: "row",
+    gap: 12,
+    paddingRight: 20,
+  },
+  photoItem: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    backgroundColor: "#f3f4f6",
+  },
+  // Spacing
+  bottomSpacer: {
+    height: 0,
+  },
+  // Button container
+  buttonContainer: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    paddingBottom: 32,
+    backgroundColor: BACKGROUND,
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
+  },
   button: {
     width: "100%",
     backgroundColor: PRIMARY,
     paddingVertical: 16,
-    borderRadius: 12,
-    marginTop: 32,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  buttonDisabled: { backgroundColor: "#d1d5db" },
+  buttonDisabled: {
+    backgroundColor: "#d1d5db",
+    opacity: 0.6,
+  },
   buttonText: {
     color: "white",
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
     textAlign: "center",
   },
-  buttonTextDisabled: { color: MUTED },
+  buttonTextDisabled: {
+    color: MUTED,
+  },
 });

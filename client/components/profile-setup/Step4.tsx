@@ -6,17 +6,15 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 // Third-party
 import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
-import { Ionicons } from "@expo/vector-icons";
 
 // Project imports
-import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
+import { BACKGROUND, DARK, MUTED, SECONDARY, GRADIENT } from "@/constants/theme";
+import { LinearGradient } from "expo-linear-gradient";
 import { useProfileSetupStore } from "@/store/profileStore";
 import { useConstantsStore } from "@/store/constantsStore";
-import AgeRangeSlider from "@/components/shared/AgeRangeSlider";
 
 // Types
 interface Step4Props {
-  onBack?: () => void;
   onValidityChange?: (isValid: boolean) => void;
 }
 
@@ -24,7 +22,6 @@ interface Step4Props {
  * Step 4: Preferences - sexual orientation and age range
  */
 export default function Step4({
-  onBack,
   onValidityChange,
 }: Step4Props) {
   const profileData = useProfileSetupStore((state) => state.data);
@@ -34,14 +31,6 @@ export default function Step4({
   /** Active dropdown state for orientation */
   const [activeDropdown, setActiveDropdown] = useState<"orientation" | null>(
     null
-  );
-
- const handleSliderChange = useCallback(
-    (low: number, high: number) => {
-      setProfileField("min_age", low);
-      setProfileField("max_age", high);
-    },
-    [setProfileField]
   );
 
   /** Dropdown items */
@@ -135,13 +124,10 @@ export default function Step4({
 
   return (
     <View style={styles.container}>
-      {onBack && (
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={DARK} />
-        </TouchableOpacity>
-      )}
-      <Text style={styles.title}>Preferences</Text>
-      <Text style={styles.subtitle}>Tell us about yourself</Text>
+      <View style={styles.headerSection}>
+        <Text style={styles.title}>Preferences</Text>
+        <Text style={styles.subtitle}>Tell us about yourself</Text>
+      </View>
 
       {/* Sexual Orientation */}
       <View
@@ -150,7 +136,9 @@ export default function Step4({
           { zIndex: getZIndex("orientation", 2000) },
         ]}
       >
-        <Text style={styles.label}>Sexual Orientation</Text>
+        <View style={styles.labelWithIcon}>
+          <Text style={styles.label}>Sexual Orientation</Text>
+        </View>
         <DropDownPicker<string>
           placeholder="Select orientation"
           open={activeDropdown === "orientation"}
@@ -166,7 +154,10 @@ export default function Step4({
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
-          style={styles.dropdown}
+          style={[
+            styles.dropdown,
+            profileData?.sexual_orientation ? { borderColor: SECONDARY, borderWidth: 2 } : undefined,
+          ]}
           dropDownContainerStyle={[
             styles.dropdownContainer,
             { position: "absolute", zIndex: getZIndex("orientation", 2000) },
@@ -176,83 +167,114 @@ export default function Step4({
 
       {/* Gender Preference (multi-select tap boxes) */}
       <View style={styles.fieldContainer}>
-        <Text style={styles.label}>Preferred Gender(s)</Text>
+        <View style={styles.labelWithIcon}>
+          <Text style={styles.label}>Preferred Gender(s)</Text>
+        </View>
         <View style={styles.intentContainer}>
-          {genderOptions.map((gender) => (
-            <TouchableOpacity
-              key={gender}
-              onPress={() => toggleGenderPreference(gender)}
-              style={[
-                styles.intentBox,
-                isGenderSelected(gender) && styles.intentBoxSelected,
-                (profileData?.gender_preference?.includes("All") && gender !== "All") && styles.disabled,
-              ]}
-              disabled={profileData?.gender_preference?.includes("All") && gender !== "All"}
-            >
-              <Text
-                style={[
-                  styles.intentText,
-                  isGenderSelected(gender) && styles.intentTextSelected,
-                ]}
+          {genderOptions.map((gender) => {
+            const selected = isGenderSelected(gender);
+            const disabled = profileData?.gender_preference?.includes("All") && gender !== "All";
+
+            return selected && !disabled ? (
+              <LinearGradient
+                key={gender}
+                colors={GRADIENT}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.intentBox}
               >
-                {gender}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <TouchableOpacity
+                  onPress={() => toggleGenderPreference(gender)}
+                  style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                >
+                  <Text style={[styles.intentText, styles.intentTextSelected]}>
+                    {gender}
+                  </Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            ) : (
+              <TouchableOpacity
+                key={gender}
+                onPress={() => toggleGenderPreference(gender)}
+                style={[
+                  styles.intentBox,
+                  disabled && styles.disabled,
+                ]}
+                disabled={disabled}
+              >
+                <Text
+                  style={[
+                    styles.intentText,
+                    selected && styles.intentTextSelected,
+                  ]}
+                >
+                  {gender}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
       {/* Intent Selection */}
       <View style={styles.fieldContainer}>
-        <Text style={styles.label}>Looking For</Text>
+        <View style={styles.labelWithIcon}>
+          <Text style={styles.label}>Looking For</Text>
+        </View>
         <View style={styles.intentContainer}>
-          {intentOptions.map((intent) => (
-            <TouchableOpacity
-              key={intent}
-              onPress={() => toggleIntent(intent)}
-              style={[
-                styles.intentBox,
-                isIntentSelected(intent) && styles.intentBoxSelected,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.intentText,
-                  isIntentSelected(intent) && styles.intentTextSelected,
-                ]}
+          {intentOptions.map((intent) => {
+            const selected = isIntentSelected(intent);
+
+            return selected ? (
+              <LinearGradient
+                key={intent}
+                colors={GRADIENT}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.intentBox}
               >
-                {intent}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <TouchableOpacity
+                  onPress={() => toggleIntent(intent)}
+                  style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                >
+                  <Text style={[styles.intentText, styles.intentTextSelected]}>
+                    {intent}
+                  </Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            ) : (
+              <TouchableOpacity
+                key={intent}
+                onPress={() => toggleIntent(intent)}
+                style={styles.intentBox}
+              >
+                <Text style={styles.intentText}>
+                  {intent}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
+
+      <View style={{ height: 16 }} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: "center",
     paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingVertical: 12,
     backgroundColor: BACKGROUND,
   },
-  backButton: {
-    position: "absolute",
-    top: 48,
-    left: 24,
-    zIndex: 10,
-  },
-  contentContainer: {
-    flex: 1,
-    justifyContent: "center",
-    paddingTop: 80,
+  headerSection: {
+    marginBottom: 28,
+    alignItems: "center",
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 28,
+    fontWeight: "800",
     color: DARK,
     marginBottom: 8,
     textAlign: "center",
@@ -260,15 +282,22 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: MUTED,
-    marginBottom: 32,
     textAlign: "center",
+    lineHeight: 22,
   },
   fieldContainer: { marginBottom: 24, position: "relative" },
+  labelWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
   label: {
     fontSize: 16,
     fontWeight: "500",
     color: DARK,
-    marginBottom: 8,
+    marginBottom: 0,
     textAlign: "center",
   },
   dropdown: {
@@ -303,8 +332,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   intentBoxSelected: {
-    backgroundColor: PRIMARY,
-    borderColor: PRIMARY,
+    backgroundColor: "transparent",
+    borderColor: "transparent",
   },
   intentText: { fontSize: 14, color: DARK, textAlign: "center" },
   intentTextSelected: { color: "white", fontWeight: "600" },
