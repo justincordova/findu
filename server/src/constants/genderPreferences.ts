@@ -6,8 +6,10 @@ export const GENDER_PREFERENCES = [
   "Men",
   "Women",
   "Non-binary",
-  "All",
+  "Trans Men",
+  "Trans Women",
   "Other",
+  "All",
 ] as const;
 
 export type GenderPreference = typeof GENDER_PREFERENCES[number];

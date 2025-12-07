@@ -3,10 +3,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 // React Native
 import {
-  Animated,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -24,13 +20,13 @@ import {
   DARK,
   MUTED,
   PRIMARY,
+  SECONDARY,
   SUCCESS,
 } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
 
 // Types
 interface Step6Props {
-  onBack?: () => void;
   onValidityChange?: (isValid: boolean) => void;
 }
 
@@ -38,14 +34,12 @@ interface Step6Props {
  * Step 6: Bio and interests - write bio and select interests
  */
 export default function Step6({
-  onBack,
   onValidityChange,
 }: Step6Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
   const [photoUploaded, setPhotoUploaded] = useState(false);
-  const keyboardHeight = useState(new Animated.Value(0))[0];
 
   /** Pick image from library */
   const pickImage = useCallback(async () => {
@@ -80,60 +74,28 @@ export default function Step6({
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
-  /** Keyboard listeners for ScrollView adjustment */
-  useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardWillShow", (e) => {
-      Animated.timing(keyboardHeight, {
-        toValue: e.endCoordinates.height,
-        duration: 250,
-        useNativeDriver: false,
-      }).start();
-    });
-    const hideSub = Keyboard.addListener("keyboardWillHide", () => {
-      Animated.timing(keyboardHeight, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: false,
-      }).start();
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
-    >
-      <Animated.ScrollView
-        contentContainerStyle={[
-          styles.container,
-          { paddingBottom: keyboardHeight },
-        ]}
-        keyboardShouldPersistTaps="handled"
-      >
-        {onBack && (
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={DARK} />
-          </TouchableOpacity>
-        )}
-
-        <View style={styles.contentContainer}>
-          <Text style={styles.title}>Profile Details</Text>
-          <Text style={styles.subtitle}>
-            Add a bio and profile picture
-          </Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Profile Details</Text>
+      <Text style={styles.subtitle}>
+        Add a bio and profile picture
+      </Text>
 
         {/* Profile Picture */}
         <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Profile Picture</Text>
+          <View style={styles.labelWithCheckmark}>
+            <Text style={styles.label}>Profile Picture</Text>
+            {profileData?.avatar_url && (
+              <View style={styles.checkmarkBadge}>
+                <Ionicons name="checkmark-circle" size={18} color={SUCCESS} />
+              </View>
+            )}
+          </View>
           <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
             <Ionicons name="camera" size={20} color="white" />
-            <Text style={styles.uploadButtonText}>Upload</Text>
+            <Text style={styles.uploadButtonText}>
+              {profileData?.avatar_url ? "Change Photo" : "Upload Photo"}
+            </Text>
           </TouchableOpacity>
           {photoUploaded && (
             <Text style={styles.uploadSuccess}>Uploaded ✓</Text>
@@ -142,9 +104,14 @@ export default function Step6({
 
         {/* Bio */}
         <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Bio</Text>
+          <View style={styles.labelWithCheckmark}>
+            <Text style={styles.label}>Bio</Text>
+          </View>
           <TextInput
-            style={styles.bioInput}
+            style={[
+              styles.bioInput,
+              profileData?.bio?.trim() && styles.bioInputCompleted,
+            ]}
             placeholder="Tell us about yourself..."
             value={profileData?.bio ?? ""}
             onChangeText={(text) => setProfileField("bio", text)}
@@ -157,27 +124,15 @@ export default function Step6({
             {(profileData?.bio ?? "").length}/500
           </Text>
         </View>
-        </View>
-      </Animated.ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingVertical: 12,
     backgroundColor: BACKGROUND,
-  },
-  backButton: {
-    position: "absolute",
-    top: 48,
-    left: 24,
-    zIndex: 10,
-  },
-  contentContainer: {
-    paddingTop: 80,
   },
   title: {
     fontSize: 24,
@@ -193,12 +148,22 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   fieldContainer: { marginBottom: 24, alignItems: "center" },
+  labelWithCheckmark: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
   label: {
     fontSize: 16,
     fontWeight: "500",
     color: DARK,
-    marginBottom: 8,
     textAlign: "center",
+  },
+  checkmarkBadge: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   uploadButton: {
     flexDirection: "row",
@@ -229,6 +194,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e5e7eb",
     textAlignVertical: "top",
+  },
+  bioInputCompleted: {
+    borderColor: SECONDARY,
+    borderWidth: 2,
   },
   characterCount: {
     textAlign: "right",

@@ -9,6 +9,7 @@ export interface Constants {
   genderPreferences: string[];
   sexualOrientations: string[];
   pronouns: string[];
+  interests: Record<string, string[]>;
 }
 
 /**

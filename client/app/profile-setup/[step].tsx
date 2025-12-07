@@ -3,7 +3,8 @@ import React, { useCallback, useState } from "react";
 
 // React Native
 import { SafeAreaView } from "react-native-safe-area-context";
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 // Project imports
 import Button from "@/components/shared/Button";
@@ -43,6 +44,51 @@ const CONTENT_PADDING_HORIZONTAL = 24;
  * Displays progress indicator and validates each step before advancing
  */
 
+/** Check if all required profile fields are filled */
+function isProfileComplete(data: any): boolean {
+  if (!data) return false;
+
+  const requiredFields = [
+    'name',
+    'birthdate',
+    'gender',
+    'pronouns',
+    'university_name',
+    'major',
+    'university_year',
+    'grad_year',
+    'sexual_orientation',
+    'gender_preference',
+    'intent',
+    'min_age',
+    'max_age',
+    'avatar_url',
+    'bio',
+    'interests',
+    'photos',
+  ];
+
+  return requiredFields.every((field) => {
+    const value = data[field];
+
+    // Handle arrays (interests, photos, gender_preference)
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+
+    // Handle strings and numbers
+    if (typeof value === 'string') {
+      return value.trim().length > 0;
+    }
+
+    if (typeof value === 'number') {
+      return value > 0;
+    }
+
+    return !!value;
+  });
+}
+
 export default function ProfileSetupStep() {
   const [currentStep, setCurrentStep] = useState<Step>("step1");
   const [isCurrentStepValid, setIsCurrentStepValid] = useState(false);
@@ -65,12 +111,20 @@ export default function ProfileSetupStep() {
     setIsCurrentStepValid(true);
   }, [currentStep]);
 
+  // Navigate to a specific step (used by Step9)
+  const goToStep = useCallback((step: string) => {
+    if (STEPS.includes(step as Step)) {
+      setCurrentStep(step as Step);
+      setIsCurrentStepValid(true);
+    }
+  }, []);
+
   const stepProps = {
     data: profileData,
     onUpdate: setProfileField,
     onNext: goToNextStep,
-    onBack: goToPreviousStep,
     onValidityChange: setIsCurrentStepValid,
+    goToStep: goToStep,
   };
 
   const renderStep = () => {
@@ -100,18 +154,37 @@ export default function ProfileSetupStep() {
 
   const totalSteps = STEPS.length;
   const currentStepIndex = STEPS.indexOf(currentStep) + 1;
+  const profileComplete = isProfileComplete(profileData);
+  const canGoToFinish = profileComplete || currentStep === "step9";
+
+  const handleGoToFinish = useCallback(() => {
+    setCurrentStep("step9");
+    setIsCurrentStepValid(true);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.progressContainer}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressText}>
-              Step {currentStepIndex} of {totalSteps}
-            </Text>
-            <Text style={styles.progressText}>
-              {Math.round((currentStepIndex / totalSteps) * 100)}%
-            </Text>
+            <View>
+              <Text style={styles.progressText}>
+                Step {currentStepIndex} of {totalSteps}
+              </Text>
+              <Text style={styles.progressText}>
+                {Math.round((currentStepIndex / totalSteps) * 100)}%
+              </Text>
+            </View>
+            {canGoToFinish && currentStep !== "step9" && (
+              <TouchableOpacity
+                onPress={handleGoToFinish}
+                style={styles.finishButton}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.finishButtonText}>Go to Finish</Text>
+                <Ionicons name="arrow-forward" size={16} color="white" style={styles.finishButtonIcon} />
+              </TouchableOpacity>
+            )}
           </View>
           <View style={styles.progressBar}>
             <View
@@ -121,51 +194,105 @@ export default function ProfileSetupStep() {
               ]}
             />
           </View>
+
+          {/* Back button below progress bar */}
+          {currentStepIndex > 1 && (
+            <TouchableOpacity
+              onPress={goToPreviousStep}
+              style={styles.backButton}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="arrow-back" size={24} color={DARK} />
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Wrap step content to allow dropdowns to expand */}
-        <View style={styles.stepContentWrapper}>{renderStep()}</View>
+        <View style={styles.content}>
+          {/* Wrap step content to allow dropdowns to expand */}
+          <View style={styles.stepContentWrapper}>{renderStep()}</View>
 
-        {currentStep !== "step9" && (
-          <Button
-            label={currentStep === "step1" ? "Get Started" : "Continue"}
-            onPress={goToNextStep}
-            disabled={currentStep !== "step1" && !isCurrentStepValid}
-            type={isCurrentStepValid ? "gradient" : "outline"}
-            style={{ marginVertical: 16 }}
-          />
-        )}
-      </View>
+          {currentStep !== "step9" && (
+            <Button
+              label={currentStep === "step1" ? "Get Started" : "Continue"}
+              onPress={goToNextStep}
+              disabled={currentStep !== "step1" && !isCurrentStepValid}
+              type={isCurrentStepValid ? "gradient" : "outline"}
+              style={{ marginVertical: 16 }}
+            />
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BACKGROUND },
-  content: { flex: 1, paddingHorizontal: CONTENT_PADDING_HORIZONTAL },
-  progressContainer: { paddingVertical: PADDING_VERTICAL },
+  scrollView: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  content: { paddingHorizontal: CONTENT_PADDING_HORIZONTAL, paddingBottom: 32 },
+  progressContainer: {
+    paddingHorizontal: CONTENT_PADDING_HORIZONTAL,
+    paddingVertical: PADDING_VERTICAL,
+    paddingBottom: 20,
+  },
   progressHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  progressText: { fontSize: 14, color: DARK },
+  progressText: {
+    fontSize: 13,
+    color: "#999",
+    fontWeight: "500",
+    letterSpacing: 0.3,
+  },
   progressBar: {
     height: PROGRESS_BAR_HEIGHT,
     backgroundColor: "#E5E7EB",
     borderRadius: PROGRESS_BORDER_RADIUS,
+    overflow: "hidden",
   },
   progressFill: {
     height: PROGRESS_BAR_HEIGHT,
     backgroundColor: PRIMARY,
     borderRadius: PROGRESS_BORDER_RADIUS,
   },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    gap: 6,
+  },
+  backButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: DARK,
+  },
   // Wrapper for step content with z-index for dropdowns
   stepContentWrapper: {
-    flex: 1,
     position: "relative",
     zIndex: 1,
     overflow: "visible",
+  },
+  finishButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: PRIMARY,
+    borderRadius: 8,
+    gap: 6,
+  },
+  finishButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "white",
+  },
+  finishButtonIcon: {
+    marginLeft: 4,
   },
 });

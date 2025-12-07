@@ -1,3 +1,6 @@
+// React core
+import { useMemo } from "react";
+
 // React Native
 import {
   Dimensions,
@@ -72,7 +75,7 @@ export default function SwipeCard({
   const translateY = useSharedValue(0);
   const context = useSharedValue({ x: 0, y: 0 });
 
-  const gesture = React.useMemo(
+  const gesture = useMemo(
     () =>
       Gesture.Pan()
         .enabled(active)
