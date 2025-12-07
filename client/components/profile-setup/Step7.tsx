@@ -3,11 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 // React Native
 import {
-  Animated,
-  FlatList,
   Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -17,192 +13,152 @@ import {
 
 // Third-party
 import { Ionicons } from "@expo/vector-icons";
+import { ItemType } from "react-native-dropdown-picker";
 
 // Project imports
-import {
-  BACKGROUND,
-  DARK,
-  MUTED,
-  PRIMARY,
-} from "@/constants/theme";
+import { BACKGROUND, DARK, MUTED, PRIMARY, SECONDARY } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
+import { useConstantsStore } from "@/store/constantsStore";
+import SearchableModal from "@/components/shared/SearchableModal";
 
 // Types
 interface Step7Props {
-  onBack?: () => void;
   onValidityChange?: (isValid: boolean) => void;
 }
-
-// Constants - Canonical interest categories and popular interests for quick selection
-const INTEREST_CATEGORIES = {
-  Technology: [
-    "Coding",
-    "Web Development",
-    "AI",
-    "Tech",
-    "Startups",
-  ],
-  Gaming: [
-    "Gaming",
-    "Esports",
-    "Video Games",
-    "Board Games",
-    "Streaming",
-  ],
-  Entertainment: [
-    "Movies",
-    "TV Shows",
-    "Music",
-    "Comedy",
-    "Podcasts",
-  ],
-  Creative: [
-    "Photography",
-    "Art",
-    "Design",
-    "Writing",
-    "Music Production",
-  ],
-  Sports: [
-    "Basketball",
-    "Soccer",
-    "Fitness",
-    "Hiking",
-    "Gym",
-  ],
-  Wellness: [
-    "Yoga",
-    "Meditation",
-    "Running",
-    "Mental Health",
-    "Nutrition",
-  ],
-  Outdoor: [
-    "Hiking",
-    "Camping",
-    "Beach",
-    "Rock Climbing",
-    "Skiing",
-  ],
-  Culinary: [
-    "Cooking",
-    "Baking",
-    "Food",
-    "Coffee",
-    "Wine Tasting",
-  ],
-  Intellectual: [
-    "Reading",
-    "Philosophy",
-    "Science",
-    "History",
-    "Languages",
-  ],
-  Social: [
-    "Socializing",
-    "Parties",
-    "Networking",
-    "Traveling",
-    "Making Friends",
-  ],
-  Animals: [
-    "Dogs",
-    "Cats",
-    "Pet Lover",
-    "Wildlife",
-    "Conservation",
-  ],
-  Home: [
-    "Interior Design",
-    "Gardening",
-    "DIY",
-    "Home Improvement",
-    "Plants",
-  ],
-  Fashion: [
-    "Fashion",
-    "Shopping",
-    "Makeup",
-    "Thrifting",
-    "Style",
-  ],
-  Business: [
-    "Entrepreneurship",
-    "Marketing",
-    "Finance",
-    "Economics",
-    "Business",
-  ],
-  Music: [
-    "Live Music",
-    "Concerts",
-    "DJ",
-    "Indie Music",
-    "Pop",
-  ],
-  Lifestyle: [
-    "Travel",
-    "Adventure",
-    "Self-improvement",
-    "Spirituality",
-    "Minimalism",
-  ],
-};
 
 interface ExpandedCategories {
   [key: string]: boolean;
 }
 
+// UNBIASED popular interests - diverse across categories
+const POPULAR_INTERESTS_UNBIASED = [
+  "Travel",
+  "Music",
+  "Fitness",
+  "Cooking",
+  "Reading",
+  "Art",
+  "Movies",
+  "Hiking",
+  "Photography",
+  "Gaming",
+  "Yoga",
+  "Socializing",
+];
+
 /**
  * Step 7: Interests - select from categories or add custom interests
+ * Features:
+ * - Unbiased popular interests selection
+ * - Paginated category browsing to avoid overwhelming lists
+ * - Custom interest input
+ * - Real-time interest organization from backend constants
  */
-export default function Step7({
-  onBack,
-  onValidityChange,
-}: Step7Props) {
+export default function Step7({ onValidityChange }: Step7Props) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
+  const setProfileField = useProfileSetupStore(
+    (state) => state.setProfileField
+  );
+  const constants = useConstantsStore((state) => state.constants);
 
   const [interestInput, setInterestInput] = useState("");
-  const [expandedCategories, setExpandedCategories] = useState<ExpandedCategories>({});
-  const keyboardHeight = useState(new Animated.Value(0))[0];
+  const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
+  const [expandedCategories, setExpandedCategories] =
+    useState<ExpandedCategories>({});
+  const [categoryPages, setCategoryPages] = useState<Record<string, number>>(
+    {}
+  );
 
-  // Popular interests for quick selection
+  const ITEMS_PER_PAGE = 6;
+
+  // Popular interests - unbiased selection
   const popularInterests = useMemo(() => {
-    return [
-      "Travel",
-      "Photography",
-      "Gaming",
-      "Hiking",
-      "Music",
-      "Cooking",
-      "Fitness",
-      "Reading",
-      "Yoga",
-      "Art",
-      "Movies",
-      "Socializing",
-    ];
+    return POPULAR_INTERESTS_UNBIASED;
   }, []);
 
-  /**
-   * Toggle category expansion
-   */
-  const toggleCategory = useCallback((category: string) => {
-    setExpandedCategories((prev) => ({
-      ...prev,
-      [category]: !prev[category],
-    }));
-  }, []);
+  // Use organized interests directly from backend constants
+  const organizedInterests = useMemo(() => {
+    if (!constants?.interests) return {};
+    return constants.interests as Record<string, string[]>;
+  }, [constants?.interests]);
 
-  /**
-   * Add interest from category or custom input
-   */
+  // Get all interests as flat list for SearchableDropdownModal
+  const allInterestsFlat = useMemo(() => {
+    const allInterests: ItemType<string>[] = [];
+    Object.values(organizedInterests).forEach((interests) => {
+      interests.forEach((interest) => {
+        if (!allInterests.find((item) => item.value === interest)) {
+          allInterests.push({ label: interest, value: interest });
+        }
+      });
+    });
+    return allInterests.sort((a, b) =>
+      (a.label || "").localeCompare(b.label || "")
+    );
+  }, [organizedInterests]);
+
+  // Get paginated interests for a category
+  const getPaginatedInterests = useCallback(
+    (category: string) => {
+      const allInterests = organizedInterests[category] || [];
+      const page = categoryPages[category] || 0;
+      const startIdx = page * ITEMS_PER_PAGE;
+      return allInterests.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+    },
+    [organizedInterests, categoryPages]
+  );
+
+  const getTotalPages = useCallback(
+    (category: string) => {
+      const allInterests = organizedInterests[category] || [];
+      return Math.ceil(allInterests.length / ITEMS_PER_PAGE);
+    },
+    [organizedInterests]
+  );
+
+  const toggleCategory = useCallback(
+    (category: string) => {
+      setExpandedCategories((prev) => ({
+        ...prev,
+        [category]: !prev[category],
+      }));
+      // Reset pagination when toggling
+      if (!expandedCategories[category]) {
+        setCategoryPages((prev) => ({ ...prev, [category]: 0 }));
+      }
+    },
+    [expandedCategories]
+  );
+
+  const nextPage = useCallback(
+    (category: string) => {
+      const totalPages = getTotalPages(category);
+      const currentPage = categoryPages[category] || 0;
+      if (currentPage < totalPages - 1) {
+        setCategoryPages((prev) => ({ ...prev, [category]: currentPage + 1 }));
+      }
+    },
+    [categoryPages, getTotalPages]
+  );
+
+  const prevPage = useCallback(
+    (category: string) => {
+      const currentPage = categoryPages[category] || 0;
+      if (currentPage > 0) {
+        setCategoryPages((prev) => ({ ...prev, [category]: currentPage - 1 }));
+      }
+    },
+    [categoryPages]
+  );
+
   const addInterest = useCallback(
     (interest: string) => {
       const trimmed = interest.trim();
       if (trimmed && !profileData?.interests?.includes(trimmed)) {
-        setProfileField("interests", [...(profileData?.interests || []), trimmed]);
+        setProfileField("interests", [
+          ...(profileData?.interests || []),
+          trimmed,
+        ]);
       }
       setInterestInput("");
       Keyboard.dismiss();
@@ -210,9 +166,6 @@ export default function Step7({
     [profileData?.interests, setProfileField]
   );
 
-  /**
-   * Remove interest
-   */
   const removeInterest = useCallback(
     (item: string) => {
       setProfileField(
@@ -223,17 +176,11 @@ export default function Step7({
     [profileData?.interests, setProfileField]
   );
 
-  /**
-   * Check if interest is already selected
-   */
   const isInterestSelected = useCallback(
     (interest: string) => profileData?.interests?.includes(interest),
     [profileData?.interests]
   );
 
-  /**
-   * Step validity: require at least one interest
-   */
   const isValid = useMemo(
     () => (profileData?.interests?.length || 0) > 0,
     [profileData?.interests]
@@ -243,118 +190,127 @@ export default function Step7({
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
-  /**
-   * Keyboard listeners for ScrollView adjustment
-   */
-  useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardWillShow", (e) => {
-      Animated.timing(keyboardHeight, {
-        toValue: e.endCoordinates.height,
-        duration: 250,
-        useNativeDriver: false,
-      }).start();
-    });
-    const hideSub = Keyboard.addListener("keyboardWillHide", () => {
-      Animated.timing(keyboardHeight, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: false,
-      }).start();
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
-    >
-      <Animated.ScrollView
-        contentContainerStyle={[
-          styles.container,
-          { paddingBottom: keyboardHeight },
-        ]}
-        keyboardShouldPersistTaps="handled"
+    <View style={styles.container}>
+      <View style={styles.headerSection}>
+        <Text style={styles.title}>Your Interests</Text>
+        <Text style={styles.subtitle}>Select interests that define you</Text>
+      </View>
+
+      {/* Searchable Modal for all interests */}
+      <SearchableModal
+        label="Search All Interests"
+        value={profileData?.interests || []}
+        items={allInterestsFlat}
+        onValueChange={(values) => {
+          const interestArray = Array.isArray(values) ? values : [values];
+          setProfileField("interests", interestArray);
+        }}
+        open={showCategoriesDropdown}
+        onOpenChange={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
+        placeholder="Select interests..."
+        searchPlaceholder="Search interests..."
+        noResultsText="No interests found"
+        showCompleted={false}
+        zIndex={10}
+        multiSelect={true}
+      />
+
+      {/* Popular Interests - Unbiased */}
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Popular</Text>
+        <View style={styles.pillContainer}>
+          {popularInterests.map((interest) => (
+            <TouchableOpacity
+              key={interest}
+              onPress={() =>
+                isInterestSelected(interest)
+                  ? removeInterest(interest)
+                  : addInterest(interest)
+              }
+              style={[
+                styles.pill,
+                isInterestSelected(interest) && styles.pillSelected,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.pillText,
+                  isInterestSelected(interest) && styles.pillTextSelected,
+                ]}
+              >
+                {interest}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Toggle Categories Section */}
+      <TouchableOpacity
+        style={styles.categoriesToggle}
+        onPress={() => {
+          if (Object.keys(expandedCategories).length > 0) {
+            setExpandedCategories({});
+          } else {
+            // Expand first category by default
+            const firstCategory = Object.keys(organizedInterests)[0];
+            if (firstCategory) {
+              setExpandedCategories({ [firstCategory]: true });
+            }
+          }
+        }}
       >
-        {onBack && (
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={DARK} />
-          </TouchableOpacity>
-        )}
+        <Text style={styles.categoriesToggleText}>Browse by Category</Text>
+        <Ionicons
+          name={
+            Object.keys(expandedCategories).length > 0
+              ? "chevron-up"
+              : "chevron-down"
+          }
+          size={20}
+          color={PRIMARY}
+        />
+      </TouchableOpacity>
 
-        <View style={styles.contentContainer}>
-          <Text style={styles.title}>Your Interests</Text>
-          <Text style={styles.subtitle}>
-            Select interests that define you
-          </Text>
+      {/* Category Bubbles with Pagination - Hidden by default */}
+      {Object.keys(expandedCategories).length > 0 && (
+        <View style={styles.sectionContainer}>
+          {Object.entries(organizedInterests).map(([category]) => {
+            const paginatedInterests = getPaginatedInterests(category);
+            const totalPages = getTotalPages(category);
+            const currentPage = categoryPages[category] || 0;
+            const isExpanded = expandedCategories[category];
 
-          {/* Popular Interests Pills */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Popular</Text>
-            <View style={styles.pillContainer}>
-              {popularInterests.map((interest) => (
-                <TouchableOpacity
-                  key={interest}
-                  onPress={() =>
-                    isInterestSelected(interest)
-                      ? removeInterest(interest)
-                      : addInterest(interest)
-                  }
-                  style={[
-                    styles.pill,
-                    isInterestSelected(interest) && styles.pillSelected,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.pillText,
-                      isInterestSelected(interest) && styles.pillTextSelected,
-                    ]}
-                  >
-                    {interest}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Category Bubbles */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Categories</Text>
-            {Object.entries(INTEREST_CATEGORIES).map(([category, interests]) => (
+            return (
               <View key={category}>
                 {/* Category Bubble */}
                 <TouchableOpacity
                   onPress={() => toggleCategory(category)}
                   style={[
                     styles.categoryBubble,
-                    expandedCategories[category] && styles.categoryBubbleExpanded,
+                    isExpanded && styles.categoryBubbleExpanded,
                   ]}
                 >
                   <Text
                     style={[
                       styles.categoryText,
-                      expandedCategories[category] && styles.categoryTextExpanded,
+                      isExpanded && styles.categoryTextExpanded,
                     ]}
                   >
                     {category}
                   </Text>
                   <Ionicons
-                    name={expandedCategories[category] ? "chevron-up" : "chevron-down"}
+                    name={isExpanded ? "chevron-up" : "chevron-down"}
                     size={18}
-                    color={expandedCategories[category] ? "white" : DARK}
+                    color={isExpanded ? "white" : DARK}
                   />
                 </TouchableOpacity>
 
-                {/* Expanded Category Items */}
-                {expandedCategories[category] && (
+                {/* Expanded Category Items with Pagination */}
+                {isExpanded && (
                   <View style={styles.expandedItemsContainer}>
-                    {interests.map((interest) => (
+                    {paginatedInterests.map((interest) => (
                       <TouchableOpacity
                         key={interest}
                         onPress={() =>
@@ -364,117 +320,160 @@ export default function Step7({
                         }
                         style={[
                           styles.categoryItem,
-                          isInterestSelected(interest) && styles.categoryItemSelected,
+                          isInterestSelected(interest) &&
+                            styles.categoryItemSelected,
                         ]}
                       >
                         <Text
                           style={[
                             styles.categoryItemText,
-                            isInterestSelected(interest) && styles.categoryItemTextSelected,
+                            isInterestSelected(interest) &&
+                              styles.categoryItemTextSelected,
                           ]}
                         >
                           {interest}
                         </Text>
-                        {isInterestSelected(interest) && (
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={18}
-                            color={PRIMARY}
-                          />
-                        )}
                       </TouchableOpacity>
                     ))}
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <View style={styles.paginationContainer}>
+                        <TouchableOpacity
+                          style={[
+                            styles.paginationButton,
+                            currentPage === 0 &&
+                              styles.paginationButtonDisabled,
+                          ]}
+                          onPress={() => prevPage(category)}
+                          disabled={currentPage === 0}
+                        >
+                          <Ionicons
+                            name="chevron-back"
+                            size={16}
+                            color={currentPage === 0 ? "#CCC" : PRIMARY}
+                          />
+                        </TouchableOpacity>
+                        <Text style={styles.paginationText}>
+                          {currentPage + 1} / {totalPages}
+                        </Text>
+                        <TouchableOpacity
+                          style={[
+                            styles.paginationButton,
+                            currentPage >= totalPages - 1 &&
+                              styles.paginationButtonDisabled,
+                          ]}
+                          onPress={() => nextPage(category)}
+                          disabled={currentPage >= totalPages - 1}
+                        >
+                          <Ionicons
+                            name="chevron-forward"
+                            size={16}
+                            color={
+                              currentPage >= totalPages - 1 ? "#CCC" : PRIMARY
+                            }
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 )}
               </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* Custom Interest Input */}
+      <View style={styles.customInputContainer}>
+        <Text style={styles.sectionTitle}>Add Custom Interest</Text>
+        <View style={styles.interestInputContainer}>
+          <TextInput
+            style={styles.interestInput}
+            placeholder="Type an interest..."
+            value={interestInput}
+            onChangeText={setInterestInput}
+            placeholderTextColor={MUTED}
+            onSubmitEditing={() => addInterest(interestInput)}
+            returnKeyType="done"
+          />
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => addInterest(interestInput)}
+          >
+            <Text style={styles.addButtonText}>Add</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Selected Interests Display */}
+      {(profileData?.interests?.length || 0) > 0 && (
+        <View style={styles.selectedContainer}>
+          <Text style={styles.sectionTitle}>
+            Selected ({profileData?.interests?.length})
+          </Text>
+          <View style={styles.selectedInterestsWrapper}>
+            {(profileData?.interests || []).map((item) => (
+              <View key={item} style={styles.interestTag}>
+                <Text style={styles.interestText}>{item}</Text>
+                <TouchableOpacity onPress={() => removeInterest(item)}>
+                  <Ionicons name="close-circle" size={18} color={DARK} />
+                </TouchableOpacity>
+              </View>
             ))}
           </View>
-
-          {/* Custom Interest Input */}
-          <View style={styles.customInputContainer}>
-            <Text style={styles.sectionTitle}>Add Custom Interest</Text>
-            <View style={styles.interestInputContainer}>
-              <TextInput
-                style={styles.interestInput}
-                placeholder="Type an interest..."
-                value={interestInput}
-                onChangeText={setInterestInput}
-                placeholderTextColor={MUTED}
-                onSubmitEditing={() => addInterest(interestInput)}
-                returnKeyType="done"
-              />
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => addInterest(interestInput)}
-              >
-                <Text style={styles.addButtonText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Selected Interests Display */}
-          {(profileData?.interests?.length || 0) > 0 && (
-            <View style={styles.selectedContainer}>
-              <Text style={styles.sectionTitle}>
-                Selected ({profileData?.interests?.length})
-              </Text>
-              <FlatList
-                data={profileData?.interests || []}
-                keyExtractor={(item) => item}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginTop: 8 }}
-                renderItem={({ item }) => (
-                  <View style={styles.interestTag}>
-                    <Text style={styles.interestText}>{item}</Text>
-                    <TouchableOpacity onPress={() => removeInterest(item)}>
-                      <Ionicons name="close-circle" size={18} color={DARK} />
-                    </TouchableOpacity>
-                  </View>
-                )}
-              />
-            </View>
-          )}
         </View>
-      </Animated.ScrollView>
-    </KeyboardAvoidingView>
+      )}
+
+      <View style={{ height: 16 }} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
     paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingVertical: 12,
     backgroundColor: BACKGROUND,
   },
-  header: {
+  headerSection: {
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
     marginBottom: 24,
+    gap: 10,
   },
-  backButton: {
-    position: "absolute",
-    top: 48,
-    left: 24,
-    zIndex: 10,
-  },
-  contentContainer: {
-    paddingTop: 80,
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: DARK,
+    padding: 0,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 28,
+    fontWeight: "800",
     color: DARK,
-    marginBottom: 6,
+    marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
     color: MUTED,
-    marginBottom: 24,
+    marginBottom: 0,
     textAlign: "center",
+    lineHeight: 22,
   },
   sectionContainer: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   sectionTitle: {
     fontSize: 14,
@@ -577,10 +576,10 @@ const styles = StyleSheet.create({
     borderColor: "#e5e7eb",
   },
   categoryItemSelected: {
-    backgroundColor: "#eff6ff",
-    borderColor: PRIMARY,
+    backgroundColor: `${SECONDARY}15`,
+    borderColor: SECONDARY,
     borderWidth: 1.5,
-    shadowColor: PRIMARY,
+    shadowColor: SECONDARY,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -593,8 +592,34 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   categoryItemTextSelected: {
-    color: PRIMARY,
+    color: SECONDARY,
     fontWeight: "600",
+  },
+  paginationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    gap: 12,
+  },
+  paginationButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: PRIMARY,
+  },
+  paginationButtonDisabled: {
+    opacity: 0.5,
+    borderColor: "#CCC",
+  },
+  paginationText: {
+    fontSize: 13,
+    color: MUTED,
+    fontWeight: "500",
   },
   customInputContainer: {
     marginBottom: 28,
@@ -640,6 +665,12 @@ const styles = StyleSheet.create({
   selectedContainer: {
     marginBottom: 24,
   },
+  selectedInterestsWrapper: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+  },
   interestTag: {
     flexDirection: "row",
     alignItems: "center",
@@ -647,7 +678,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 24,
-    marginRight: 10,
     shadowColor: PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -659,5 +689,22 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 14,
     fontWeight: "600",
+  },
+  categoriesToggle: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#e5e7eb",
+    marginBottom: 20,
+  },
+  categoriesToggleText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: DARK,
   },
 });

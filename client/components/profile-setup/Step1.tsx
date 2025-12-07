@@ -77,8 +77,6 @@ export default function Step1(_props: WelcomeStepProps) {
 
         <Text style={styles.title}>Welcome to FindU</Text>
 
-        <Text style={styles.subtitle}>Find your college sweet heart</Text>
-
         <Text style={styles.description}>
           Let&apos;s get started and set up your profile
         </Text>
@@ -91,14 +89,12 @@ export default function Step1(_props: WelcomeStepProps) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     paddingHorizontal: 24,
-    justifyContent: "center",
     alignItems: "center",
+    paddingVertical: 100,
   },
   content: {
     alignItems: "center",
-    marginBottom: 48,
   },
   iconContainer: {
     width: 128,

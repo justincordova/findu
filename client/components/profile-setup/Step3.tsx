@@ -6,23 +6,21 @@ import {
   Dimensions,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 
 // Third-party
 import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
-import { Ionicons } from "@expo/vector-icons";
 
 // Project imports
-import { BACKGROUND, DARK, MUTED } from "@/constants/theme";
+import { BACKGROUND, DARK, MUTED, SECONDARY } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
 import { useConstantsStore } from "@/store/constantsStore";
+import UniversityCard from "./UniversityCard";
+import SearchableModal from "@/components/shared/SearchableModal";
 
 // Types
 interface Step3Props {
-  onBack?: () => void;
   onValidityChange?: (isValid: boolean) => void;
 }
 
@@ -37,7 +35,7 @@ type DropdownKey =
 /**
  * Step 3: Academic information - university, major, year, and graduation year
  */
-export default function Step3({ onBack, onValidityChange }: Step3Props) {
+export default function Step3({ onValidityChange }: Step3Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
   const { data, campuses } = useProfileSetupStore();
@@ -45,7 +43,6 @@ export default function Step3({ onBack, onValidityChange }: Step3Props) {
   const constants = useConstantsStore((state) => state.constants);
 
   const [activeDropdown, setActiveDropdown] = useState<DropdownKey>(null);
-  const [majorSearch, setMajorSearch] = useState("");
 
   const screenHeight = Dimensions.get("window").height;
   const emptyCallback = useCallback(() => {}, []);
@@ -75,15 +72,11 @@ export default function Step3({ onBack, onValidityChange }: Step3Props) {
   );
 
   const majorItems: ItemType<string>[] = useMemo(() => {
-    const filteredMajors = constants?.majors?.filter((major) =>
-      major.toLowerCase().includes(majorSearch.toLowerCase())
-    ) ?? [];
-
-    return filteredMajors.map((major) => ({
+    return (constants?.majors ?? []).map((major) => ({
       label: major,
       value: major,
     }));
-  }, [constants?.majors, majorSearch]);
+  }, [constants?.majors]);
 
   const handleOpen = (key: DropdownKey) => {
     setActiveDropdown((prev) => (prev === key ? null : key));
@@ -94,38 +87,22 @@ export default function Step3({ onBack, onValidityChange }: Step3Props) {
 
   return (
     <View style={styles.container}>
-      {onBack && (
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={DARK} />
-        </TouchableOpacity>
-      )}
-
       <Text style={styles.title}>Education</Text>
       <Text style={styles.subtitle}>
         Tell us about your academic background
       </Text>
 
       {/* University (read-only display) */}
-      <View
-        style={[
-          styles.fieldContainer,
-          { zIndex: getZIndex("university_id", 4) },
-        ]}
-      >
-        <Text style={styles.label}>University *</Text>
-        <View style={styles.universityDisplay}>
-          <Text style={styles.universityText}>
-            {universityName || "No university found"}
-          </Text>
-        </View>
-      </View>
+      <UniversityCard universityName={universityName} />
 
       {/* Campus */}
       {campuses.length > 0 && (
         <View
           style={[styles.fieldContainer, { zIndex: getZIndex("campus_id", 3) }]}
         >
-          <Text style={styles.label}>Campus *</Text>
+          <View style={styles.labelWithIcon}>
+            <Text style={styles.label}>Campus</Text>
+          </View>
           <DropDownPicker<string>
             open={activeDropdown === "campus_id"}
             value={profileData?.campus_id ?? null}
@@ -140,7 +117,10 @@ export default function Step3({ onBack, onValidityChange }: Step3Props) {
             }}
             setItems={emptyCallback}
             listMode="SCROLLVIEW"
-            style={styles.dropdown}
+            style={[
+              styles.dropdown,
+              profileData?.campus_id && { borderColor: SECONDARY, borderWidth: 2 },
+            ]}
             dropDownContainerStyle={[
               styles.dropdownContainer,
               { maxHeight: screenHeight * 0.35 },
@@ -150,44 +130,19 @@ export default function Step3({ onBack, onValidityChange }: Step3Props) {
       )}
 
       {/* Major */}
-      <View style={[styles.fieldContainer, { zIndex: getZIndex("major", 2) }]}>
-        <Text style={styles.label}>Major *</Text>
-        {activeDropdown === "major" && (
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={18} color={MUTED} style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search majors..."
-              placeholderTextColor={MUTED}
-              value={majorSearch}
-              onChangeText={setMajorSearch}
-            />
-          </View>
-        )}
-        <DropDownPicker<string>
-          open={activeDropdown === "major"}
-          value={profileData?.major ?? null}
-          items={majorItems}
-          setOpen={() => {
-            handleOpen("major");
-            if (!activeDropdown) setMajorSearch("");
-          }}
-          setValue={(callback) => {
-            const value =
-              typeof callback === "function"
-                ? callback(profileData?.major ?? "")
-                : callback;
-            setProfileField("major", value ?? "");
-          }}
-          setItems={emptyCallback}
-          listMode="SCROLLVIEW"
-          style={styles.dropdown}
-          dropDownContainerStyle={[
-            styles.dropdownContainer,
-            { maxHeight: screenHeight * 0.35 },
-          ]}
-        />
-      </View>
+      <SearchableModal
+        label="Major"
+        value={profileData?.major ?? null}
+        items={majorItems}
+        onValueChange={(value) => setProfileField("major", value)}
+        open={activeDropdown === "major"}
+        onOpenChange={() => handleOpen("major")}
+        placeholder="Select your major..."
+        searchPlaceholder="Search majors..."
+        noResultsText="No majors found"
+        showCompleted={true}
+        zIndex={2}
+      />
 
       {/* University Year */}
       <View
@@ -196,7 +151,9 @@ export default function Step3({ onBack, onValidityChange }: Step3Props) {
           { zIndex: getZIndex("university_year", 1) },
         ]}
       >
-        <Text style={styles.label}>Year *</Text>
+        <View style={styles.labelWithIcon}>
+          <Text style={styles.label}>Year</Text>
+        </View>
         <DropDownPicker<string>
           open={activeDropdown === "university_year"}
           value={
@@ -219,7 +176,10 @@ export default function Step3({ onBack, onValidityChange }: Step3Props) {
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
-          style={styles.dropdown}
+          style={[
+            styles.dropdown,
+            profileData?.university_year ? { borderColor: SECONDARY, borderWidth: 2 } : undefined,
+          ]}
           dropDownContainerStyle={[
             styles.dropdownContainer,
             { maxHeight: screenHeight * 0.35 },
@@ -231,7 +191,9 @@ export default function Step3({ onBack, onValidityChange }: Step3Props) {
       <View
         style={[styles.fieldContainer, { zIndex: getZIndex("grad_year", 0) }]}
       >
-        <Text style={styles.label}>Graduation Year *</Text>
+        <View style={styles.labelWithIcon}>
+          <Text style={styles.label}>Graduation Year</Text>
+        </View>
         <DropDownPicker<string>
           open={activeDropdown === "grad_year"}
           value={profileData?.grad_year ? String(profileData.grad_year) : null}
@@ -251,7 +213,10 @@ export default function Step3({ onBack, onValidityChange }: Step3Props) {
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
-          style={styles.dropdown}
+          style={[
+            styles.dropdown,
+            profileData?.grad_year ? { borderColor: SECONDARY, borderWidth: 2 } : undefined,
+          ]}
           dropDownContainerStyle={[
             styles.dropdownContainer,
             { maxHeight: screenHeight * 0.35 },
@@ -265,21 +230,10 @@ export default function Step3({ onBack, onValidityChange }: Step3Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingVertical: 12,
     backgroundColor: BACKGROUND,
-  },
-  backButton: {
-    position: "absolute",
-    top: 48,
-    left: 24,
-    zIndex: 10,
-  },
-  contentContainer: {
-    flex: 1,
-    justifyContent: "center",
-    paddingTop: 80,
   },
   title: {
     fontSize: 24,
@@ -295,12 +249,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   fieldContainer: { marginBottom: 24, position: "relative" },
+  labelWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 8,
+    marginBottom: 8,
+  },
   label: {
     fontSize: 16,
     fontWeight: "500",
     color: DARK,
-    marginBottom: 8,
-    textAlign: "center",
+    marginBottom: 0,
+    textAlign: "left",
   },
   dropdown: {
     backgroundColor: BACKGROUND,
@@ -314,44 +275,5 @@ const styles = StyleSheet.create({
     backgroundColor: BACKGROUND,
     borderColor: "#e5e7eb",
     borderRadius: 12,
-  },
-  universityDisplay: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    backgroundColor: "#eef2f5",
-    borderRadius: 16,
-    borderColor: "#d1d5db",
-    borderWidth: 1,
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  universityText: {
-    fontSize: 16,
-    color: DARK,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    backgroundColor: "#fafafa",
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    padding: 12,
-    fontSize: 14,
-    color: DARK,
   },
 });
