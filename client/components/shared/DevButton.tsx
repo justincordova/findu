@@ -1,13 +1,37 @@
+// React core
 import React, { useMemo } from "react";
-import { TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+
+// React Native
+import { Alert, StyleSheet, Text, TouchableOpacity } from "react-native";
+
+// Navigation
+import { useLocalSearchParams, useRouter } from "expo-router";
+
+// Project imports
+import { useAuth } from "@/hooks/useAuth";
 import { DANGER } from "@/constants/theme";
 import { useAuthStore } from "@/store/authStore";
-import { useAuth } from "@/hooks/useAuth"; // Import useAuth hook
 
+// Constants
+const DEFAULT_ROUTE = "/home/(tabs)/discover";
+const LONG_PRESS_DELAY = 500;
+const BUTTON_HORIZONTAL_PADDING = 12;
+const BUTTON_VERTICAL_PADDING = 8;
+const BUTTON_BORDER_RADIUS = 20;
+const BUTTON_MIN_WIDTH = 40;
+const BUTTON_TEXT_SIZE = 12;
+const DEV_Z_INDEX = 1000;
+
+// Types
 interface DevButtonProps {
   route?: string;
 }
+
+/**
+ * Development navigation button (only visible in __DEV__ mode)
+ * Short press: navigate to specified route
+ * Long press: logout and return to entry screen
+ */
 
 export default function DevButton({ route }: DevButtonProps) {
   const router = useRouter();
@@ -17,18 +41,20 @@ export default function DevButton({ route }: DevButtonProps) {
   const { userId, isLoading } = useAuthStore();
   const { signOut } = useAuth(); // Get signOut from useAuth hook
 
-  // Memoize targetRoute safely
+  // Memoize target route safely (prop > param > default)
   const targetRoute = useMemo(() => {
     const paramRoute = Array.isArray(paramRouteRaw)
       ? paramRouteRaw[0]
       : paramRouteRaw;
-    return route || paramRoute || "/home/(tabs)/discover";
+    return route || paramRoute || DEFAULT_ROUTE;
   }, [route, paramRouteRaw]);
 
+  // Navigate to target route on short press
   const handlePress = () => {
     router.push(targetRoute as any);
   };
 
+  // Show logout confirmation on long press
   const handleLongPress = () => {
     if (isLoading || !userId) {
       Alert.alert("Logout", "You are not signed in.");
@@ -75,7 +101,7 @@ export default function DevButton({ route }: DevButtonProps) {
       style={styles.devButton}
       onPress={handlePress}
       onLongPress={handleLongPress}
-      delayLongPress={500}
+      delayLongPress={LONG_PRESS_DELAY}
     >
       <Text style={styles.devButtonText}>dev</Text>
     </TouchableOpacity>
@@ -88,21 +114,21 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     backgroundColor: DANGER,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    zIndex: 1000,
+    paddingHorizontal: BUTTON_HORIZONTAL_PADDING,
+    paddingVertical: BUTTON_VERTICAL_PADDING,
+    borderRadius: BUTTON_BORDER_RADIUS,
+    zIndex: DEV_Z_INDEX,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    minWidth: 40,
+    minWidth: BUTTON_MIN_WIDTH,
     alignItems: "center",
   },
   devButtonText: {
     color: "white",
-    fontSize: 12,
+    fontSize: BUTTON_TEXT_SIZE,
     fontWeight: "600",
     textAlign: "center",
   },

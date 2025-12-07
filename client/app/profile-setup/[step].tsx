@@ -1,21 +1,25 @@
-import React, { useState, useCallback } from "react";
-import { View, Text, StyleSheet } from "react-native";
+// React core
+import React, { useCallback, useState } from "react";
+
+// React Native
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PRIMARY, BACKGROUND, DARK,  } from "../../constants/theme";
+import { StyleSheet, Text, View } from "react-native";
 
-import Step1 from "../../components/profile-setup/Step1";
-import Step2 from "../../components/profile-setup/Step2";
-import Step3 from "../../components/profile-setup/Step3";
-import Step4 from "../../components/profile-setup/Step4";
-import Step5 from "../../components/profile-setup/Step5";
-import Step6 from "../../components/profile-setup/Step6";
-import Step7 from "../../components/profile-setup/Step7";
-import Step8 from "../../components/profile-setup/Step8";
-import Step9 from "../../components/profile-setup/Step9";
+// Project imports
+import Button from "@/components/shared/Button";
+import Step1 from "@/components/profile-setup/Step1";
+import Step2 from "@/components/profile-setup/Step2";
+import Step3 from "@/components/profile-setup/Step3";
+import Step4 from "@/components/profile-setup/Step4";
+import Step5 from "@/components/profile-setup/Step5";
+import Step6 from "@/components/profile-setup/Step6";
+import Step7 from "@/components/profile-setup/Step7";
+import Step8 from "@/components/profile-setup/Step8";
+import Step9 from "@/components/profile-setup/Step9";
+import { BACKGROUND, DARK, PRIMARY } from "@/constants/theme";
+import { useProfileSetupStore } from "@/store/profileStore";
 
-import { useProfileSetupStore } from "../../store/profileStore";
-import Button from "@/components/shared/Button"; // <-- use shared Button component
-
+// Constants
 const STEPS = [
   "step1",
   "step2",
@@ -28,21 +32,33 @@ const STEPS = [
   "step9",
 ] as const;
 type Step = (typeof STEPS)[number];
+const PROGRESS_BAR_HEIGHT = 8;
+const PROGRESS_BORDER_RADIUS = 9999;
+const PADDING_VERTICAL = 16;
+const CONTENT_PADDING_HORIZONTAL = 24;
+
+/**
+ * Multi-step profile setup wizard
+ * Guides users through 9 steps to complete their profile
+ * Displays progress indicator and validates each step before advancing
+ */
 
 export default function ProfileSetupStep() {
   const [currentStep, setCurrentStep] = useState<Step>("step1");
   const [isCurrentStepValid, setIsCurrentStepValid] = useState(false);
 
-  // access store
+  // Access profile setup store
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
+  // Navigate to next step (validates current step is valid first)
   const goToNextStep = useCallback(() => {
     const idx = STEPS.indexOf(currentStep);
     if (idx < STEPS.length - 1) setCurrentStep(STEPS[idx + 1]);
     setIsCurrentStepValid(false);
   }, [currentStep]);
 
+  // Navigate to previous step
   const goToPreviousStep = useCallback(() => {
     const idx = STEPS.indexOf(currentStep);
     if (idx > 0) setCurrentStep(STEPS[idx - 1]);
@@ -126,8 +142,8 @@ export default function ProfileSetupStep() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BACKGROUND },
-  content: { flex: 1, paddingHorizontal: 24 },
-  progressContainer: { paddingVertical: 16 },
+  content: { flex: 1, paddingHorizontal: CONTENT_PADDING_HORIZONTAL },
+  progressContainer: { paddingVertical: PADDING_VERTICAL },
   progressHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -135,10 +151,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   progressText: { fontSize: 14, color: DARK },
-  progressBar: { height: 8, backgroundColor: "#E5E7EB", borderRadius: 9999 },
-  progressFill: { height: 8, backgroundColor: PRIMARY, borderRadius: 9999 },
-
-  // Updated wrapper for dropdowns
+  progressBar: {
+    height: PROGRESS_BAR_HEIGHT,
+    backgroundColor: "#E5E7EB",
+    borderRadius: PROGRESS_BORDER_RADIUS,
+  },
+  progressFill: {
+    height: PROGRESS_BAR_HEIGHT,
+    backgroundColor: PRIMARY,
+    borderRadius: PROGRESS_BORDER_RADIUS,
+  },
+  // Wrapper for step content with z-index for dropdowns
   stepContentWrapper: {
     flex: 1,
     position: "relative",

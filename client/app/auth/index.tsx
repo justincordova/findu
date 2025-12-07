@@ -1,19 +1,36 @@
-import { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+// React core
+import { useEffect, useState } from "react";
+
+// React Native
 import { SafeAreaView } from "react-native-safe-area-context";
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
-import { PRIMARY, BACKGROUND } from "../../constants/theme";
-import LoginForm from "../../components/auth/LoginForm";
-import SignupForm from "../../components/auth/SignupForm";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+// Expo & Navigation
 import { useLocalSearchParams, useRouter } from "expo-router";
 
+// Project imports
+import LoginForm from "@/components/auth/LoginForm";
+import SignupForm from "@/components/auth/SignupForm";
+import { BACKGROUND, PRIMARY } from "@/constants/theme";
+
+// Layout constants
 const TOGGLE_WIDTH = 320;
 const TOGGLE_HEIGHT = 48;
 const TOGGLE_RADIUS = 10;
 const PILL_WIDTH = TOGGLE_WIDTH / 2;
 const FORM_BOX_WIDTH = 360;
 const FORM_BOX_HEIGHT = 320;
+const ANIMATION_DURATION = 250;
 
+/**
+ * Authentication screen with login/signup toggle
+ * Uses animated pill to switch between forms
+ */
 export default function AuthIndex() {
   const { mode: modeParam } = useLocalSearchParams();
   const initialMode = modeParam === "signup" ? "signup" : "login";
@@ -21,9 +38,10 @@ export default function AuthIndex() {
   const pillTranslate = useSharedValue(initialMode === "login" ? 0 : PILL_WIDTH);
   const router = useRouter();
 
+  // Animate pill position when mode changes
   useEffect(() => {
     pillTranslate.value = withTiming(mode === "login" ? 0 : PILL_WIDTH, {
-      duration: 250,
+      duration: ANIMATION_DURATION,
     });
   }, [mode, pillTranslate]);
 

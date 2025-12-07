@@ -1,21 +1,33 @@
-import { View, Text, StyleSheet } from "react-native";
+// React core
+import { useEffect } from "react";
+
+// React Native
+import { StyleSheet, Text, View } from "react-native";
+
+// Third-party
 import { Ionicons } from "@expo/vector-icons";
+
+// Project imports
 import {
+  BACKGROUND,
   DARK,
   MUTED,
   PRIMARY,
   SECONDARY,
-  BACKGROUND,
-} from "../../constants/theme";
+} from "@/constants/theme";
+import { profileApi } from "@/api/profile";
 import { useAuthStore } from "@/store/authStore";
 import { useProfileSetupStore } from "@/store/profileStore";
-import { profileApi } from "@/api/profile";
-import { useEffect } from "react";
 
+// Types
 interface WelcomeStepProps {
   onNext: () => void;
 }
 
+/**
+ * Step 1: University information detection and setup
+ * Fetches university and campus data from email domain, auto-fills profile
+ */
 export default function Step1(_props: WelcomeStepProps) {
   const email = useAuthStore((state) => state.email);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);

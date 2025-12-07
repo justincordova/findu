@@ -1,10 +1,22 @@
-import { View, StyleSheet } from "react-native";
-import { BACKGROUND } from "@/constants/theme";
-import HeaderSection from "@/components/entry/HeaderSection";
-import ActionButtons from "@/components/entry/ActionButtons";
-import TermsSection from "@/components/entry/TermsSection";
-import FloatingLogo from "@/components/entry/FoatingLogo";
+// React Native core
+import { StyleSheet, View } from "react-native";
 
+// Project imports
+import { BACKGROUND } from "@/constants/theme";
+import ActionButtons from "@/components/entry/ActionButtons";
+import FloatingLogo from "@/components/entry/FoatingLogo";
+import HeaderSection from "@/components/entry/HeaderSection";
+import TermsSection from "@/components/entry/TermsSection";
+
+// Constants
+const TOP_SECTION_MARGIN_TOP = 40;
+const BOTTOM_SECTION_GAP = 40;
+const BOTTOM_SECTION_MARGIN_BOTTOM = 30;
+
+/**
+ * Entry/landing screen shown before authentication
+ * Displays app branding and authentication action buttons
+ */
 export default function EntryScreen() {
   return (
     <View style={styles.container}>
@@ -33,11 +45,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 40,
+    marginTop: TOP_SECTION_MARGIN_TOP,
   },
   bottomSection: {
     alignItems: "center",
-    marginBottom: 30,
-    gap: 40,
+    marginBottom: BOTTOM_SECTION_MARGIN_BOTTOM,
+    gap: BOTTOM_SECTION_GAP,
   },
 });

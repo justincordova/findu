@@ -1,18 +1,26 @@
-import React, { useMemo, useEffect, useState, useCallback } from "react";
+// React core
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+// React Native
 import {
-  View,
-  Text,
-  StyleSheet,
   Dimensions,
-  TouchableOpacity,
+  StyleSheet,
+  Text,
   TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+// Third-party
 import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { DARK, MUTED, BACKGROUND } from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileStore";
-import { useConstantsStore } from "../../store/constantsStore";
 
+// Project imports
+import { BACKGROUND, DARK, MUTED } from "@/constants/theme";
+import { useProfileSetupStore } from "@/store/profileStore";
+import { useConstantsStore } from "@/store/constantsStore";
+
+// Types
 interface Step3Props {
   onBack?: () => void;
   onValidityChange?: (isValid: boolean) => void;
@@ -26,6 +34,9 @@ type DropdownKey =
   | "campus_id"
   | null;
 
+/**
+ * Step 3: Academic information - university, major, year, and graduation year
+ */
 export default function Step3({ onBack, onValidityChange }: Step3Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);

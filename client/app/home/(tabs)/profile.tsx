@@ -1,33 +1,52 @@
-import React, { useState, useCallback, useRef } from "react";
+// React core
+import React, { useCallback, useRef, useState } from "react";
+
+// React Native
 import {
-  ScrollView,
-  StyleSheet,
-  View,
   ActivityIndicator,
-  StatusBar,
-  Text,
-  Image,
   Dimensions,
-  TouchableOpacity,
-  Modal,
-  TextInput,
+  Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+// Navigation & Hooks
 import { useFocusEffect } from "@react-navigation/native";
+
+// Icons
 import { Ionicons } from "@expo/vector-icons";
+
+// Project imports
 import { profileApi } from "@/api/profile";
+import AgeRangeSlider from "@/components/shared/AgeRangeSlider";
 import AlertModal from "@/components/shared/AlertModal";
 import logger from "@/config/logger";
 import { DARK, MUTED, PRIMARY } from "@/constants/theme";
+import { updatePhoto, uploadAvatar, uploadPhotos } from "@/services/uploadService";
 import * as ImagePicker from "expo-image-picker";
-import { uploadAvatar, uploadPhotos, updatePhoto } from "@/services/uploadService";
-import AgeRangeSlider from "@/components/shared/AgeRangeSlider";
 
+// Layout constants
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PHOTO_HEIGHT = SCREEN_WIDTH * 1.3;
+const AVATAR_SIZE = 80;
+const AVATAR_BORDER_RADIUS = 40;
+const AVATAR_BADGE_SIZE = 28;
+const AVATAR_BADGE_BORDER = 2;
+const MODAL_MAX_HEIGHT = "80%";
+const PHOTO_EDIT_BUTTON_SIZE = 48;
+const PHOTO_EDIT_BUTTON_RADIUS = 24;
+const INTENT_BUTTON_GAP = 12;
 
+// Year mapping for university year selector
 const YEAR_MAP: Record<number, string> = {
   1: "Freshman",
   2: "Sophomore",
@@ -35,6 +54,15 @@ const YEAR_MAP: Record<number, string> = {
   4: "Senior",
   5: "Grad",
 };
+
+/**
+ * User profile screen - display and edit profile information
+ * Features:
+ * - Photo carousel with replace/add functionality
+ * - Editable profile sections (name, bio, interests, academic, basic info)
+ * - Modal-based editing with dropdowns for selections
+ * - Image upload with caching
+ */
 
 export default function ProfileScreen() {
   const [profileData, setProfileData] = useState<any>(null);
@@ -127,6 +155,7 @@ export default function ProfileScreen() {
   const photos = Array.isArray(profileData?.photos) ? profileData.photos : [];
   const displayPhotos = photos.length > 0 ? photos : [];
 
+  // Calculate age from birthdate (accounts for month/day not yet passed)
   const calculateAge = (birthdate: string | undefined): number | null => {
     if (!birthdate) return null;
     try {
@@ -134,6 +163,7 @@ export default function ProfileScreen() {
       const today = new Date();
       let age = today.getFullYear() - birth.getFullYear();
       const monthDiff = today.getMonth() - birth.getMonth();
+      // Subtract 1 if birthday hasn't occurred yet this year
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
         age -= 1;
       }
@@ -1297,15 +1327,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_BORDER_RADIUS,
     marginRight: 16,
   },
   avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_BORDER_RADIUS,
     backgroundColor: "#E5E7EB",
     justifyContent: "center",
     alignItems: "center",
@@ -1511,7 +1541,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    maxHeight: "80%",
+    maxHeight: MODAL_MAX_HEIGHT,
   },
   modalHeader: {
     flexDirection: "row",
@@ -1683,9 +1713,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20,
     right: 20,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: PHOTO_EDIT_BUTTON_SIZE,
+    height: PHOTO_EDIT_BUTTON_SIZE,
+    borderRadius: PHOTO_EDIT_BUTTON_RADIUS,
     backgroundColor: "rgba(59, 130, 246, 0.9)",
     justifyContent: "center",
     alignItems: "center",
@@ -1699,9 +1729,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20,
     right: 20,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: PHOTO_EDIT_BUTTON_SIZE,
+    height: PHOTO_EDIT_BUTTON_SIZE,
+    borderRadius: PHOTO_EDIT_BUTTON_RADIUS,
     backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",
@@ -1723,13 +1753,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
     right: 16,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: AVATAR_BADGE_SIZE,
+    height: AVATAR_BADGE_SIZE,
+    borderRadius: AVATAR_BADGE_SIZE / 2,
     backgroundColor: PRIMARY,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
+    borderWidth: AVATAR_BADGE_BORDER,
     borderColor: "white",
   },
   avatarLoading: {
@@ -1741,10 +1771,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.8)",
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 40,
+    borderRadius: AVATAR_BORDER_RADIUS,
   },
   intentOptionsContainer: {
-    gap: 12,
+    gap: INTENT_BUTTON_GAP,
     marginTop: 16,
   },
   intentOption: {

@@ -1,12 +1,26 @@
-import { View, Text, StyleSheet } from "react-native";
+// React Native
+import { StyleSheet, Text, View } from "react-native";
+
+// Third-party
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
-import { DARK, GRADIENT } from "../../constants/theme";
 
+// Project imports
+import { DARK, GRADIENT } from "@/constants/theme";
+
+// Constants
+const LOGO_FONT_SIZE = 42;
+const SUBTITLE_FONT_SIZE = 18;
+const SUBTITLE_MARGIN_TOP = 12;
+
+/**
+ * Header section with gradient brand name and tagline
+ * Displays "findU" text with gradient color fill
+ */
 export default function HeaderSection() {
   return (
     <View style={styles.container}>
-      {/* Gradient Text for findU */}
+      {/* Gradient masked text for brand name */}
       <MaskedView
         maskElement={
           <Text style={styles.logo}>findU</Text>
@@ -15,14 +29,15 @@ export default function HeaderSection() {
         <LinearGradient
           colors={GRADIENT}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }} // left → right gradient
+          end={{ x: 1, y: 0 }}
           style={styles.gradientText}
         >
-          {/* Invisible text ensures the gradient has correct size */}
+          {/* Invisible text sets gradient size */}
           <Text style={[styles.logo, { opacity: 0 }]}>findU</Text>
         </LinearGradient>
       </MaskedView>
 
+      {/* Tagline subtitle */}
       <Text style={styles.subtitle}>Where college hearts connect</Text>
     </View>
   );
@@ -33,7 +48,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   logo: {
-    fontSize: 42,
+    fontSize: LOGO_FONT_SIZE,
     fontWeight: "bold",
     textAlign: "center",
   },
@@ -42,10 +57,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: SUBTITLE_FONT_SIZE,
     color: DARK,
     textAlign: "center",
-    marginTop: 12, // ensures gap from logo
+    marginTop: SUBTITLE_MARGIN_TOP,
   },
 });
 
