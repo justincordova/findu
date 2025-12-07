@@ -1,18 +1,26 @@
-import React, { useMemo, useEffect, useState, useCallback } from "react";
+// React core
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+// React Native
 import {
-  View,
-  Text,
-  StyleSheet,
   Dimensions,
+  Keyboard,
+  StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  Keyboard,
+  View,
 } from "react-native";
+
+// Third-party
 import DropDownPicker from "react-native-dropdown-picker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { DARK, MUTED, BACKGROUND, DANGER } from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileStore";
 
+// Project imports
+import { BACKGROUND, DANGER, DARK, MUTED } from "@/constants/theme";
+import { useProfileSetupStore } from "@/store/profileStore";
+
+// Types
 interface Step2Props {
   onBack?: () => void;
   onNext?: () => void;
@@ -21,6 +29,9 @@ interface Step2Props {
 
 type DropdownKey = "gender" | "pronouns" | null;
 
+/**
+ * Step 2: Personal information - name, gender, pronouns, and birthdate
+ */
 export default function Step2({ onBack, onNext, onValidityChange }: Step2Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);

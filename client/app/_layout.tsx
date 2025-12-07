@@ -1,28 +1,51 @@
+// Polyfill setup
 import "react-native-url-polyfill/auto";
-import { Stack } from "expo-router";
-import { View, StyleSheet, Text, ActivityIndicator } from "react-native";
-import * as SplashScreen from "expo-splash-screen";
+
+// React Native core
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useEffect } from "react";
-import DevButton from "@/components/shared/DevButton";
-import logger from "@/config/logger";
+
+// Expo & Navigation
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import {
-  useFonts,
   Inter_400Regular,
   Inter_500Medium,
   Inter_600SemiBold,
   Inter_700Bold,
+  useFonts,
 } from "@expo-google-fonts/inter";
-import { useAuth } from "@/hooks/useAuth";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+
+// Project imports
+import DevButton from "@/components/shared/DevButton";
+import logger from "@/config/logger";
+import { useAuth } from "@/hooks/useAuth";
 import { useConstantsStore } from "@/store/constantsStore";
 
 // Prevent splash screen from auto hiding
 SplashScreen.preventAutoHideAsync();
 
+// Constants
+const DEFAULT_FONT_FAMILY = "Inter_400Regular";
+const LOADING_INDICATOR_COLOR = "#007AFF";
+const DEV_BUTTON_ROUTE = "/profile-setup/0";
+const DEV_BUTTON_TOP = 50;
+const DEV_BUTTON_RIGHT = 20;
+
 // Set default font globally (once)
 if (!(Text as any).defaultProps) (Text as any).defaultProps = {};
-(Text as any).defaultProps.style = [{ fontFamily: "Inter_400Regular" }];
+(Text as any).defaultProps.style = [{ fontFamily: DEFAULT_FONT_FAMILY }];
 
+/**
+ * Root layout component for the app
+ * Handles:
+ * - Font initialization with Inter typeface
+ * - Session restoration on app startup
+ * - Global constants fetching
+ * - Splash screen visibility management
+ * - Gesture handler setup for native gestures
+ */
 export default function RootLayout() {
   logger.debug("RootLayout rendered");
 
@@ -36,7 +59,7 @@ export default function RootLayout() {
   const { isLoading, restoreSession } = useAuth();
   const fetchConstants = useConstantsStore((state) => state.fetchConstants);
 
-  // Restore session and fetch constants on app start
+  // Initialize session and app state on first render
   useEffect(() => {
     (async () => {
       logger.debug("Restoring session and fetching constants");
@@ -45,7 +68,7 @@ export default function RootLayout() {
     })();
   }, [restoreSession, fetchConstants]);
 
-  // Hide splash screen once fonts and auth check are ready
+  // Hide splash screen once fonts are loaded and app is ready
   useEffect(() => {
     if (fontsLoaded) {
       logger.debug("Fonts loaded, hiding splash screen");
@@ -83,17 +106,17 @@ export default function RootLayout() {
 
       </Stack>
 
-      {/* Loading overlay */}
+      {/* Loading overlay shown during font/session initialization */}
       {(isLoading || !fontsLoaded) && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={LOADING_INDICATOR_COLOR} />
         </View>
       )}
 
-      {/* Dev button */}
+      {/* Development navigation shortcut (only in dev builds) */}
       {__DEV__ && (
-        <View style={{ position: "absolute", top: 50, right: 20 }}>
-          <DevButton route="/profile-setup/0" />
+        <View style={{ position: "absolute", top: DEV_BUTTON_TOP, right: DEV_BUTTON_RIGHT }}>
+          <DevButton route={DEV_BUTTON_ROUTE} />
         </View>
       )}
     </GestureHandlerRootView>

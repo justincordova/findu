@@ -1,9 +1,22 @@
-import { Tabs, useNavigation } from "expo-router";
-import { Compass, Users, MessageCircle, User } from "lucide-react-native";
-import { PRIMARY } from "@/constants/theme";
-import CustomTabBar from "@/components/shared/CustomTabBar";
+// React core
 import { useEffect } from "react";
+
+// Expo & Navigation
+import { Tabs, useNavigation } from "expo-router";
+
+// Icons
+import { Compass, MessageCircle, User, Users } from "lucide-react-native";
+
+// Project imports
+import CustomTabBar from "@/components/shared/CustomTabBar";
+import { PRIMARY } from "@/constants/theme";
 import { useAuthStore } from "@/store/authStore";
+
+/**
+ * Home tab layout with bottom tab navigation
+ * Manages navigation between: Discover, Matches, Messages, Profile
+ * Prevents back navigation when logged in (sticky navigation)
+ */
 
 export default function TabLayout() {
   const navigation = useNavigation();

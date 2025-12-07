@@ -1,19 +1,24 @@
-import React, { useEffect, useState, useCallback } from "react";
+// React core
+import React, { useCallback, useEffect, useState } from "react";
+
+// React Native
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Image,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BACKGROUND, DARK, MUTED, PRIMARY } from "../../../constants/theme";
+
+// Project imports
+import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
 import { getMatches } from "@/services/matchesService";
 
-
+// Types
 interface Match {
   id: string;
   otherUser: {
@@ -23,6 +28,17 @@ interface Match {
   };
   matched_at: string;
 }
+
+// Constants
+const AVATAR_SIZE = 60;
+const AVATAR_BORDER_RADIUS = 30;
+const MATCH_ITEM_MARGIN_BOTTOM = 12;
+const AVATAR_MARGIN_RIGHT = 16;
+
+/**
+ * Matches screen - displays list of current matches
+ * Shows matched user profiles with match timestamps
+ */
 
 export default function MatchesScreen() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -109,7 +125,7 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: "white",
     borderRadius: 12,
-    marginBottom: 12,
+    marginBottom: MATCH_ITEM_MARGIN_BOTTOM,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -117,10 +133,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 16,
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_BORDER_RADIUS,
+    marginRight: AVATAR_MARGIN_RIGHT,
   },
   info: {
     flex: 1,

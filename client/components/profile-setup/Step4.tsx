@@ -1,19 +1,32 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+// React core
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+// React Native
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+// Third-party
 import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { DARK, MUTED, BACKGROUND, PRIMARY } from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileStore";
-import AgeRangeSlider from "../shared/AgeRangeSlider";
-import { useConstantsStore } from "../../store/constantsStore";
 
+// Project imports
+import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
+import { useProfileSetupStore } from "@/store/profileStore";
+import { useConstantsStore } from "@/store/constantsStore";
+import AgeRangeSlider from "@/components/shared/AgeRangeSlider";
+
+// Types
+interface Step4Props {
+  onBack?: () => void;
+  onValidityChange?: (isValid: boolean) => void;
+}
+
+/**
+ * Step 4: Preferences - sexual orientation and age range
+ */
 export default function Step4({
   onBack,
   onValidityChange,
-}: {
-  onBack?: () => void;
-  onValidityChange?: (isValid: boolean) => void;
-}) {
+}: Step4Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
   const constants = useConstantsStore((state) => state.constants);

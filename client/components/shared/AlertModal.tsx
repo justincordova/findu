@@ -1,16 +1,39 @@
+// React core
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+
+// React Native
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// Icons
 import { Ionicons } from '@expo/vector-icons';
+
+// Project imports
 import { PRIMARY } from '@/constants/theme';
 
+// Constants
+const CONTENT_MAX_WIDTH = 400;
+const CONTENT_PADDING = 24;
+const BORDER_RADIUS = 16;
+const BUTTON_PADDING_VERTICAL = 12;
+const BUTTON_PADDING_HORIZONTAL = 32;
+const BUTTON_BORDER_RADIUS = 12;
+const BUTTON_MIN_WIDTH = 120;
+
+// Types
 interface AlertModalProps {
   visible: boolean;
   title: string;
   message: string;
   onClose: () => void;
   type?: 'info' | 'error' | 'warning' | 'success';
-  onConfirm?: () => void; // Optional confirmation callback for yes/no dialogs
+  onConfirm?: () => void;
 }
+
+/**
+ * Alert/confirmation modal component
+ * Displays messages with icons based on type (info, error, warning, success)
+ * Supports optional confirmation callback for confirmation dialogs
+ */
 
 export default function AlertModal({ 
   visible, 
@@ -94,10 +117,10 @@ const styles = StyleSheet.create({
   },
   content: {
     backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: BORDER_RADIUS,
+    padding: CONTENT_PADDING,
     width: '100%',
-    maxWidth: 400,
+    maxWidth: CONTENT_MAX_WIDTH,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -129,10 +152,10 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: PRIMARY,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    minWidth: 120,
+    paddingVertical: BUTTON_PADDING_VERTICAL,
+    paddingHorizontal: BUTTON_PADDING_HORIZONTAL,
+    borderRadius: BUTTON_BORDER_RADIUS,
+    minWidth: BUTTON_MIN_WIDTH,
   },
   cancelButton: {
     backgroundColor: '#E5E7EB',
