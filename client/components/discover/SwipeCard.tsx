@@ -1,25 +1,29 @@
-import React from "react";
+// React Native
 import {
-  View,
-  Text,
-  StyleSheet,
   Dimensions,
   ImageBackground,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
+
+// Third-party
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
+  Extrapolate,
+  interpolate,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  runOnJS,
-  interpolate,
-  Extrapolate,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import MaskedView from "@react-native-masked-view/masked-view";
 import { Ionicons } from "@expo/vector-icons";
+
+// Project imports
+import { DANGER, SUCCESS } from "@/constants/theme";
 import { Profile } from "@/types/Profile";
-import { SUCCESS, DANGER } from "@/constants/theme";
 
 const { width, height } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.9;
@@ -46,6 +50,7 @@ const GradientIcon = ({ name, size, colors }: GradientIconProps) => (
   </MaskedView>
 );
 
+// Types
 interface SwipeCardProps {
   profile: Profile;
   onSwipeLeft: () => void;
@@ -53,6 +58,10 @@ interface SwipeCardProps {
   active?: boolean;
 }
 
+/**
+ * Swipeable card component for discover flow
+ * Supports left/right swipe gestures with spring animations and action overlays
+ */
 export default function SwipeCard({
   profile,
   onSwipeLeft,

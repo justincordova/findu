@@ -1,33 +1,46 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+// React core
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+// React Native
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
+  Animated,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Keyboard,
-  Animated,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+// Third-party
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
+
+// Project imports
 import {
+  BACKGROUND,
   DARK,
   MUTED,
-  BACKGROUND,
   PRIMARY,
   SUCCESS,
-} from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileStore";
+} from "@/constants/theme";
+import { useProfileSetupStore } from "@/store/profileStore";
 
+// Types
+interface Step6Props {
+  onBack?: () => void;
+  onValidityChange?: (isValid: boolean) => void;
+}
+
+/**
+ * Step 6: Bio and interests - write bio and select interests
+ */
 export default function Step6({
   onBack,
   onValidityChange,
-}: {
-  onBack?: () => void;
-  onValidityChange?: (isValid: boolean) => void;
-}) {
+}: Step6Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 

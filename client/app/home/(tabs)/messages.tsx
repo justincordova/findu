@@ -1,6 +1,13 @@
-import { View, Text, StyleSheet } from "react-native";
-import { BACKGROUND, DARK, MUTED } from "../../../constants/theme";
+// React Native
+import { StyleSheet, Text, View } from "react-native";
 
+// Project imports
+import { BACKGROUND, DARK, MUTED } from "@/constants/theme";
+
+/**
+ * Messages/Chats screen - placeholder for messaging functionality
+ * Currently displays a stub message for future implementation
+ */
 export default function MessagesScreen() {
   return (
     <View style={styles.container}>

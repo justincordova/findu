@@ -1,27 +1,41 @@
-import React, { useCallback, useEffect, useMemo } from "react";
+// React core
+import { useCallback, useEffect, useMemo } from "react";
+
+// React Native
 import {
-  View,
-  Text,
-  TouchableOpacity,
+  Dimensions,
   Image,
   StyleSheet,
-  Dimensions,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+// Third-party
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileStore";
 
+// Project imports
+import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
+import { useProfileSetupStore } from "@/store/profileStore";
+
+// Constants
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const PHOTO_SIZE = (SCREEN_WIDTH - 64) / 2.5; // Bigger photos, 2.5 per row conceptually
 
-export default function Step6({
-  onBack,
-  onValidityChange,
-}: {
+// Types
+interface Step8Props {
   onBack?: () => void;
   onValidityChange?: (isValid: boolean) => void;
-}) {
+}
+
+/**
+ * Step 8: Photos - upload up to 6 profile photos
+ */
+export default function Step8({
+  onBack,
+  onValidityChange,
+}: Step8Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 

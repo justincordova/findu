@@ -1,26 +1,39 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+// React core
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+// React Native
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
+  Animated,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Keyboard,
-  Animated,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+// Third-party
 import { Ionicons } from "@expo/vector-icons";
+
+// Project imports
 import {
+  BACKGROUND,
   DARK,
   MUTED,
-  BACKGROUND,
   PRIMARY,
-} from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileStore";
+} from "@/constants/theme";
+import { useProfileSetupStore } from "@/store/profileStore";
 
-// Canonical interest categories and popular interests for quick selection
+// Types
+interface Step7Props {
+  onBack?: () => void;
+  onValidityChange?: (isValid: boolean) => void;
+}
+
+// Constants - Canonical interest categories and popular interests for quick selection
 const INTEREST_CATEGORIES = {
   Technology: [
     "Coding",
@@ -140,13 +153,13 @@ interface ExpandedCategories {
   [key: string]: boolean;
 }
 
+/**
+ * Step 7: Interests - select from categories or add custom interests
+ */
 export default function Step7({
   onBack,
   onValidityChange,
-}: {
-  onBack?: () => void;
-  onValidityChange?: (isValid: boolean) => void;
-}) {
+}: Step7Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 

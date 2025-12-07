@@ -1,29 +1,60 @@
-import React, { useState, useRef, useEffect } from "react";
+// React core
+import { useEffect, useRef, useState } from "react";
+
+// React Native
 import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  Dimensions,
-  TouchableOpacity,
-  Modal,
-  Alert,
-  FlatList,
   ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+
+// Project imports
 import { useProfileSetupStore } from "@/store/profileStore";
 import { useAuthStore } from "@/store/authStore";
 import { updatePhoto } from "@/services/uploadService";
 import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
 
+// Constants
 const { width } = Dimensions.get("window");
 const PADDING = 16;
 const GAP = 12;
 const PHOTO_WIDTH = (width - PADDING * 2 - GAP) / 2;
 const PHOTO_HEIGHT = PHOTO_WIDTH * 1.25; // 4:5 aspect ratio
+const CONTAINER_MARGIN_BOTTOM = 24;
+const TITLE_FONT_SIZE = 20;
+const TITLE_FONT_WEIGHT = "700";
+const TITLE_COLOR = "#1f2937";
+const TITLE_MARGIN_BOTTOM = 12;
+const PHOTO_BORDER_RADIUS = 12;
+const EMPTY_PADDING = 16;
+const EMPTY_TEXT_COLOR = "#6b7280";
+const EMPTY_TEXT_SIZE = 14;
+const EMPTY_BG = "#f9fafb";
+const MODAL_BOTTOM = 40;
+const ACTION_BUTTON_PADDING_V = 12;
+const ACTION_BUTTON_PADDING_H = 24;
+const ACTION_BUTTON_RADIUS = 8;
+const ACTION_TEXT_SIZE = 16;
+const ACTION_TEXT_WEIGHT = "600";
+const UPLOAD_OVERLAY_BG = "rgba(0, 0, 0, 0.6)";
+const UPLOAD_TEXT_SIZE = 16;
+const UPLOAD_TEXT_WEIGHT = "600";
+const UPLOAD_TEXT_MARGIN_TOP = 12;
+const UPLOAD_GAP = 16;
 
+/**
+ * Photos section component with grid display and fullscreen modal
+ * Supports replacing individual photos via image picker with upload feedback
+ */
 export default function PhotosSection() {
   const { data: profile } = useProfileSetupStore();
   const photos = Array.isArray(profile?.photos) ? profile.photos : [];
@@ -268,13 +299,13 @@ export default function PhotosSection() {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 24,
+    marginBottom: CONTAINER_MARGIN_BOTTOM,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 12,
-    color: "#1f2937",
+    fontSize: TITLE_FONT_SIZE,
+    fontWeight: TITLE_FONT_WEIGHT,
+    marginBottom: TITLE_MARGIN_BOTTOM,
+    color: TITLE_COLOR,
   },
   gridContainer: {
     paddingHorizontal: 0,
@@ -285,7 +316,7 @@ const styles = StyleSheet.create({
     gap: GAP,
   },
   photoContainer: {
-    borderRadius: 12,
+    borderRadius: PHOTO_BORDER_RADIUS,
     overflow: "hidden",
     backgroundColor: "#f3f4f6",
     width: PHOTO_WIDTH,
@@ -296,14 +327,14 @@ const styles = StyleSheet.create({
     height: PHOTO_HEIGHT,
   },
   emptyContainer: {
-    padding: 16,
+    padding: EMPTY_PADDING,
     alignItems: "center",
-    backgroundColor: "#f9fafb",
-    borderRadius: 12,
+    backgroundColor: EMPTY_BG,
+    borderRadius: PHOTO_BORDER_RADIUS,
   },
   emptyText: {
-    color: "#6b7280",
-    fontSize: 14,
+    color: EMPTY_TEXT_COLOR,
+    fontSize: EMPTY_TEXT_SIZE,
   },
   modalBackground: {
     flex: 1,
@@ -317,22 +348,22 @@ const styles = StyleSheet.create({
   },
   modalActions: {
     position: "absolute",
-    bottom: 40,
+    bottom: MODAL_BOTTOM,
     left: 0,
     right: 0,
     flexDirection: "row",
     justifyContent: "space-around",
   },
   actionButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: ACTION_BUTTON_PADDING_V,
+    paddingHorizontal: ACTION_BUTTON_PADDING_H,
     backgroundColor: "rgba(255,255,255,0.3)",
-    borderRadius: 8,
+    borderRadius: ACTION_BUTTON_RADIUS,
   },
   actionText: {
     color: "white",
-    fontWeight: "600",
-    fontSize: 16,
+    fontWeight: ACTION_TEXT_WEIGHT,
+    fontSize: ACTION_TEXT_SIZE,
   },
   actionButtonDisabled: {
     opacity: 0.5,
@@ -343,16 +374,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: UPLOAD_OVERLAY_BG,
     justifyContent: "center",
     alignItems: "center",
-    gap: 16,
+    gap: UPLOAD_GAP,
   },
   uploadingText: {
     color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    marginTop: 12,
+    fontSize: UPLOAD_TEXT_SIZE,
+    fontWeight: UPLOAD_TEXT_WEIGHT,
+    marginTop: UPLOAD_TEXT_MARGIN_TOP,
   },
 });
 

@@ -1,15 +1,35 @@
-import React from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from "react-native";
+// React Native
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+
+// Project imports
 import { DARK, MUTED } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
 import { useAuthStore } from "@/store/authStore";
 import { uploadAvatar } from "@/services/uploadService";
 import logger from "@/config/logger";
 
+// Constants
 const AVATAR_SIZE = 120;
+const AVATAR_BORDER_RADIUS = AVATAR_SIZE / 2;
+const AVATAR_MARGIN_BOTTOM = 16;
+const CONTAINER_MARGIN_TOP = 24;
+const CONTAINER_MARGIN_BOTTOM = 24;
+const CONTAINER_PADDING_HORIZONTAL = 16;
+const AVATAR_PLACEHOLDER_BG = "#e5e7eb";
+const NAME_FONT_SIZE = 24;
+const NAME_FONT_WEIGHT = "bold";
+const NAME_MARGIN_BOTTOM = 4;
+const SUBTEXT_FONT_SIZE = 16;
+const SUBTEXT_MARGIN_BOTTOM = 2;
+const PLACEHOLDER_TEXT_FONT_SIZE = 14;
 
-/** Calculate age from birthdate */
+/**
+ * Profile header with avatar, name, age, gender, and intent
+ * Allows avatar upload with image picker
+ */
+
+/** Calculate age from birthdate accounting for month/day not yet passed */
 function calculateAge(birthdate: string | undefined): number | null {
   if (!birthdate) return null;
   // ... (age calculation logic remains the same)
@@ -112,37 +132,37 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 24,
-    marginBottom: 24,
-    paddingHorizontal: 16,
+    marginTop: CONTAINER_MARGIN_TOP,
+    marginBottom: CONTAINER_MARGIN_BOTTOM,
+    paddingHorizontal: CONTAINER_PADDING_HORIZONTAL,
   },
   avatar: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    marginBottom: 16,
+    borderRadius: AVATAR_BORDER_RADIUS,
+    marginBottom: AVATAR_MARGIN_BOTTOM,
   },
   avatarPlaceholder: {
-    backgroundColor: "#e5e7eb",
+    backgroundColor: AVATAR_PLACEHOLDER_BG,
     justifyContent: "center",
     alignItems: "center",
   },
   avatarPlaceholderText: {
     color: MUTED,
-    fontSize: 14,
+    fontSize: PLACEHOLDER_TEXT_FONT_SIZE,
     textAlign: "center",
   },
   name: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: NAME_FONT_SIZE,
+    fontWeight: NAME_FONT_WEIGHT,
     color: DARK,
-    marginBottom: 4,
+    marginBottom: NAME_MARGIN_BOTTOM,
     textAlign: "center",
   },
   subText: {
-    fontSize: 16,
+    fontSize: SUBTEXT_FONT_SIZE,
     color: MUTED,
     textAlign: "center",
-    marginBottom: 2,
+    marginBottom: SUBTEXT_MARGIN_BOTTOM,
   },
 });

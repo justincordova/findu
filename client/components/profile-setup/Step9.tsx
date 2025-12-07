@@ -1,26 +1,44 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+// React core
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+// React Native
 import {
-  View,
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  ScrollView,
-  Image,
-  StyleSheet,
-  ActivityIndicator,
+  View,
 } from "react-native";
+
+// Third-party
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileStore";
+// Project imports
+import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
+import { useProfileSetupStore } from "@/store/profileStore";
+import { useAuthStore } from "@/store/authStore";
 import { handleSubmitProfile } from "./handleSubmitProfile";
 import { Profile } from "@/types/Profile";
-import { useAuthStore } from "../../store/authStore";
 
+// Types
 type ProfileData = Partial<Profile> & {
   university_name?: string;
   campus_name?: string;
 };
+
+interface Step9Props {
+  onBack?: () => void;
+  onNext: () => void;
+  onValidityChange?: (isValid: boolean) => void;
+}
+
+/**
+ * Step 9: Review - final profile review and submission
+ * Displays all profile information for user confirmation before submitting
+ */
 
 /** Format birthdate into readable string */
 function formatBirthdate(birthdate: string | Date | undefined) {
@@ -45,11 +63,7 @@ export default function Step9({
   onBack,
   onNext,
   onValidityChange,
-}: {
-  onBack?: () => void;
-  onNext: () => void;
-  onValidityChange?: (isValid: boolean) => void;
-}) {
+}: Step9Props) {
   const authState = useAuthStore.getState();
   const rawProfileData = useProfileSetupStore((state) => state.data);
   const profileData: ProfileData = useMemo(() => rawProfileData ?? {}, [rawProfileData]);

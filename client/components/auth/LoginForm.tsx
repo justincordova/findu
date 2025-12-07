@@ -1,13 +1,41 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+// React core
+import { useState } from "react";
+
+// React Native
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+
+// Third-party
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+
+// Project imports
+import Button from "@/components/shared/Button";
 import { DANGER } from "@/constants/theme";
-import { useAuth } from "@/hooks/useAuth";
-import Button from "../shared/Button";
 import { profileApi } from "@/api/profile";
+import { useAuth } from "@/hooks/useAuth";
 
+// Constants
+const CONTAINER_MARGIN_TOP = 24;
+const INPUT_BORDER_WIDTH = 1;
+const INPUT_BORDER_COLOR = "#D1D5DB";
+const INPUT_BORDER_RADIUS = 12;
+const INPUT_PADDING_HORIZONTAL = 16;
+const INPUT_PADDING_VERTICAL = 14;
+const INPUT_MARGIN_BOTTOM = 16;
+const INPUT_FONT_SIZE = 16;
+const PLACEHOLDER_COLOR = "#A1A1A1";
+const PASSWORD_PADDING_RIGHT = 50;
+const EYE_ICON_SIZE = 20;
+const EYE_ICON_COLOR = "#6B7280";
+const EYE_BUTTON_PADDING = 4;
+const EYE_BUTTON_RIGHT = 16;
+const EYE_BUTTON_TRANSLATE_Y = -14;
+const ERROR_MARGIN_BOTTOM = 16;
 
+/**
+ * Login form component with email, password, and visibility toggle
+ * Handles authentication and navigates to discover or profile setup based on profile status
+ */
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,18 +49,17 @@ export default function LoginForm() {
     setError("");
 
     try {
-      const result = await login(email, password); // Hook handles store internally
+      const result = await login(email, password);
 
       if (!result.success) {
         setError(result.error || "Login failed");
       } else {
-        // Check if profile exists by calling /me
+        // Verify profile exists, navigate accordingly
         try {
           await profileApi.me();
-          // Profile exists, go to discover
           router.replace("/home/(tabs)/discover");
         } catch {
-          // Profile doesn't exist (404), go to setup
+          // Profile doesn't exist, start setup flow
           router.replace("/profile-setup/1");
         }
       }
@@ -53,7 +80,7 @@ export default function LoginForm() {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
-        placeholderTextColor="#A1A1A1"
+        placeholderTextColor={PLACEHOLDER_COLOR}
       />
 
       <View style={styles.passwordContainer}>
@@ -64,7 +91,7 @@ export default function LoginForm() {
           onChangeText={setPassword}
           secureTextEntry={!showPassword}
           autoCapitalize="none"
-          placeholderTextColor="#A1A1A1"
+          placeholderTextColor={PLACEHOLDER_COLOR}
         />
         <TouchableOpacity
           style={styles.eyeButton}
@@ -73,8 +100,8 @@ export default function LoginForm() {
         >
           <Ionicons
             name={showPassword ? "eye-off" : "eye"}
-            size={20}
-            color="#6B7280"
+            size={EYE_ICON_SIZE}
+            color={EYE_ICON_COLOR}
           />
         </TouchableOpacity>
       </View>
@@ -91,42 +118,42 @@ export default function LoginForm() {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    marginTop: 24,
+    marginTop: CONTAINER_MARGIN_TOP,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 16,
+    borderWidth: INPUT_BORDER_WIDTH,
+    borderColor: INPUT_BORDER_COLOR,
+    borderRadius: INPUT_BORDER_RADIUS,
+    paddingHorizontal: INPUT_PADDING_HORIZONTAL,
+    paddingVertical: INPUT_PADDING_VERTICAL,
+    marginBottom: INPUT_MARGIN_BOTTOM,
     backgroundColor: "white",
-    fontSize: 16,
+    fontSize: INPUT_FONT_SIZE,
   },
   error: {
     color: DANGER,
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: ERROR_MARGIN_BOTTOM,
   },
   passwordContainer: {
     position: "relative",
-    marginBottom: 16,
+    marginBottom: INPUT_MARGIN_BOTTOM,
   },
   passwordInput: {
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingRight: 50,
-    paddingVertical: 14,
+    borderWidth: INPUT_BORDER_WIDTH,
+    borderColor: INPUT_BORDER_COLOR,
+    borderRadius: INPUT_BORDER_RADIUS,
+    paddingHorizontal: INPUT_PADDING_HORIZONTAL,
+    paddingRight: PASSWORD_PADDING_RIGHT,
+    paddingVertical: INPUT_PADDING_VERTICAL,
     backgroundColor: "white",
-    fontSize: 16,
+    fontSize: INPUT_FONT_SIZE,
   },
   eyeButton: {
     position: "absolute",
-    right: 16,
+    right: EYE_BUTTON_RIGHT,
     top: "50%",
-    transform: [{ translateY: -14 }],
-    padding: 4,
+    transform: [{ translateY: EYE_BUTTON_TRANSLATE_Y }],
+    padding: EYE_BUTTON_PADDING,
   },
 });

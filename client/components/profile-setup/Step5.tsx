@@ -1,17 +1,30 @@
-import React, { useCallback, useMemo, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+// React core
+import { useCallback, useEffect, useMemo } from "react";
+
+// React Native
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+// Third-party
 import RangeSlider from "rn-range-slider";
 import { Ionicons } from "@expo/vector-icons";
-import { DARK, MUTED, PRIMARY, BACKGROUND } from "../../constants/theme";
-import { useProfileSetupStore } from "../../store/profileStore";
 
+// Project imports
+import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
+import { useProfileSetupStore } from "@/store/profileStore";
+
+// Types
+interface Step5Props {
+  onBack?: () => void;
+  onValidityChange?: (isValid: boolean) => void;
+}
+
+/**
+ * Step 5: Gender preferences - select preferred genders
+ */
 export default function Step5({
   onBack,
   onValidityChange,
-}: {
-  onBack?: () => void;
-  onValidityChange?: (isValid: boolean) => void;
-}) {
+}: Step5Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 

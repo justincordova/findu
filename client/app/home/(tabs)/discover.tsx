@@ -1,12 +1,27 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, Alert } from "react-native";
+// React core
+import React, { useCallback, useEffect, useState } from "react";
+
+// React Native
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BACKGROUND, DARK, MUTED, PRIMARY } from "../../../constants/theme";
-import { getDiscoverFeed } from "@/services/discoverService";
-import { sendLike } from "@/services/likesService";
+
+// Project imports
 import SwipeCard from "@/components/discover/SwipeCard";
-import { Profile } from "@/types/Profile";
 import logger from "@/config/logger";
+import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
+import { sendLike } from "@/services/likesService";
+import { getDiscoverFeed } from "@/services/discoverService";
+import { Profile } from "@/types/Profile";
+
+// Constants
+const INITIAL_FETCH_LIMIT = 10;
+const INITIAL_OFFSET = 0;
+
+/**
+ * Discover screen - card-based matching interface
+ * Displays profiles as swipeable cards with left/right gesture support
+ * Left swipe: discard, Right swipe: like (with match detection)
+ */
 
 export default function DiscoverScreen() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -15,9 +30,10 @@ export default function DiscoverScreen() {
 
   logger.debug("DiscoverScreen rendered", { currentIndex, profilesCount: profiles.length });
 
+  // Fetch initial discover feed
   const fetchProfiles = useCallback(async () => {
     setLoading(true);
-    const res = await getDiscoverFeed(10, 0);
+    const res = await getDiscoverFeed(INITIAL_FETCH_LIMIT, INITIAL_OFFSET);
     if (res.success && res.data?.profiles) {
       setProfiles(res.data.profiles);
     } else {
