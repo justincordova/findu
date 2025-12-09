@@ -154,11 +154,13 @@ export default function Step7({ onValidityChange }: Step7Props) {
   const addInterest = useCallback(
     (interest: string) => {
       const trimmed = interest.trim();
-      if (trimmed && !profileData?.interests?.includes(trimmed)) {
-        setProfileField("interests", [
-          ...(profileData?.interests || []),
-          trimmed,
-        ]);
+      const currentInterests = profileData?.interests || [];
+      // Enforce max 10 interests limit
+      if (currentInterests.length >= 10) {
+        return;
+      }
+      if (trimmed && !currentInterests.includes(trimmed)) {
+        setProfileField("interests", [...currentInterests, trimmed]);
       }
       setInterestInput("");
       Keyboard.dismiss();
@@ -204,7 +206,10 @@ export default function Step7({ onValidityChange }: Step7Props) {
         items={allInterestsFlat}
         onValueChange={(values) => {
           const interestArray = Array.isArray(values) ? values : [values];
-          setProfileField("interests", interestArray);
+          // Enforce max 10 interests limit
+          if (interestArray.length <= 10) {
+            setProfileField("interests", interestArray);
+          }
         }}
         open={showCategoriesDropdown}
         onOpenChange={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
@@ -220,29 +225,37 @@ export default function Step7({ onValidityChange }: Step7Props) {
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>Popular</Text>
         <View style={styles.pillContainer}>
-          {popularInterests.map((interest) => (
-            <TouchableOpacity
-              key={interest}
-              onPress={() =>
-                isInterestSelected(interest)
-                  ? removeInterest(interest)
-                  : addInterest(interest)
-              }
-              style={[
-                styles.pill,
-                isInterestSelected(interest) && styles.pillSelected,
-              ]}
-            >
-              <Text
+          {popularInterests.map((interest) => {
+            const isSelected = isInterestSelected(interest);
+            const isAtLimit = (profileData?.interests?.length || 0) >= 10;
+            const isDisabled = !isSelected && isAtLimit;
+            return (
+              <TouchableOpacity
+                key={interest}
+                onPress={() =>
+                  isSelected
+                    ? removeInterest(interest)
+                    : addInterest(interest)
+                }
                 style={[
-                  styles.pillText,
-                  isInterestSelected(interest) && styles.pillTextSelected,
+                  styles.pill,
+                  isSelected && styles.pillSelected,
+                  isDisabled && styles.pillDisabled,
                 ]}
+                disabled={isDisabled}
               >
-                {interest}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.pillText,
+                    isSelected && styles.pillTextSelected,
+                    isDisabled && styles.pillTextDisabled,
+                  ]}
+                >
+                  {interest}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -310,31 +323,39 @@ export default function Step7({ onValidityChange }: Step7Props) {
                 {/* Expanded Category Items with Pagination */}
                 {isExpanded && (
                   <View style={styles.expandedItemsContainer}>
-                    {paginatedInterests.map((interest) => (
+                    {paginatedInterests.map((interest) => {
+                      const isSelected = isInterestSelected(interest);
+                      const isAtLimit = (profileData?.interests?.length || 0) >= 10;
+                      const isDisabled = !isSelected && isAtLimit;
+                      return (
                       <TouchableOpacity
                         key={interest}
                         onPress={() =>
-                          isInterestSelected(interest)
+                          isSelected
                             ? removeInterest(interest)
                             : addInterest(interest)
                         }
+                        disabled={isDisabled}
                         style={[
                           styles.categoryItem,
-                          isInterestSelected(interest) &&
+                          isSelected &&
                             styles.categoryItemSelected,
+                          isDisabled && styles.categoryItemDisabled,
                         ]}
                       >
                         <Text
                           style={[
                             styles.categoryItemText,
-                            isInterestSelected(interest) &&
+                            isSelected &&
                               styles.categoryItemTextSelected,
+                            isDisabled && styles.categoryItemTextDisabled,
                           ]}
                         >
                           {interest}
                         </Text>
                       </TouchableOpacity>
-                    ))}
+                      );
+                    })}
 
                     {/* Pagination Controls */}
                     {totalPages > 1 && (
@@ -385,26 +406,30 @@ export default function Step7({ onValidityChange }: Step7Props) {
       )}
 
       {/* Custom Interest Input */}
-      <View style={styles.customInputContainer}>
-        <Text style={styles.sectionTitle}>Add Custom Interest</Text>
-        <View style={styles.interestInputContainer}>
-          <TextInput
-            style={styles.interestInput}
-            placeholder="Type an interest..."
-            value={interestInput}
-            onChangeText={setInterestInput}
-            placeholderTextColor={MUTED}
-            onSubmitEditing={() => addInterest(interestInput)}
-            returnKeyType="done"
-          />
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => addInterest(interestInput)}
-          >
-            <Text style={styles.addButtonText}>Add</Text>
-          </TouchableOpacity>
+      {(profileData?.interests?.length || 0) < 10 && (
+        <View style={styles.customInputContainer}>
+          <Text style={styles.sectionTitle}>Add Custom Interest</Text>
+          <View style={styles.interestInputContainer}>
+            <TextInput
+              style={styles.interestInput}
+              placeholder="Type an interest..."
+              value={interestInput}
+              onChangeText={setInterestInput}
+              placeholderTextColor={MUTED}
+              onSubmitEditing={() => addInterest(interestInput)}
+              returnKeyType="done"
+              editable={(profileData?.interests?.length || 0) < 10}
+            />
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => addInterest(interestInput)}
+              disabled={(profileData?.interests?.length || 0) >= 10}
+            >
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Selected Interests Display */}
       {(profileData?.interests?.length || 0) > 0 && (
@@ -515,6 +540,13 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
   },
+  pillDisabled: {
+    opacity: 0.5,
+    borderColor: "#d1d5db",
+  },
+  pillTextDisabled: {
+    color: "#9ca3af",
+  },
   categoryBubble: {
     flexDirection: "row",
     alignItems: "center",
@@ -585,6 +617,10 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  categoryItemDisabled: {
+    opacity: 0.5,
+    borderColor: "#d1d5db",
+  },
   categoryItemText: {
     flex: 1,
     fontSize: 14,
@@ -594,6 +630,9 @@ const styles = StyleSheet.create({
   categoryItemTextSelected: {
     color: SECONDARY,
     fontWeight: "600",
+  },
+  categoryItemTextDisabled: {
+    color: "#9ca3af",
   },
   paginationContainer: {
     flexDirection: "row",
