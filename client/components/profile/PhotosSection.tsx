@@ -1,5 +1,5 @@
 // React core
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // React Native
 import {
@@ -8,7 +8,6 @@ import {
   Dimensions,
   FlatList,
   Image,
-  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,7 +16,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 
 // Project imports
-import { useProfileSetupStore } from "@/store/profileStore";
+import { useProfile } from "@/contexts/ProfileContext";
 import { useAuthStore } from "@/store/authStore";
 import { updatePhoto } from "@/services/uploadService";
 import { profileApi } from "@/api/profile";
@@ -29,286 +28,249 @@ const PADDING = 16;
 const GAP = 12;
 const PHOTO_WIDTH = (width - PADDING * 2 - GAP) / 2;
 const PHOTO_HEIGHT = PHOTO_WIDTH * 1.25; // 4:5 aspect ratio
-const CONTAINER_MARGIN_BOTTOM = 24;
-const TITLE_FONT_SIZE = 20;
-const TITLE_FONT_WEIGHT = "700";
-const TITLE_COLOR = "#1f2937";
-const TITLE_MARGIN_BOTTOM = 12;
 const PHOTO_BORDER_RADIUS = 12;
-const EMPTY_PADDING = 16;
-const EMPTY_TEXT_COLOR = "#6b7280";
-const EMPTY_TEXT_SIZE = 14;
-const EMPTY_BG = "#f9fafb";
-const MODAL_BOTTOM = 40;
-const ACTION_BUTTON_PADDING_V = 12;
-const ACTION_BUTTON_PADDING_H = 24;
-const ACTION_BUTTON_RADIUS = 8;
-const ACTION_TEXT_SIZE = 16;
-const ACTION_TEXT_WEIGHT = "600";
-const UPLOAD_OVERLAY_BG = "rgba(0, 0, 0, 0.6)";
-const UPLOAD_TEXT_SIZE = 16;
-const UPLOAD_TEXT_WEIGHT = "600";
-const UPLOAD_TEXT_MARGIN_TOP = 12;
-const UPLOAD_GAP = 16;
+// Carousel height: full width with 4:5 aspect ratio to match photos
+const CAROUSEL_HEIGHT = (width / 4) * 5; // 4:5 aspect ratio = width * 1.25
 
 /**
- * Photos section component with grid display and fullscreen modal
- * Supports replacing individual photos via image picker with upload feedback
+ * PhotosSection Component
+ *
+ * Displays user's 6 photos in a carousel view at the top of profile.
+ * Supports replacing photos via image picker with 4:5 crop ratio.
+ *
+ * Features:
+ * - Horizontal carousel with swipe navigation
+ * - Tap photo to replace (discrete pencil icon indicator)
+ * - Image cropping with 4:5 aspect ratio
+ * - Photo indicators (dots) at bottom of carousel
+ * - Uploading feedback overlay
+ * - Comprehensive logging and error handling
  */
 export default function PhotosSection() {
-  const { data: profile } = useProfileSetupStore();
-  const photos = Array.isArray(profile?.photos) ? profile.photos : [];
+  const { profile, refetch } = useProfile();
   const userId = useAuthStore.getState().userId;
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const photos = useMemo(
+    () => Array.isArray(profile?.photos) ? profile.photos : [],
+    [profile?.photos]
+  );
+
+  // Carousel state
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+
+  // FlatList ref for carousel scrolling
   const flatListRef = useRef<FlatList>(null);
 
-  const openModal = (index: number) => {
-    setCurrentIndex(index);
-    setModalVisible(true);
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-  };
-
+  // Scroll to selected photo when index changes
   useEffect(() => {
-    if (modalVisible && flatListRef.current) {
-      // Scroll to the current index when modal opens
+    if (flatListRef.current) {
       setTimeout(() => {
         flatListRef.current?.scrollToIndex({
-          index: currentIndex,
-          animated: false,
+          index: currentPhotoIndex,
+          animated: true,
         });
       }, 100);
     }
-  }, [modalVisible, currentIndex]);
+  }, [currentPhotoIndex]);
 
-  const handleReplacePhoto = async () => {
+
+  /**
+   * Handle tapping carousel photo to replace it
+   */
+  const handleTapPhotoToReplace = useCallback(async () => {
     if (!userId) {
       logger.error("[PhotosSection] User ID not found");
       Alert.alert("Error", "You must be logged in to update photos.");
       return;
     }
 
-    logger.debug("Modal opened for photo replacement", {
-      photoIndex: currentIndex
+    logger.debug("Tapping photo to replace", {
+      userId,
+      photoIndex: currentPhotoIndex,
     });
-
-    logger.debug("Requesting media library permission", {
-      photoIndex: currentIndex
-    });
-
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissionResult.granted === false) {
-      logger.warn("[PhotosSection] Media library permission denied", {
-        userId,
-        photoIndex: currentIndex
-      });
-      Alert.alert("Permission required", "You need to allow access to your photos.");
-      return;
-    }
-
-    logger.debug("Permission granted, launching picker", {
-      photoIndex: currentIndex
-    });
-
-    const pickerResult = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 5],
-      quality: 1,
-    });
-
-    if (pickerResult.canceled) {
-      logger.debug("Image picker cancelled", {
-        photoIndex: currentIndex
-      });
-      return;
-    }
-
-    const newUri = pickerResult.assets[0].uri;
-    logger.debug("Image selected", {
-      photoIndex: currentIndex
-    });
-
-    setIsUploading(true);
 
     try {
-      logger.info("Photo upload started", {
-        photoIndex: currentIndex
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [4, 5],
+        quality: 1,
       });
 
-      const newPhotoUrl = await updatePhoto(userId, newUri, currentIndex);
+      if (result.canceled) {
+        logger.debug("Image picker cancelled");
+        return;
+      }
 
-      logger.info("Photo replaced", {
-        photoIndex: currentIndex
-      });
-
-      // Update the store with the new photo URL
-      // This ensures correct extension is displayed after upload
-      const currentPhotos = Array.isArray(profile?.photos) ? [...profile.photos] : [];
-      currentPhotos[currentIndex] = newPhotoUrl;
-      useProfileSetupStore.getState().setProfileField("photos", currentPhotos);
-
-      logger.debug("Updated store with new URL", {
-        photoIndex: currentIndex
-      });
-
-      // Update the profile in the database with the new photo URL
-      logger.debug("Updating profile in database", {
-        photoIndex: currentIndex
-      });
-      await profileApi.update(userId, { photos: currentPhotos });
-
-      logger.info("Profile updated in database", {
-        photoIndex: currentIndex
-      });
-
-      Alert.alert("Success", "Photo updated successfully!");
-      closeModal(); // Close the modal after successful upload
-    } catch (error) {
-      logger.error("[PhotosSection] Failed to replace photo", {
+      const imageUri = result.assets[0].uri;
+      logger.debug("Image selected for replacement", {
         userId,
-        photoIndex: currentIndex,
-        error: error instanceof Error ? error.message : String(error)
+        photoIndex: currentPhotoIndex,
+        imageUri,
       });
-      Alert.alert("Upload Failed", "Could not replace the photo. Please try again.");
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>No photos added</Text>
+      // Upload photo and get the new URL
+      setIsUploading(true);
+
+      try {
+        const newPhotoUrl = await updatePhoto(userId, imageUri, currentPhotoIndex);
+
+        logger.debug("Photo uploaded, saving to profile", {
+          userId,
+          photoIndex: currentPhotoIndex,
+          newUrl: newPhotoUrl,
+        });
+
+        // Build updated photos array with new URL at the correct index
+        const updatedPhotos = [...photos];
+        updatedPhotos[currentPhotoIndex] = newPhotoUrl;
+
+        // Save the updated photos array to the profile
+        await profileApi.update(userId, {
+          photos: updatedPhotos,
+        });
+
+        logger.info("Photo replaced successfully", {
+          userId,
+          photoIndex: currentPhotoIndex,
+          newUrl: newPhotoUrl,
+        });
+
+        // Refetch profile to sync with server
+        await refetch();
+
+        Alert.alert("Success", "Photo updated successfully!");
+      } catch (error) {
+        logger.error("[PhotosSection] Failed to replace photo", {
+          userId,
+          photoIndex: currentPhotoIndex,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        Alert.alert(
+          "Upload Failed",
+          "Could not replace the photo. Please try again."
+        );
+      } finally {
+        setIsUploading(false);
+      }
+    } catch (error) {
+      logger.error("[PhotosSection] Failed to pick image", {
+        userId,
+        photoIndex: currentPhotoIndex,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      Alert.alert("Error", "Could not open image picker. Please try again.");
+    }
+  }, [userId, currentPhotoIndex, photos, refetch]);
+
+
+  /**
+   * Render photo indicators (dots showing current position in carousel)
+   */
+  const renderIndicators = () => (
+    <View style={styles.indicatorsContainer}>
+      {photos.map((_, index) => (
+        <View
+          key={index}
+          style={[
+            styles.indicator,
+            currentPhotoIndex === index && styles.indicatorActive,
+          ]}
+        />
+      ))}
     </View>
   );
 
-  if (photos.length === 0) {
-    return renderEmptyState();
-  }
+  /**
+   * Render carousel FlatList
+   */
+  const renderCarousel = () => (
+    <FlatList
+      ref={flatListRef}
+      data={photos}
+      horizontal
+      pagingEnabled
+      scrollEventThrottle={16}
+      showsHorizontalScrollIndicator={false}
+      keyExtractor={(_, index) => `carousel-photo-${index}`}
+      initialScrollIndex={currentPhotoIndex}
+      getItemLayout={(_, index) => ({
+        length: width,
+        offset: width * index,
+        index,
+      })}
+      onMomentumScrollEnd={(event) => {
+        const contentOffsetX = event.nativeEvent.contentOffset.x;
+        const newIndex = Math.round(contentOffsetX / width);
+        setCurrentPhotoIndex(newIndex);
+      }}
+      renderItem={({ item: photo }) => (
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={handleTapPhotoToReplace}
+          style={styles.carouselPhotoContainer}
+        >
+          <Image
+            source={{ uri: photo }}
+            style={styles.carouselPhoto}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+      )}
+      onScrollToIndexFailed={(info) => {
+        // Fallback if scroll fails
+        setTimeout(() => {
+          flatListRef.current?.scrollToOffset({
+            offset: info.averageItemLength * info.index,
+            animated: false,
+          });
+        }, 100);
+      }}
+    />
+  );
 
-  // Create a 2x3 grid (6 photos max)
-  const renderGrid = () => {
-    const rows = [];
-    for (let i = 0; i < photos.length; i += 2) {
-      const rowPhotos = photos.slice(i, i + 2);
-      rows.push(
-        <View key={i} style={styles.row}>
-          {rowPhotos.map((photo: string, idx: number) => {
-            const photoIndex = i + idx;
-            return (
-              <TouchableOpacity
-                key={photoIndex}
-                onPress={() => openModal(photoIndex)}
-                activeOpacity={0.8}
-                style={styles.photoContainer}
-              >
-                <Image
-                  source={{ uri: photo }}
-                  style={styles.photo}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-            );
-          })}
-          {/* Fill empty space if odd number of photos in last row */}
-          {rowPhotos.length === 1 && <View style={styles.photoContainer} />}
+  if (photos.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No photos added</Text>
         </View>
-      );
-    }
-    return rows;
-  };
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Photos</Text>
+      {/* Carousel Display */}
+      <View style={styles.carouselContainer}>
+        {renderCarousel()}
+        {renderIndicators()}
 
-      <View style={styles.gridContainer}>{renderGrid()}</View>
-
-      <Modal visible={modalVisible} transparent={true} animationType="fade">
-        <View style={styles.modalBackground}>
-          <FlatList
-            ref={flatListRef}
-            data={photos}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item, index) => `modal-photo-${index}`}
-            initialScrollIndex={currentIndex}
-            getItemLayout={(_, index) => ({
-              length: width,
-              offset: width * index,
-              index,
-            })}
-            renderItem={({ item: photo }) => (
-              <Image
-                source={{ uri: photo }}
-                style={styles.fullscreenImage}
-                resizeMode="contain"
-              />
-            )}
-            onScrollToIndexFailed={(info) => {
-              // Fallback if scroll fails
-              setTimeout(() => {
-                flatListRef.current?.scrollToOffset({
-                  offset: info.averageItemLength * info.index,
-                  animated: false,
-                });
-              }, 100);
-            }}
-          />
-
-          <View style={styles.modalActions}>
-            <TouchableOpacity
-              style={[styles.actionButton, isUploading && styles.actionButtonDisabled]}
-              onPress={handleReplacePhoto}
-              activeOpacity={0.8}
-              disabled={isUploading}
-            >
-              {isUploading ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Text style={styles.actionText}>Replace</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionButton, isUploading && styles.actionButtonDisabled]}
-              onPress={closeModal}
-              activeOpacity={0.8}
-              disabled={isUploading}
-            >
-              <Text style={styles.actionText}>Close</Text>
-            </TouchableOpacity>
+        {/* Uploading overlay */}
+        {isUploading && (
+          <View style={styles.uploadingOverlay}>
+            <ActivityIndicator size="large" color="white" />
+            <Text style={styles.uploadingText}>Updating photo...</Text>
           </View>
+        )}
+      </View>
 
-          {isUploading && (
-            <View style={styles.uploadingOverlay}>
-              <ActivityIndicator size="large" color="white" />
-              <Text style={styles.uploadingText}>Updating photo...</Text>
-            </View>
-          )}
-        </View>
-      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: CONTAINER_MARGIN_BOTTOM,
-  },
-  title: {
-    fontSize: TITLE_FONT_SIZE,
-    fontWeight: TITLE_FONT_WEIGHT,
-    marginBottom: TITLE_MARGIN_BOTTOM,
-    color: TITLE_COLOR,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   gridContainer: {
-    paddingHorizontal: 0,
+    marginHorizontal: -PADDING,
+    paddingHorizontal: PADDING,
   },
   row: {
     flexDirection: "row",
@@ -327,46 +289,87 @@ const styles = StyleSheet.create({
     height: PHOTO_HEIGHT,
   },
   emptyContainer: {
-    padding: EMPTY_PADDING,
+    padding: 16,
     alignItems: "center",
-    backgroundColor: EMPTY_BG,
+    backgroundColor: "#f9fafb",
     borderRadius: PHOTO_BORDER_RADIUS,
   },
   emptyText: {
-    color: EMPTY_TEXT_COLOR,
-    fontSize: EMPTY_TEXT_SIZE,
+    color: "#6b7280",
+    fontSize: 14,
   },
-  modalBackground: {
+  carouselContainer: {
+    position: "relative",
+    width: "100%",
+    height: CAROUSEL_HEIGHT,
+    backgroundColor: "#1f2937",
+    borderRadius: 0,
+    overflow: "hidden",
+  },
+  carouselBackground: {
     flex: 1,
     backgroundColor: "black",
     justifyContent: "center",
     alignItems: "center",
   },
-  fullscreenImage: {
+  closeButton: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  carouselPhotoContainer: {
+    width,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  carouselPhoto: {
     width,
     height: "100%",
   },
-  modalActions: {
+  tapHintOverlay: {
     position: "absolute",
-    bottom: MODAL_BOTTOM,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.1)",
+    width: "100%",
+    height: "100%",
+  },
+  indicatorsContainer: {
+    position: "absolute",
+    bottom: 16,
     left: 0,
     right: 0,
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 16,
   },
-  actionButton: {
-    paddingVertical: ACTION_BUTTON_PADDING_V,
-    paddingHorizontal: ACTION_BUTTON_PADDING_H,
-    backgroundColor: "rgba(255,255,255,0.3)",
-    borderRadius: ACTION_BUTTON_RADIUS,
+  indicator: {
+    flex: 1,
+    maxWidth: 40,
+    height: 4,
+    backgroundColor: "rgba(255,255,255,0.6)",
+    borderRadius: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  actionText: {
-    color: "white",
-    fontWeight: ACTION_TEXT_WEIGHT,
-    fontSize: ACTION_TEXT_SIZE,
-  },
-  actionButtonDisabled: {
-    opacity: 0.5,
+  indicatorActive: {
+    backgroundColor: "rgba(255,255,255,1)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   uploadingOverlay: {
     position: "absolute",
@@ -374,16 +377,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: UPLOAD_OVERLAY_BG,
+    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
-    gap: UPLOAD_GAP,
+    gap: 16,
+    zIndex: 100,
   },
   uploadingText: {
     color: "white",
-    fontSize: UPLOAD_TEXT_SIZE,
-    fontWeight: UPLOAD_TEXT_WEIGHT,
-    marginTop: UPLOAD_TEXT_MARGIN_TOP,
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 12,
   },
 });
 
