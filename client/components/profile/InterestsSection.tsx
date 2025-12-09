@@ -63,7 +63,7 @@ const POPULAR_INTERESTS_UNBIASED = [
 
 export default function InterestsSection() {
   const { profile, refetch } = useProfile();
-  const userId = useAuthStore.getState().userId;
+  const userId = useAuthStore((state) => state.userId);
   const constants = useConstantsStore((state) => state.constants);
 
   // Display data

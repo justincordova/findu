@@ -37,7 +37,7 @@ import { MUTED, PRIMARY } from "@/constants/theme";
  */
 export default function BioSection() {
   const { profile, refetch } = useProfile();
-  const userId = useAuthStore.getState().userId;
+  const userId = useAuthStore((state) => state.userId);
 
   // Display data
   const bio = profile?.bio || "";

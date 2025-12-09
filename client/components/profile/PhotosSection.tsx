@@ -48,7 +48,7 @@ const CAROUSEL_HEIGHT = (width / 4) * 5; // 4:5 aspect ratio = width * 1.25
  */
 export default function PhotosSection() {
   const { profile, refetch } = useProfile();
-  const userId = useAuthStore.getState().userId;
+  const userId = useAuthStore((state) => state.userId);
 
   const photos = useMemo(
     () => Array.isArray(profile?.photos) ? profile.photos : [],
