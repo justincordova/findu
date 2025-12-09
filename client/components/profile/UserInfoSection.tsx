@@ -70,7 +70,7 @@ type DropdownKey = "gender" | "pronouns" | null;
 
 export default function UserInfoSection() {
   const { profile, refetch } = useProfile();
-  const userId = useAuthStore.getState().userId;
+  const userId = useAuthStore((state) => state.userId);
 
   // Display data
   const avatarUrl = profile?.avatar_url;

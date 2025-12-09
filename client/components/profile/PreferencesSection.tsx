@@ -44,7 +44,7 @@ import { PRIMARY } from "@/constants/theme";
  */
 export default function PreferencesSection() {
   const { profile, refetch } = useProfile();
-  const userId = useAuthStore.getState().userId;
+  const userId = useAuthStore((state) => state.userId);
   const { constants } = useConstantsStore();
 
   // Display data

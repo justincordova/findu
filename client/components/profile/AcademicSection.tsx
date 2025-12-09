@@ -44,7 +44,7 @@ import { PRIMARY } from "@/constants/theme";
  */
 export default function AcademicSection() {
   const { profile, refetch } = useProfile();
-  const userId = useAuthStore.getState().userId;
+  const userId = useAuthStore((state) => state.userId);
   const { constants } = useConstantsStore();
 
   // Display data
@@ -276,11 +276,7 @@ export default function AcademicSection() {
                   label="Major"
                   value={editingMajor}
                   items={majorItems}
-                  onValueChange={(value) => {
-                    if (typeof value === "string") {
-                      setEditingMajor(value);
-                    }
-                  }}
+                  onValueChange={(value) => setEditingMajor(Array.isArray(value) ? value[0] : value)}
                   open={activeMajorDropdown}
                   onOpenChange={() => setActiveMajorDropdown(!activeMajorDropdown)}
                   placeholder="Select your major..."
