@@ -276,7 +276,11 @@ export default function AcademicSection() {
                   label="Major"
                   value={editingMajor}
                   items={majorItems}
-                  onValueChange={setEditingMajor}
+                  onValueChange={(value) => {
+                    if (typeof value === "string") {
+                      setEditingMajor(value);
+                    }
+                  }}
                   open={activeMajorDropdown}
                   onOpenChange={() => setActiveMajorDropdown(!activeMajorDropdown)}
                   placeholder="Select your major..."
@@ -292,7 +296,7 @@ export default function AcademicSection() {
                   <TouchableOpacity
                     style={[
                       profileStyles.dropdownButton,
-                      editingYear && profileStyles.formInputFilled,
+                      editingYear ? profileStyles.formInputFilled : null,
                     ]}
                     onPress={() => setActiveYearDropdown(!activeYearDropdown)}
                     disabled={isSaving}
@@ -341,7 +345,7 @@ export default function AcademicSection() {
                   <TouchableOpacity
                     style={[
                       profileStyles.dropdownButton,
-                      editingGradYear && profileStyles.formInputFilled,
+                      editingGradYear ? profileStyles.formInputFilled : null,
                     ]}
                     onPress={() =>
                       setActiveGradYearDropdown(!activeGradYearDropdown)
