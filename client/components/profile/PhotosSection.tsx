@@ -23,7 +23,7 @@ import { updatePhoto } from "@/services/uploadService";
 import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
 import { profileStyles } from "./shared/profileStyles";
-import { MUTED, DARK, PRIMARY } from "@/constants/theme";
+import { MUTED, PRIMARY } from "@/constants/theme";
 
 // Constants
 const { width } = Dimensions.get("window");
@@ -70,7 +70,6 @@ export default function PhotosSection() {
   }
 
   // Trigger entrance animation when photos count changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const animations = photos.map((_, index) =>
       Animated.timing(fadeAnimsRef.current[index], {
@@ -82,9 +81,7 @@ export default function PhotosSection() {
     );
 
     Animated.stagger(0, animations).start();
-    // We intentionally use only photos.length to avoid re-triggering animations
-    // when photo content changes (new URLs) - we only want animation on mount
-  }, [photos.length]);
+  }, [photos]);
 
   /**
    * Handle tapping a photo to replace it
