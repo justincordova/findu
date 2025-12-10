@@ -4,7 +4,6 @@ import { useCallback, useRef, useState } from "react";
 // React Native
 import {
   ActivityIndicator,
-  Dimensions,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -119,30 +118,24 @@ export default function ProfileScreen() {
     );
   }
 
-  // Calculate carousel height: 4:5 aspect ratio of screen width
-  const carouselHeight = (Dimensions.get("window").width / 4) * 5;
-
   return (
     <ProfileContext.Provider value={{ profile: profileData, refetch: fetchProfile }}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ paddingBottom: 100 }}
-      >
-        {/* Photos Section - Carousel positioned absolutely at top */}
-        <PhotosSection />
-
-        {/* SafeAreaView wraps remaining content below carousel */}
-        <SafeAreaView style={styles.contentArea}>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
           {/* User Info Section - Avatar, Name, Age, Gender, Pronouns */}
-          <View style={{ marginTop: carouselHeight }}>
-            <UserInfoSection />
-          </View>
+          <UserInfoSection />
 
-          {/* Bio Section - Bio text, Gender, Pronouns */}
+          {/* Photos Section - Grid layout positioned in natural flow */}
+          <PhotosSection />
+
+          {/* Bio Section - Bio text */}
           <BioSection />
 
           {/* Interests Section - Interest badges with add/remove */}
@@ -153,8 +146,8 @@ export default function ProfileScreen() {
 
           {/* Preferences Section - Sexual Orientation, Looking For, Age Range, Interested In */}
           <PreferencesSection />
-        </SafeAreaView>
-      </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
     </ProfileContext.Provider>
   );
 }
@@ -164,11 +157,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f9fafb",
   },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f9fafb",
+  },
   scrollView: {
     flex: 1,
-  },
-  contentArea: {
-    backgroundColor: "transparent",
   },
   loaderContainer: {
     flex: 1,
