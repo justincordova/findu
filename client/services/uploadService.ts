@@ -181,15 +181,12 @@ export async function updatePhoto(
 
     const publicUrl = await uploadViaSignedUrl(userId, photoName, photoBlob, "update");
 
-    // Add cache-busting query parameter to force image reload
-    const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
-
     logger.info("Photo updated", {
       photoIndex,
-      url: cacheBustedUrl
+      url: publicUrl
     });
 
-    return cacheBustedUrl;
+    return publicUrl;
   } catch (error: any) {
     logger.error("[upload] Failed to update photo", {
       userId,
