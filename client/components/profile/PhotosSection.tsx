@@ -5,15 +5,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Dimensions,
-  FlatList,
   Image,
+  Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
 
 // Project imports
 import { useProfile } from "@/contexts/ProfileContext";
@@ -21,29 +22,31 @@ import { useAuthStore } from "@/store/authStore";
 import { updatePhoto } from "@/services/uploadService";
 import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
+import { profileStyles } from "./shared/profileStyles";
+import { MUTED, DARK, PRIMARY } from "@/constants/theme";
 
 // Constants
 const { width } = Dimensions.get("window");
-const PADDING = 16;
+const SECTION_PADDING = 16; // Container padding (paddingHorizontal)
+const CARD_PADDING = 20; // Card internal padding
 const GAP = 12;
-const PHOTO_WIDTH = (width - PADDING * 2 - GAP) / 2;
+const COLS = 2;
+// Available width: full width - section padding - card padding - gap between photos
+const AVAILABLE_WIDTH = width - SECTION_PADDING * 2 - CARD_PADDING * 2 - GAP;
+const PHOTO_WIDTH = AVAILABLE_WIDTH / COLS;
 const PHOTO_HEIGHT = PHOTO_WIDTH * 1.25; // 4:5 aspect ratio
-const PHOTO_BORDER_RADIUS = 12;
-// Carousel height: full width with 4:5 aspect ratio to match photos
-const CAROUSEL_HEIGHT = (width / 4) * 5; // 4:5 aspect ratio = width * 1.25
 
 /**
  * PhotosSection Component
  *
- * Displays user's 6 photos in a carousel view at the top of profile.
+ * Displays user's photos in a clean 2-column grid layout.
  * Supports replacing photos via image picker with 4:5 crop ratio.
  *
  * Features:
- * - Horizontal carousel with swipe navigation
- * - Tap photo to replace (discrete pencil icon indicator)
+ * - 2-column grid layout matching card style
+ * - Tap photo to replace
  * - Image cropping with 4:5 aspect ratio
- * - Photo indicators (dots) at bottom of carousel
- * - Uploading feedback overlay
+ * - Uploading feedback
  * - Comprehensive logging and error handling
  */
 export default function PhotosSection() {
@@ -55,186 +58,139 @@ export default function PhotosSection() {
     [profile?.photos]
   );
 
-  // Carousel state
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
+  // Upload state
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
 
-  // FlatList ref for carousel scrolling
-  const flatListRef = useRef<FlatList>(null);
+  // Animation refs for staggered entrance (initialize once)
+  const fadeAnimsRef = useRef<Animated.Value[]>([]);
 
-  // Scroll to selected photo when index changes
+  // Initialize animation refs if needed
+  if (fadeAnimsRef.current.length !== photos.length) {
+    fadeAnimsRef.current = photos.map(() => new Animated.Value(0));
+  }
+
+  // Trigger entrance animation when photos count changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (flatListRef.current) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index: currentPhotoIndex,
-          animated: true,
-        });
-      }, 100);
-    }
-  }, [currentPhotoIndex]);
+    const animations = photos.map((_, index) =>
+      Animated.timing(fadeAnimsRef.current[index], {
+        toValue: 1,
+        duration: 400,
+        delay: index * 80,
+        useNativeDriver: true,
+      })
+    );
 
+    Animated.stagger(0, animations).start();
+    // We intentionally use only photos.length to avoid re-triggering animations
+    // when photo content changes (new URLs) - we only want animation on mount
+  }, [photos.length]);
 
   /**
-   * Handle tapping carousel photo to replace it
+   * Handle tapping a photo to replace it
    */
-  const handleTapPhotoToReplace = useCallback(async () => {
-    if (!userId) {
-      logger.error("[PhotosSection] User ID not found");
-      Alert.alert("Error", "You must be logged in to update photos.");
-      return;
-    }
-
-    logger.debug("Tapping photo to replace", {
-      userId,
-      photoIndex: currentPhotoIndex,
-    });
-
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: [4, 5],
-        quality: 1,
-      });
-
-      if (result.canceled) {
-        logger.debug("Image picker cancelled");
+  const handleTapPhotoToReplace = useCallback(
+    async (photoIndex: number) => {
+      if (!userId) {
+        logger.error("[PhotosSection] User ID not found");
+        Alert.alert("Error", "You must be logged in to update photos.");
         return;
       }
 
-      const imageUri = result.assets[0].uri;
-      logger.debug("Image selected for replacement", {
+      logger.debug("Tapping photo to replace", {
         userId,
-        photoIndex: currentPhotoIndex,
-        imageUri,
+        photoIndex,
       });
-
-      // Upload photo and get the new URL
-      setIsUploading(true);
 
       try {
-        const newPhotoUrl = await updatePhoto(userId, imageUri, currentPhotoIndex);
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ["images"],
+          allowsEditing: true,
+          aspect: [4, 5],
+          quality: 1,
+        });
 
-        logger.debug("Photo uploaded, saving to profile", {
+        if (result.canceled) {
+          logger.debug("Image picker cancelled");
+          return;
+        }
+
+        const imageUri = result.assets[0].uri;
+        logger.debug("Image selected for replacement", {
           userId,
-          photoIndex: currentPhotoIndex,
-          newUrl: newPhotoUrl,
+          photoIndex,
+          imageUri,
         });
 
-        // Build updated photos array with new URL at the correct index
-        const updatedPhotos = [...photos];
-        updatedPhotos[currentPhotoIndex] = newPhotoUrl;
+        // Set uploading state for this specific photo
+        setUploadingIndex(photoIndex);
 
-        // Save the updated photos array to the profile
-        await profileApi.update(userId, {
-          photos: updatedPhotos,
-        });
+        try {
+          const newPhotoUrl = await updatePhoto(userId, imageUri, photoIndex);
 
-        logger.info("Photo replaced successfully", {
-          userId,
-          photoIndex: currentPhotoIndex,
-          newUrl: newPhotoUrl,
-        });
+          logger.debug("Photo uploaded, saving to profile", {
+            userId,
+            photoIndex,
+            newUrl: newPhotoUrl,
+          });
 
-        // Refetch profile to sync with server
-        await refetch();
+          // Build updated photos array with new URL at the correct index
+          const updatedPhotos = [...photos];
+          updatedPhotos[photoIndex] = newPhotoUrl;
 
-        Alert.alert("Success", "Photo updated successfully!");
+          // Save the updated photos array to the profile
+          await profileApi.update(userId, {
+            photos: updatedPhotos,
+          });
+
+          logger.info("Photo replaced successfully", {
+            userId,
+            photoIndex,
+            newUrl: newPhotoUrl,
+          });
+
+          // Refetch profile to sync with server
+          await refetch();
+
+          Alert.alert("Success", "Photo updated successfully!");
+        } catch (error) {
+          logger.error("[PhotosSection] Failed to replace photo", {
+            userId,
+            photoIndex,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          Alert.alert(
+            "Upload Failed",
+            "Could not replace the photo. Please try again."
+          );
+        } finally {
+          setUploadingIndex(null);
+        }
       } catch (error) {
-        logger.error("[PhotosSection] Failed to replace photo", {
+        logger.error("[PhotosSection] Failed to pick image", {
           userId,
-          photoIndex: currentPhotoIndex,
+          photoIndex,
           error: error instanceof Error ? error.message : String(error),
         });
-        Alert.alert(
-          "Upload Failed",
-          "Could not replace the photo. Please try again."
-        );
-      } finally {
-        setIsUploading(false);
+        Alert.alert("Error", "Could not open image picker. Please try again.");
       }
-    } catch (error) {
-      logger.error("[PhotosSection] Failed to pick image", {
-        userId,
-        photoIndex: currentPhotoIndex,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      Alert.alert("Error", "Could not open image picker. Please try again.");
-    }
-  }, [userId, currentPhotoIndex, photos, refetch]);
-
-
-  /**
-   * Render photo indicators (dots showing current position in carousel)
-   */
-  const renderIndicators = () => (
-    <View style={styles.indicatorsContainer}>
-      {photos.map((_, index) => (
-        <View
-          key={index}
-          style={[
-            styles.indicator,
-            currentPhotoIndex === index && styles.indicatorActive,
-          ]}
-        />
-      ))}
-    </View>
+    },
+    [userId, photos, refetch]
   );
 
-  /**
-   * Render carousel FlatList
-   */
-  const renderCarousel = () => (
-    <FlatList
-      ref={flatListRef}
-      data={photos}
-      horizontal
-      pagingEnabled
-      scrollEventThrottle={16}
-      showsHorizontalScrollIndicator={false}
-      keyExtractor={(_, index) => `carousel-photo-${index}`}
-      initialScrollIndex={currentPhotoIndex}
-      getItemLayout={(_, index) => ({
-        length: width,
-        offset: width * index,
-        index,
-      })}
-      onMomentumScrollEnd={(event) => {
-        const contentOffsetX = event.nativeEvent.contentOffset.x;
-        const newIndex = Math.round(contentOffsetX / width);
-        setCurrentPhotoIndex(newIndex);
-      }}
-      renderItem={({ item: photo }) => (
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={handleTapPhotoToReplace}
-          style={styles.carouselPhotoContainer}
-        >
-          <Image
-            source={{ uri: photo }}
-            style={styles.carouselPhoto}
-            resizeMode="cover"
-          />
-        </TouchableOpacity>
-      )}
-      onScrollToIndexFailed={(info) => {
-        // Fallback if scroll fails
-        setTimeout(() => {
-          flatListRef.current?.scrollToOffset({
-            offset: info.averageItemLength * info.index,
-            animated: false,
-          });
-        }, 100);
-      }}
-    />
-  );
-
+  // Empty state
   if (photos.length === 0) {
     return (
       <View style={styles.container}>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No photos added</Text>
+        <View style={profileStyles.card}>
+          <View style={styles.emptyHeader}>
+            <Ionicons name="image-outline" size={24} color={PRIMARY} />
+            <Text style={profileStyles.cardTitle}>Photos</Text>
+          </View>
+          <View style={styles.emptyContent}>
+            <Ionicons name="add-circle-outline" size={48} color={MUTED} />
+            <Text style={styles.emptyText}>Add your first photo</Text>
+          </View>
         </View>
       </View>
     );
@@ -242,134 +198,101 @@ export default function PhotosSection() {
 
   return (
     <View style={styles.container}>
-      {/* Carousel Display */}
-      <View style={styles.carouselContainer}>
-        {renderCarousel()}
-        {renderIndicators()}
+      <View style={profileStyles.card}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Ionicons name="image" size={24} color={PRIMARY} />
+          <Text style={profileStyles.cardTitle}>Photos</Text>
+        </View>
 
-        {/* Uploading overlay */}
-        {isUploading && (
-          <View style={styles.uploadingOverlay}>
-            <ActivityIndicator size="large" color="white" />
-            <Text style={styles.uploadingText}>Updating photo...</Text>
-          </View>
-        )}
+        {/* Grid */}
+        <View style={styles.gridContainer}>
+          {photos.map((photo, index) => (
+            <Animated.View
+              key={index}
+              style={[
+                styles.photoWrapper,
+                { opacity: fadeAnimsRef.current[index] },
+              ]}
+            >
+              <Pressable
+                onPress={() => handleTapPhotoToReplace(index)}
+                style={({ pressed }) => [
+                  styles.photoCard,
+                  pressed && styles.photoCardPressed,
+                ]}
+              >
+                {photo ? (
+                  <Image
+                    source={{ uri: photo }}
+                    style={styles.photo}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.emptyPhoto}>
+                    <Ionicons name="add-outline" size={32} color={MUTED} />
+                  </View>
+                )}
+
+                {/* Uploading indicator */}
+                {uploadingIndex === index && (
+                  <View style={styles.uploadingOverlay}>
+                    <ActivityIndicator size="small" color="white" />
+                  </View>
+                )}
+              </Pressable>
+            </Animated.View>
+          ))}
+        </View>
       </View>
-
     </View>
   );
 }
 
+const SECTION_VERTICAL_PADDING = 8;
+
 const styles = StyleSheet.create({
   container: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
+    paddingHorizontal: 16,
+    paddingVertical: SECTION_VERTICAL_PADDING,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
   },
   gridContainer: {
-    marginHorizontal: -PADDING,
-    paddingHorizontal: PADDING,
-  },
-  row: {
     flexDirection: "row",
-    marginBottom: GAP,
+    flexWrap: "wrap",
     gap: GAP,
   },
-  photoContainer: {
-    borderRadius: PHOTO_BORDER_RADIUS,
+  photoWrapper: {
+    width: PHOTO_WIDTH,
+    height: PHOTO_HEIGHT,
+  },
+  photoCard: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 12,
     overflow: "hidden",
     backgroundColor: "#f3f4f6",
-    width: PHOTO_WIDTH,
-    height: PHOTO_HEIGHT,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  photoCardPressed: {
+    opacity: 0.7,
   },
   photo: {
-    width: PHOTO_WIDTH,
-    height: PHOTO_HEIGHT,
-  },
-  emptyContainer: {
-    padding: 16,
-    alignItems: "center",
-    backgroundColor: "#f9fafb",
-    borderRadius: PHOTO_BORDER_RADIUS,
-  },
-  emptyText: {
-    color: "#6b7280",
-    fontSize: 14,
-  },
-  carouselContainer: {
-    position: "relative",
-    width: "100%",
-    height: CAROUSEL_HEIGHT,
-    backgroundColor: "#1f2937",
-    borderRadius: 0,
-    overflow: "hidden",
-  },
-  carouselBackground: {
-    flex: 1,
-    backgroundColor: "black",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  closeButton: {
-    position: "absolute",
-    top: 16,
-    right: 16,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-  },
-  carouselPhotoContainer: {
-    width,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  carouselPhoto: {
-    width,
-    height: "100%",
-  },
-  tapHintOverlay: {
-    position: "absolute",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.1)",
     width: "100%",
     height: "100%",
   },
-  indicatorsContainer: {
-    position: "absolute",
-    bottom: 16,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
+  emptyPhoto: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#f3f4f6",
     justifyContent: "center",
-    gap: 8,
-    paddingHorizontal: 16,
-  },
-  indicator: {
-    flex: 1,
-    maxWidth: 40,
-    height: 4,
-    backgroundColor: "rgba(255,255,255,0.6)",
-    borderRadius: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  indicatorActive: {
-    backgroundColor: "rgba(255,255,255,1)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
+    alignItems: "center",
   },
   uploadingOverlay: {
     position: "absolute",
@@ -377,17 +300,24 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "center",
     alignItems: "center",
-    gap: 16,
-    zIndex: 100,
   },
-  uploadingText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    marginTop: 12,
+  emptyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+  },
+  emptyContent: {
+    paddingVertical: 32,
+    alignItems: "center",
+    gap: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: MUTED,
+    fontStyle: "italic",
   },
 });
-
