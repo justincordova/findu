@@ -23,7 +23,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { useAuthStore } from "@/store/authStore";
 import { useConstantsStore } from "@/store/constantsStore";
 import { profileApi } from "@/api/profile";
-import AgeRangeSlider from "@/components/shared/AgeRangeSlider";
+import AgeRangeStepper from "@/components/shared/AgeRangeStepper";
 import logger from "@/config/logger";
 import { PRIMARY } from "@/constants/theme";
 
@@ -39,7 +39,7 @@ import { PRIMARY } from "@/constants/theme";
  * Features:
  * - Dropdown modal for single-select fields
  * - Multi-select buttons for gender preferences
- * - Age range slider for min/max age
+ * - Age range stepper for min/max age
  * - Comprehensive logging and error handling
  */
 export default function PreferencesSection() {
@@ -236,7 +236,7 @@ export default function PreferencesSection() {
           <View style={profileStyles.infoItem}>
             <Ionicons name="calendar-outline" size={20} color={PRIMARY} />
             <View style={profileStyles.infoTextContainer}>
-              <Text style={profileStyles.infoLabel}>Age Range</Text>
+              <Text style={profileStyles.infoLabel}>Preferred Age</Text>
               <Text style={profileStyles.infoValue}>
                 {ageRange.min_age} - {ageRange.max_age}
               </Text>
@@ -396,13 +396,15 @@ export default function PreferencesSection() {
                   )}
                 </View>
 
-                {/* Age Range Slider */}
+                {/* Preferred Ages Stepper */}
                 <View style={profileStyles.formField}>
-                  <Text style={profileStyles.formLabel}>Age Range</Text>
-                  <AgeRangeSlider
+                  <Text style={profileStyles.formLabel}>Preferred Ages</Text>
+                  <AgeRangeStepper
                     minAge={editingAgeRange.min_age}
                     maxAge={editingAgeRange.max_age}
                     onAgeRangeChange={handleAgeRangeChange}
+                    minLimit={18}
+                    maxLimit={26}
                   />
                 </View>
 
