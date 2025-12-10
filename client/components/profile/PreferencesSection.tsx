@@ -1,117 +1,498 @@
+// React core
+import { useCallback, useMemo, useState } from "react";
+
 // React Native
-import { StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+// Third-party
+import { Ionicons } from "@expo/vector-icons";
 
 // Project imports
-import { DARK, MUTED } from "@/constants/theme";
-import { useProfileSetupStore } from "@/store/profileStore";
-
-// Constants
-const CONTAINER_MARGIN_BOTTOM = 24;
-const CONTAINER_PADDING = 16;
-const CONTAINER_BORDER_RADIUS = 16;
-const CONTAINER_BACKGROUND = "#f9fafb";
-const SHADOW_COLOR = "#000";
-const SHADOW_OPACITY = 0.03;
-const SHADOW_RADIUS = 6;
-const TITLE_FONT_SIZE = 20;
-const TITLE_FONT_WEIGHT = "700";
-const TITLE_MARGIN_BOTTOM = 12;
-const ROW_PADDING_VERTICAL = 8;
-const LABEL_FONT_SIZE = 16;
-const LABEL_FONT_WEIGHT = "500";
-const VALUE_FONT_SIZE = 16;
-const VALUE_FONT_WEIGHT = "600";
+import { profileStyles } from "./shared/profileStyles";
+import { useProfile } from "@/contexts/ProfileContext";
+import { useAuthStore } from "@/store/authStore";
+import { useConstantsStore } from "@/store/constantsStore";
+import { profileApi } from "@/api/profile";
+import AgeRangeStepper from "@/components/shared/AgeRangeStepper";
+import logger from "@/config/logger";
+import { PRIMARY } from "@/constants/theme";
 
 /**
- * Preferences section showing user's dating preferences
- * Displays looking for intent, gender preference, age range, and sexual orientation
+ * PreferencesSection Component
+ *
+ * Displays and manages user preferences:
+ * - Sexual orientation (from constants store)
+ * - Looking for (intent, from constants store)
+ * - Age range
+ * - Interested in (gender preferences, from constants store)
+ *
+ * Features:
+ * - Dropdown modal for single-select fields
+ * - Multi-select buttons for gender preferences
+ * - Age range stepper for min/max age
+ * - Comprehensive logging and error handling
  */
 export default function PreferencesSection() {
-  const { data: profile } = useProfileSetupStore();
+  const { profile, refetch } = useProfile();
+  const userId = useAuthStore((state) => state.userId);
+  const { constants } = useConstantsStore();
 
-  const intent = profile?.intent || "";
-  const genderPreference = Array.isArray(profile?.gender_preference)
-    ? profile.gender_preference.filter(Boolean).map(String)
-    : [];
-  const minAge = profile?.min_age;
-  const maxAge = profile?.max_age;
+  // Display data
   const sexualOrientation = profile?.sexual_orientation || "";
-
-  const getGenderPreferenceText = (): string => {
-    if (genderPreference.length === 0) {
-      return "Not set";
-    }
-    return genderPreference.join(", ");
-  };
-
-  const getAgeRangeText = (): string => {
-    if (minAge == null && maxAge == null) {
-      return "Not set";
-    }
-
-    const min = minAge != null ? String(minAge) : "?";
-    const max = maxAge != null ? String(maxAge) : "?";
-
-    if (min === "?" && max === "?") {
-      return "Not set";
-    }
-
-    return `${min} - ${max}`;
-  };
-
-  const renderRow = (label: string, value: string) => (
-    <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
-    </View>
+  const intent = profile?.intent || "";
+  const ageRange = useMemo(
+    () => ({
+      min_age: profile?.min_age || 18,
+      max_age: profile?.max_age || 26,
+    }),
+    [profile?.min_age, profile?.max_age]
   );
+  const genderPreferences = useMemo(
+    () =>
+      Array.isArray(profile?.gender_preference)
+        ? profile.gender_preference
+        : [],
+    [profile?.gender_preference]
+  );
+
+  // Dropdown options from constants store
+  const sexualOrientationOptions = (constants?.sexualOrientations || []).map(
+    (value) => ({
+      label: value.charAt(0).toUpperCase() + value.slice(1),
+      value,
+    })
+  );
+
+  const intentOptions = (constants?.intents || []).map((value) => ({
+    label: value.charAt(0).toUpperCase() + value.slice(1),
+    value,
+  }));
+
+  const genderPreferenceOptions = constants?.genderPreferences || [];
+
+  // Modal state
+  const [mainModalVisible, setMainModalVisible] = useState(false);
+  const [activeOrientationDropdown, setActiveOrientationDropdown] = useState(false);
+  const [activeIntentDropdown, setActiveIntentDropdown] = useState(false);
+
+  // Editing state
+  const [editingSexualOrientation, setEditingSexualOrientation] = useState(
+    sexualOrientation
+  );
+  const [editingIntent, setEditingIntent] = useState(intent);
+  const [editingAgeRange, setEditingAgeRange] = useState(ageRange);
+  const [editingGenderPreference, setEditingGenderPreference] = useState(
+    genderPreferences
+  );
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Open main edit modal
+  const handleOpenModal = useCallback(() => {
+    logger.debug("Opening Preferences edit modal", { userId });
+    setEditingSexualOrientation(sexualOrientation);
+    setEditingIntent(intent);
+    setEditingAgeRange(ageRange);
+    setEditingGenderPreference(genderPreferences);
+    setMainModalVisible(true);
+  }, [sexualOrientation, intent, ageRange, genderPreferences, userId]);
+
+  const handleCloseModal = useCallback(() => {
+    setMainModalVisible(false);
+    setActiveOrientationDropdown(false);
+    setActiveIntentDropdown(false);
+  }, []);
+
+  // Toggle gender preference with "All" logic
+  const toggleGenderPreference = useCallback((gender: string) => {
+    setEditingGenderPreference((prev: string[]) => {
+      // If selecting "All", clear other selections
+      if (gender === "All") {
+        return prev.includes("All") ? [] : ["All"];
+      }
+
+      // If "All" is selected and user tries to select something else, reject it
+      if (prev.includes("All")) {
+        Alert.alert("Info", "Deselect 'All' to choose specific genders");
+        return prev;
+      }
+
+      // Normal multi-select behavior
+      if (prev.includes(gender)) {
+        return prev.filter((g: string) => g !== gender);
+      } else {
+        return [...prev, gender];
+      }
+    });
+  }, []);
+
+  // Handle age range change
+  const handleAgeRangeChange = useCallback(
+    (minAge: number, maxAge: number) => {
+      setEditingAgeRange({ min_age: minAge, max_age: maxAge });
+    },
+    []
+  );
+
+  /**
+   * Save preferences to profile
+   */
+  const handleSavePreferences = useCallback(async () => {
+    if (!userId) {
+      logger.error("[PreferencesSection] User ID not found");
+      Alert.alert("Error", "You must be logged in");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      logger.debug("Saving preferences", {
+        userId,
+        sexual_orientation: editingSexualOrientation,
+        intent: editingIntent,
+        age_range: editingAgeRange,
+        gender_preferences: editingGenderPreference,
+      });
+
+      await profileApi.update(userId, {
+        sexual_orientation: editingSexualOrientation,
+        intent: editingIntent,
+        min_age: editingAgeRange.min_age,
+        max_age: editingAgeRange.max_age,
+        gender_preference: editingGenderPreference,
+      });
+
+      logger.info("Preferences updated successfully", {
+        userId,
+        sexual_orientation: editingSexualOrientation,
+        intent: editingIntent,
+        ageRange: editingAgeRange,
+        genderPreferences: editingGenderPreference,
+      });
+
+      // Refetch to sync with server
+      await refetch();
+
+      handleCloseModal();
+      Alert.alert("Success", "Preferences updated!");
+    } catch (error) {
+      logger.error("Failed to update Preferences", {
+        userId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      Alert.alert("Error", "Failed to update preferences. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [userId, editingSexualOrientation, editingIntent, editingAgeRange, editingGenderPreference, refetch, handleCloseModal]);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Preferences</Text>
+      {/* Card Header */}
+      <TouchableOpacity
+        style={profileStyles.card}
+        onPress={handleOpenModal}
+        activeOpacity={0.7}
+      >
+        <View style={[profileStyles.cardHeader, { gap: 10 }]}>
+          <Ionicons name="heart-outline" size={24} color={PRIMARY} />
+          <Text style={profileStyles.cardTitle}>Preferences</Text>
+        </View>
 
-      {renderRow("Looking for:", intent || "Not set")}
-      {renderRow("Gender preference:", getGenderPreferenceText())}
-      {renderRow("Age range:", getAgeRangeText())}
-      {renderRow("Sexual orientation:", sexualOrientation || "Not set")}
+        {/* Info Grid */}
+        <View style={profileStyles.infoGrid}>
+          {/* Sexual Orientation */}
+          <View style={profileStyles.infoItem}>
+            <Ionicons name="heart-outline" size={20} color={PRIMARY} />
+            <View style={profileStyles.infoTextContainer}>
+              <Text style={profileStyles.infoLabel}>Sexual Orientation</Text>
+              <Text style={profileStyles.infoValue}>
+                {sexualOrientation || "Not specified"}
+              </Text>
+            </View>
+          </View>
+
+          {/* Looking For (Intent) */}
+          <View style={profileStyles.infoItem}>
+            <Ionicons name="compass-outline" size={20} color={PRIMARY} />
+            <View style={profileStyles.infoTextContainer}>
+              <Text style={profileStyles.infoLabel}>Looking For</Text>
+              <Text style={profileStyles.infoValue}>
+                {intent ? intent.charAt(0).toUpperCase() + intent.slice(1) : "Not specified"}
+              </Text>
+            </View>
+          </View>
+
+          {/* Age Range */}
+          <View style={profileStyles.infoItem}>
+            <Ionicons name="calendar-outline" size={20} color={PRIMARY} />
+            <View style={profileStyles.infoTextContainer}>
+              <Text style={profileStyles.infoLabel}>Preferred Age</Text>
+              <Text style={profileStyles.infoValue}>
+                {ageRange.min_age} - {ageRange.max_age}
+              </Text>
+            </View>
+          </View>
+
+          {/* Interested In */}
+          {genderPreferences.length > 0 && (
+            <View style={profileStyles.infoItem}>
+              <Ionicons name="people-outline" size={20} color={PRIMARY} />
+              <View style={profileStyles.infoTextContainer}>
+                <Text style={profileStyles.infoLabel}>Interested In</Text>
+                <View style={styles.genderPreferenceBadges}>
+                  {genderPreferences.map((gender: string, idx: number) => (
+                    <View key={idx} style={profileStyles.interestBadge}>
+                      <Text style={profileStyles.interestText}>{gender}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+
+      {/* Edit Modal */}
+      <Modal
+        visible={mainModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleCloseModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={profileStyles.modalOverlay}
+        >
+          <View style={profileStyles.modalContent}>
+            {/* Modal Header */}
+            <View style={profileStyles.modalHeader}>
+              <Text style={profileStyles.modalTitle}>Edit Preferences</Text>
+              <TouchableOpacity onPress={handleCloseModal} disabled={isSaving}>
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={isSaving ? "#ccc" : "#000"}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Scrollable Content */}
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={profileStyles.formContainer}>
+                {/* Sexual Orientation Dropdown */}
+                <View style={profileStyles.formField}>
+                  <Text style={profileStyles.formLabel}>
+                    Sexual Orientation
+                  </Text>
+                  <TouchableOpacity
+                    style={[
+                      profileStyles.dropdownButton,
+                      editingSexualOrientation && profileStyles.formInputFilled,
+                    ]}
+                    onPress={() =>
+                      setActiveOrientationDropdown(!activeOrientationDropdown)
+                    }
+                    disabled={isSaving}
+                  >
+                    <Text style={profileStyles.dropdownText}>
+                      {editingSexualOrientation || "Select sexual orientation"}
+                    </Text>
+                    <Ionicons
+                      name="chevron-down"
+                      size={20}
+                      color="#9CA3AF"
+                    />
+                  </TouchableOpacity>
+
+                  {/* Inline Sexual Orientation Dropdown */}
+                  {activeOrientationDropdown && (
+                    <View style={[profileStyles.dropdownModalContent, { marginTop: 4, zIndex: 1000 }]}>
+                      {sexualOrientationOptions.map((option) => (
+                        <TouchableOpacity
+                          key={option.value}
+                          style={profileStyles.dropdownOption}
+                          onPress={() => {
+                            setEditingSexualOrientation(option.value);
+                            setActiveOrientationDropdown(false);
+                          }}
+                        >
+                          <Text style={profileStyles.dropdownOptionText}>
+                            {option.label}
+                          </Text>
+                          {editingSexualOrientation === option.value && (
+                            <Ionicons
+                              name="checkmark"
+                              size={20}
+                              color={PRIMARY}
+                            />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+
+                {/* Intent Dropdown */}
+                <View style={profileStyles.formField}>
+                  <Text style={profileStyles.formLabel}>Looking For</Text>
+                  <TouchableOpacity
+                    style={[
+                      profileStyles.dropdownButton,
+                      editingIntent && profileStyles.formInputFilled,
+                    ]}
+                    onPress={() =>
+                      setActiveIntentDropdown(!activeIntentDropdown)
+                    }
+                    disabled={isSaving}
+                  >
+                    <Text style={profileStyles.dropdownText}>
+                      {editingIntent
+                        ? editingIntent.charAt(0).toUpperCase() +
+                          editingIntent.slice(1)
+                        : "Select looking for"}
+                    </Text>
+                    <Ionicons
+                      name="chevron-down"
+                      size={20}
+                      color="#9CA3AF"
+                    />
+                  </TouchableOpacity>
+
+                  {/* Inline Intent Dropdown */}
+                  {activeIntentDropdown && (
+                    <View style={[profileStyles.dropdownModalContent, { marginTop: 4, zIndex: 1000 }]}>
+                      {intentOptions.map((option) => (
+                        <TouchableOpacity
+                          key={option.value}
+                          style={profileStyles.dropdownOption}
+                          onPress={() => {
+                            setEditingIntent(option.value);
+                            setActiveIntentDropdown(false);
+                          }}
+                        >
+                          <Text style={profileStyles.dropdownOptionText}>
+                            {option.label}
+                          </Text>
+                          {editingIntent === option.value && (
+                            <Ionicons
+                              name="checkmark"
+                              size={20}
+                              color={PRIMARY}
+                            />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+
+                {/* Preferred Ages Stepper */}
+                <View style={profileStyles.formField}>
+                  <Text style={profileStyles.formLabel}>Preferred Ages</Text>
+                  <AgeRangeStepper
+                    minAge={editingAgeRange.min_age}
+                    maxAge={editingAgeRange.max_age}
+                    onAgeRangeChange={handleAgeRangeChange}
+                    minLimit={18}
+                    maxLimit={26}
+                  />
+                </View>
+
+                {/* Gender Preference Multi-Select */}
+                <View style={profileStyles.formField}>
+                  <Text style={profileStyles.formLabel}>
+                    Interested In (select all that apply)
+                  </Text>
+                  <View style={profileStyles.intentOptionsContainer}>
+                    {genderPreferenceOptions.map((option) => {
+                      const isSelected = editingGenderPreference.includes(option);
+                      return (
+                        <TouchableOpacity
+                          key={option}
+                          style={[
+                            profileStyles.intentOption,
+                            isSelected && profileStyles.intentOptionSelected,
+                          ]}
+                          onPress={() => toggleGenderPreference(option)}
+                          disabled={isSaving}
+                        >
+                          <Text
+                            style={[
+                              profileStyles.intentOptionText,
+                              isSelected &&
+                                profileStyles.intentOptionTextSelected,
+                            ]}
+                          >
+                            {option}
+                          </Text>
+                          {isSelected && (
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={20}
+                              color="white"
+                            />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* Modal Actions */}
+            <View style={profileStyles.modalButtons}>
+              <TouchableOpacity
+                style={[
+                  profileStyles.modalCancelButton,
+                  isSaving && { opacity: 0.5 },
+                ]}
+                onPress={handleCloseModal}
+                disabled={isSaving}
+              >
+                <Text style={profileStyles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  profileStyles.modalSaveButton,
+                  isSaving && { opacity: 0.5 },
+                ]}
+                onPress={handleSavePreferences}
+                disabled={isSaving}
+              >
+                <Text style={profileStyles.modalSaveText}>
+                  {isSaving ? "Saving..." : "Save"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: CONTAINER_MARGIN_BOTTOM,
-    padding: CONTAINER_PADDING,
-    backgroundColor: CONTAINER_BACKGROUND,
-    borderRadius: CONTAINER_BORDER_RADIUS,
-    shadowColor: SHADOW_COLOR,
-    shadowOpacity: SHADOW_OPACITY,
-    shadowRadius: SHADOW_RADIUS,
-    shadowOffset: { width: 0, height: 2 },
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
-  title: {
-    fontSize: TITLE_FONT_SIZE,
-    fontWeight: TITLE_FONT_WEIGHT,
-    color: DARK,
-    marginBottom: TITLE_MARGIN_BOTTOM,
-  },
-  row: {
+
+  genderPreferenceBadges: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: ROW_PADDING_VERTICAL,
-  },
-  label: {
-    fontSize: LABEL_FONT_SIZE,
-    color: MUTED,
-    fontWeight: LABEL_FONT_WEIGHT,
-    flex: 1,
-  },
-  value: {
-    fontSize: VALUE_FONT_SIZE,
-    color: DARK,
-    fontWeight: VALUE_FONT_WEIGHT,
-    textAlign: "right",
-    flex: 1,
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
   },
 });

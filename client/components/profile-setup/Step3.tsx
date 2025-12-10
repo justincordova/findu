@@ -134,7 +134,7 @@ export default function Step3({ onValidityChange }: Step3Props) {
         label="Major"
         value={profileData?.major ?? null}
         items={majorItems}
-        onValueChange={(value) => setProfileField("major", value)}
+        onValueChange={(value) => setProfileField("major", Array.isArray(value) ? value[0] : value)}
         open={activeDropdown === "major"}
         onOpenChange={() => handleOpen("major")}
         placeholder="Select your major..."
@@ -142,6 +142,7 @@ export default function Step3({ onValidityChange }: Step3Props) {
         noResultsText="No majors found"
         showCompleted={true}
         zIndex={2}
+        multiSelect={false}
       />
 
       {/* University Year */}
