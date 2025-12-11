@@ -60,7 +60,27 @@ describe("Profiles API happy path cases", () => {
 
     expect(prisma.profiles.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        ...sampleProfile,
+        user_id: sampleProfile.user_id,
+        name: sampleProfile.name,
+        bio: sampleProfile.bio,
+        avatar_url: sampleProfile.avatar_url,
+        birthdate: sampleProfile.birthdate,
+        gender: sampleProfile.gender,
+        pronouns: sampleProfile.pronouns,
+        university_id: sampleProfile.university_id,
+        campus_id: sampleProfile.campus_id,
+        major: sampleProfile.major,
+        university_year: sampleProfile.university_year,
+        grad_year: sampleProfile.grad_year,
+        sexual_orientation: sampleProfile.sexual_orientation,
+        gender_preference: sampleProfile.gender_preference,
+        intent: sampleProfile.intent,
+        min_age: sampleProfile.min_age,
+        max_age: sampleProfile.max_age,
+        interests: sampleProfile.interests,
+        spotify_url: sampleProfile.spotify_url,
+        instagram_url: sampleProfile.instagram_url,
+        photos: sampleProfile.photos,
         updated_at: expect.any(Date),
       }),
     });
