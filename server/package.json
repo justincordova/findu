@@ -12,6 +12,7 @@
     "test:coverage": "jest --coverage --verbose",
     "seed:users": "ts-node -r tsconfig-paths/register src/scripts/seed/seed.ts",
     "seed:jac352": "ts-node -r tsconfig-paths/register src/scripts/seed/seed-jac352.ts",
+    "cleanup:jac352": "ts-node -r tsconfig-paths/register src/scripts/seed/cleanupJac352.ts",
     "cleanup:users": "ts-node -r tsconfig-paths/register src/scripts/seed/cleanupSeed.ts",
     "cleanup:all-likes-matches": "ts-node -r tsconfig-paths/register src/scripts/likes/cleanupLikesMatches.ts",
     "seed:uni": "ts-node -r tsconfig-paths/register src/scripts/seed/setupUniversities.ts",

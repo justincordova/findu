@@ -10,6 +10,19 @@ export interface Constants {
   sexualOrientations: string[];
   pronouns: string[];
   interests: Record<string, string[]>;
+  lifestyleOptions?: {
+    drinking: readonly string[];
+    smoking: readonly string[];
+    cannabis: readonly string[];
+    sleepHabits: readonly string[];
+    pets: readonly string[];
+    dietaryPreferences: readonly string[];
+    studyStyle: readonly string[];
+    cleanliness: readonly string[];
+    caffeine: readonly string[];
+    livingSituation: readonly string[];
+    fitness: readonly string[];
+  };
 }
 
 /**
