@@ -11,15 +11,14 @@ import {
 } from "react-native";
 
 // Third-party
-import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 // Project imports
 import {
   BACKGROUND,
   DARK,
   MUTED,
-  PRIMARY,
-  SECONDARY,
+  GRADIENT,
 } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
 import { useConstantsStore } from "@/store/constantsStore";
@@ -28,17 +27,15 @@ import { Lifestyle } from "@/types/Lifestyle";
 // Types
 interface Step8Props {
   onValidityChange?: (isValid: boolean) => void;
-  onNext?: () => void;
 }
 
 /**
- * Step 8: Lifestyle - optional lifestyle preferences (skippable)
+ * Step 8: Lifestyle - optional lifestyle preferences
  * Users can select 0-11 lifestyle fields from predefined options.
- * This step is completely optional with no validation required.
+ * This step has no validation required - users can proceed without selecting any fields.
  */
 export default function Step8({
   onValidityChange,
-  onNext,
 }: Step8Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
@@ -93,34 +90,42 @@ export default function Step8({
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>Tell us about your lifestyle</Text>
-      <Text style={styles.subtitle}>(Optional - you can skip this)</Text>
+      <Text style={styles.subtitle}>(Optional)</Text>
 
       {/* Drinking */}
       {lifestyleOptions.drinking && (
         <View style={styles.sectionContainer}>
           <Text style={styles.fieldLabel}>Drinking</Text>
           <View style={styles.optionsGrid}>
-            {lifestyleOptions.drinking.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.optionButton,
-                  currentLifestyle.drinking === option &&
-                    styles.optionButtonSelected,
-                ]}
-                onPress={() => handleSelectField("drinking", option)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    currentLifestyle.drinking === option &&
-                      styles.optionTextSelected,
-                  ]}
+            {lifestyleOptions.drinking.map((option) => {
+              const selected = currentLifestyle.drinking === option;
+              return selected ? (
+                <LinearGradient
+                  key={option}
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.optionButton}
                 >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <TouchableOpacity
+                    onPress={() => handleSelectField("drinking", option)}
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  >
+                    <Text style={[styles.optionText, styles.optionTextSelected]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.optionButton}
+                  onPress={() => handleSelectField("drinking", option)}
+                >
+                  <Text style={styles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       )}
@@ -130,27 +135,35 @@ export default function Step8({
         <View style={styles.sectionContainer}>
           <Text style={styles.fieldLabel}>Smoking</Text>
           <View style={styles.optionsGrid}>
-            {lifestyleOptions.smoking.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.optionButton,
-                  currentLifestyle.smoking === option &&
-                    styles.optionButtonSelected,
-                ]}
-                onPress={() => handleSelectField("smoking", option)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    currentLifestyle.smoking === option &&
-                      styles.optionTextSelected,
-                  ]}
+            {lifestyleOptions.smoking.map((option) => {
+              const selected = currentLifestyle.smoking === option;
+              return selected ? (
+                <LinearGradient
+                  key={option}
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.optionButton}
                 >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <TouchableOpacity
+                    onPress={() => handleSelectField("smoking", option)}
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  >
+                    <Text style={[styles.optionText, styles.optionTextSelected]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.optionButton}
+                  onPress={() => handleSelectField("smoking", option)}
+                >
+                  <Text style={styles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       )}
@@ -160,27 +173,35 @@ export default function Step8({
         <View style={styles.sectionContainer}>
           <Text style={styles.fieldLabel}>Cannabis</Text>
           <View style={styles.optionsGrid}>
-            {lifestyleOptions.cannabis.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.optionButton,
-                  currentLifestyle.cannabis === option &&
-                    styles.optionButtonSelected,
-                ]}
-                onPress={() => handleSelectField("cannabis", option)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    currentLifestyle.cannabis === option &&
-                      styles.optionTextSelected,
-                  ]}
+            {lifestyleOptions.cannabis.map((option) => {
+              const selected = currentLifestyle.cannabis === option;
+              return selected ? (
+                <LinearGradient
+                  key={option}
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.optionButton}
                 >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <TouchableOpacity
+                    onPress={() => handleSelectField("cannabis", option)}
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  >
+                    <Text style={[styles.optionText, styles.optionTextSelected]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.optionButton}
+                  onPress={() => handleSelectField("cannabis", option)}
+                >
+                  <Text style={styles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       )}
@@ -190,27 +211,35 @@ export default function Step8({
         <View style={styles.sectionContainer}>
           <Text style={styles.fieldLabel}>Sleep Habits</Text>
           <View style={styles.optionsGrid}>
-            {lifestyleOptions.sleepHabits.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.optionButton,
-                  currentLifestyle.sleep_habits === option &&
-                    styles.optionButtonSelected,
-                ]}
-                onPress={() => handleSelectField("sleep_habits", option)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    currentLifestyle.sleep_habits === option &&
-                      styles.optionTextSelected,
-                  ]}
+            {lifestyleOptions.sleepHabits.map((option) => {
+              const selected = currentLifestyle.sleep_habits === option;
+              return selected ? (
+                <LinearGradient
+                  key={option}
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.optionButton}
                 >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <TouchableOpacity
+                    onPress={() => handleSelectField("sleep_habits", option)}
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  >
+                    <Text style={[styles.optionText, styles.optionTextSelected]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.optionButton}
+                  onPress={() => handleSelectField("sleep_habits", option)}
+                >
+                  <Text style={styles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       )}
@@ -220,27 +249,35 @@ export default function Step8({
         <View style={styles.sectionContainer}>
           <Text style={styles.fieldLabel}>Pets</Text>
           <View style={styles.pillContainer}>
-            {lifestyleOptions.pets.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.pill,
-                  (currentLifestyle.pets || []).includes(option) &&
-                    styles.pillSelected,
-                ]}
-                onPress={() => handleMultiSelectField("pets", option)}
-              >
-                <Text
-                  style={[
-                    styles.pillText,
-                    (currentLifestyle.pets || []).includes(option) &&
-                      styles.pillTextSelected,
-                  ]}
+            {lifestyleOptions.pets.map((option) => {
+              const selected = (currentLifestyle.pets || []).includes(option);
+              return selected ? (
+                <LinearGradient
+                  key={option}
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.pill}
                 >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <TouchableOpacity
+                    onPress={() => handleMultiSelectField("pets", option)}
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  >
+                    <Text style={[styles.pillText, styles.pillTextSelected]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.pill}
+                  onPress={() => handleMultiSelectField("pets", option)}
+                >
+                  <Text style={styles.pillText}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       )}
@@ -250,29 +287,35 @@ export default function Step8({
         <View style={styles.sectionContainer}>
           <Text style={styles.fieldLabel}>Dietary Preferences</Text>
           <View style={styles.pillContainer}>
-            {lifestyleOptions.dietaryPreferences.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.pill,
-                  (currentLifestyle.dietary_preferences || []).includes(
-                    option
-                  ) && styles.pillSelected,
-                ]}
-                onPress={() => handleMultiSelectField("dietary_preferences", option)}
-              >
-                <Text
-                  style={[
-                    styles.pillText,
-                    (currentLifestyle.dietary_preferences || []).includes(
-                      option
-                    ) && styles.pillTextSelected,
-                  ]}
+            {lifestyleOptions.dietaryPreferences.map((option) => {
+              const selected = (currentLifestyle.dietary_preferences || []).includes(option);
+              return selected ? (
+                <LinearGradient
+                  key={option}
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.pill}
                 >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <TouchableOpacity
+                    onPress={() => handleMultiSelectField("dietary_preferences", option)}
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  >
+                    <Text style={[styles.pillText, styles.pillTextSelected]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.pill}
+                  onPress={() => handleMultiSelectField("dietary_preferences", option)}
+                >
+                  <Text style={styles.pillText}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       )}
@@ -282,27 +325,35 @@ export default function Step8({
         <View style={styles.sectionContainer}>
           <Text style={styles.fieldLabel}>Study Style</Text>
           <View style={styles.optionsGrid}>
-            {lifestyleOptions.studyStyle.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.optionButton,
-                  currentLifestyle.study_style === option &&
-                    styles.optionButtonSelected,
-                ]}
-                onPress={() => handleSelectField("study_style", option)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    currentLifestyle.study_style === option &&
-                      styles.optionTextSelected,
-                  ]}
+            {lifestyleOptions.studyStyle.map((option) => {
+              const selected = currentLifestyle.study_style === option;
+              return selected ? (
+                <LinearGradient
+                  key={option}
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.optionButton}
                 >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <TouchableOpacity
+                    onPress={() => handleSelectField("study_style", option)}
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  >
+                    <Text style={[styles.optionText, styles.optionTextSelected]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.optionButton}
+                  onPress={() => handleSelectField("study_style", option)}
+                >
+                  <Text style={styles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       )}
@@ -312,27 +363,35 @@ export default function Step8({
         <View style={styles.sectionContainer}>
           <Text style={styles.fieldLabel}>Cleanliness</Text>
           <View style={styles.optionsGrid}>
-            {lifestyleOptions.cleanliness.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.optionButton,
-                  currentLifestyle.cleanliness === option &&
-                    styles.optionButtonSelected,
-                ]}
-                onPress={() => handleSelectField("cleanliness", option)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    currentLifestyle.cleanliness === option &&
-                      styles.optionTextSelected,
-                  ]}
+            {lifestyleOptions.cleanliness.map((option) => {
+              const selected = currentLifestyle.cleanliness === option;
+              return selected ? (
+                <LinearGradient
+                  key={option}
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.optionButton}
                 >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <TouchableOpacity
+                    onPress={() => handleSelectField("cleanliness", option)}
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  >
+                    <Text style={[styles.optionText, styles.optionTextSelected]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.optionButton}
+                  onPress={() => handleSelectField("cleanliness", option)}
+                >
+                  <Text style={styles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       )}
@@ -342,27 +401,35 @@ export default function Step8({
         <View style={styles.sectionContainer}>
           <Text style={styles.fieldLabel}>Caffeine</Text>
           <View style={styles.optionsGrid}>
-            {lifestyleOptions.caffeine.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.optionButton,
-                  currentLifestyle.caffeine === option &&
-                    styles.optionButtonSelected,
-                ]}
-                onPress={() => handleSelectField("caffeine", option)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    currentLifestyle.caffeine === option &&
-                      styles.optionTextSelected,
-                  ]}
+            {lifestyleOptions.caffeine.map((option) => {
+              const selected = currentLifestyle.caffeine === option;
+              return selected ? (
+                <LinearGradient
+                  key={option}
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.optionButton}
                 >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <TouchableOpacity
+                    onPress={() => handleSelectField("caffeine", option)}
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  >
+                    <Text style={[styles.optionText, styles.optionTextSelected]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.optionButton}
+                  onPress={() => handleSelectField("caffeine", option)}
+                >
+                  <Text style={styles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       )}
@@ -372,27 +439,35 @@ export default function Step8({
         <View style={styles.sectionContainer}>
           <Text style={styles.fieldLabel}>Living Situation</Text>
           <View style={styles.optionsGrid}>
-            {lifestyleOptions.livingSituation.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.optionButton,
-                  currentLifestyle.living_situation === option &&
-                    styles.optionButtonSelected,
-                ]}
-                onPress={() => handleSelectField("living_situation", option)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    currentLifestyle.living_situation === option &&
-                      styles.optionTextSelected,
-                  ]}
+            {lifestyleOptions.livingSituation.map((option) => {
+              const selected = currentLifestyle.living_situation === option;
+              return selected ? (
+                <LinearGradient
+                  key={option}
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.optionButton}
                 >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <TouchableOpacity
+                    onPress={() => handleSelectField("living_situation", option)}
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  >
+                    <Text style={[styles.optionText, styles.optionTextSelected]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.optionButton}
+                  onPress={() => handleSelectField("living_situation", option)}
+                >
+                  <Text style={styles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       )}
@@ -402,41 +477,39 @@ export default function Step8({
         <View style={styles.sectionContainer}>
           <Text style={styles.fieldLabel}>Fitness</Text>
           <View style={styles.optionsGrid}>
-            {lifestyleOptions.fitness.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.optionButton,
-                  currentLifestyle.fitness === option &&
-                    styles.optionButtonSelected,
-                ]}
-                onPress={() => handleSelectField("fitness", option)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    currentLifestyle.fitness === option &&
-                      styles.optionTextSelected,
-                  ]}
+            {lifestyleOptions.fitness.map((option) => {
+              const selected = currentLifestyle.fitness === option;
+              return selected ? (
+                <LinearGradient
+                  key={option}
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.optionButton}
                 >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <TouchableOpacity
+                    onPress={() => handleSelectField("fitness", option)}
+                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  >
+                    <Text style={[styles.optionText, styles.optionTextSelected]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                </LinearGradient>
+              ) : (
+                <TouchableOpacity
+                  key={option}
+                  style={styles.optionButton}
+                  onPress={() => handleSelectField("fitness", option)}
+                >
+                  <Text style={styles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       )}
 
-      {/* Skip button for optional step */}
-      <View style={styles.skipButtonContainer}>
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={onNext}
-        >
-          <Text style={styles.skipButtonText}>Skip for now</Text>
-          <Ionicons name="arrow-forward" size={16} color={PRIMARY} />
-        </TouchableOpacity>
-      </View>
     </ScrollView>
   );
 }
@@ -484,10 +557,6 @@ const styles = StyleSheet.create({
     borderColor: "#e5e7eb",
     backgroundColor: "#f9f9f9",
   },
-  optionButtonSelected: {
-    backgroundColor: PRIMARY,
-    borderColor: PRIMARY,
-  },
   optionText: {
     fontSize: 13,
     color: DARK,
@@ -505,13 +574,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "white",
     borderWidth: 1,
     borderColor: "#e5e7eb",
-  },
-  pillSelected: {
-    backgroundColor: SECONDARY,
-    borderColor: SECONDARY,
   },
   pillText: {
     fontSize: 13,
@@ -520,22 +585,5 @@ const styles = StyleSheet.create({
   },
   pillTextSelected: {
     color: "white",
-  },
-  skipButtonContainer: {
-    alignItems: "center",
-    paddingVertical: 24,
-    marginBottom: 24,
-  },
-  skipButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  skipButtonText: {
-    fontSize: 14,
-    color: PRIMARY,
-    fontWeight: "500",
   },
 });

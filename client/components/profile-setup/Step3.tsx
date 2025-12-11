@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     textAlign: "left",
   },
   dropdown: {
-    backgroundColor: BACKGROUND,
+    backgroundColor: "white",
     borderColor: "#e5e7eb",
     borderRadius: 12,
     minHeight: 44,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   dropdownContainer: {
-    backgroundColor: BACKGROUND,
+    backgroundColor: "white",
     borderColor: "#e5e7eb",
     borderRadius: 12,
   },

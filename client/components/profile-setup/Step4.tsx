@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   dropdown: {
-    backgroundColor: BACKGROUND,
+    backgroundColor: "white",
     borderColor: "#e5e7eb",
     borderRadius: 12,
     minHeight: 44,
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   dropdownContainer: {
-    backgroundColor: BACKGROUND,
+    backgroundColor: "white",
     borderColor: "#e5e7eb",
     borderRadius: 12,
   },
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     margin: 4,
-    backgroundColor: BACKGROUND,
+    backgroundColor: "white",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#e5e7eb",

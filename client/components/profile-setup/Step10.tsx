@@ -14,9 +14,10 @@ import {
 import { useRouter } from "expo-router";
 
 // Third-party
+import { LinearGradient } from "expo-linear-gradient";
 
 // Project imports
-import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
+import { BACKGROUND, DARK, MUTED, PRIMARY, GRADIENT } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
 import { useAuthStore } from "@/store/authStore";
 import { handleSubmitProfile } from "./handleSubmitProfile";
@@ -347,18 +348,36 @@ export default function Step10({
 
       {/* Finish Button */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          onPress={handleFinish}
-          disabled={submitting || !isValid}
-          style={[styles.button, (submitting) && styles.buttonDisabled]}
-          activeOpacity={0.8}
-        >
-          {submitting ? (
-            <ActivityIndicator color="white" />
-          ) : (
+        {!submitting && !isValid ? (
+          <TouchableOpacity
+            onPress={handleFinish}
+            disabled={true}
+            style={[styles.button, styles.buttonDisabled]}
+            activeOpacity={0.8}
+          >
             <Text style={styles.buttonText}>Complete Profile</Text>
-          )}
-        </TouchableOpacity>
+          </TouchableOpacity>
+        ) : (
+          <LinearGradient
+            colors={GRADIENT}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.button}
+          >
+            <TouchableOpacity
+              onPress={handleFinish}
+              disabled={submitting}
+              style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+              activeOpacity={0.8}
+            >
+              {submitting ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.buttonText}>Complete Profile</Text>
+              )}
+            </TouchableOpacity>
+          </LinearGradient>
+        )}
       </View>
     </View>
   );
@@ -539,7 +558,6 @@ const styles = StyleSheet.create({
   },
   button: {
     width: "100%",
-    backgroundColor: PRIMARY,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
@@ -547,7 +565,6 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     backgroundColor: "#d1d5db",
-    opacity: 0.6,
   },
   buttonText: {
     color: "white",

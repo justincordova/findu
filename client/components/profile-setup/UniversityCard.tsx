@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 // Project imports
-import { BACKGROUND, DARK, PRIMARY, SECONDARY } from "@/constants/theme";
+import { DARK, PRIMARY, SECONDARY } from "@/constants/theme";
 
 // Types
 interface UniversityCardProps {
@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: BACKGROUND,
+    backgroundColor: "white",
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 16,
