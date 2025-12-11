@@ -16,6 +16,7 @@ import {
 
 // Third-party
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 // Project imports
 import { profileStyles } from "./shared/profileStyles";
@@ -25,7 +26,7 @@ import { useConstantsStore } from "@/store/constantsStore";
 import { profileApi } from "@/api/profile";
 import AgeRangeStepper from "@/components/shared/AgeRangeStepper";
 import logger from "@/config/logger";
-import { PRIMARY } from "@/constants/theme";
+import { PRIMARY, GRADIENT } from "@/constants/theme";
 
 /**
  * PreferencesSection Component
@@ -251,9 +252,15 @@ export default function PreferencesSection() {
                 <Text style={profileStyles.infoLabel}>Interested In</Text>
                 <View style={styles.genderPreferenceBadges}>
                   {genderPreferences.map((gender: string, idx: number) => (
-                    <View key={idx} style={profileStyles.interestBadge}>
-                      <Text style={profileStyles.interestText}>{gender}</Text>
-                    </View>
+                    <LinearGradient
+                      key={idx}
+                      colors={GRADIENT}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={profileStyles.interestBadge}
+                    >
+                      <Text style={[profileStyles.interestText, { color: "white" }]}>{gender}</Text>
+                    </LinearGradient>
                   ))}
                 </View>
               </View>
@@ -429,19 +436,11 @@ export default function PreferencesSection() {
                           <Text
                             style={[
                               profileStyles.intentOptionText,
-                              isSelected &&
-                                profileStyles.intentOptionTextSelected,
+                              isSelected && profileStyles.intentOptionTextSelected,
                             ]}
                           >
                             {option}
                           </Text>
-                          {isSelected && (
-                            <Ionicons
-                              name="checkmark-circle"
-                              size={20}
-                              color="white"
-                            />
-                          )}
                         </TouchableOpacity>
                       );
                     })}

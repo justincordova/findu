@@ -17,6 +17,7 @@ import {
 
 // Third-party
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { ItemType } from "react-native-dropdown-picker";
 
 // Project imports
@@ -27,7 +28,7 @@ import { useConstantsStore } from "@/store/constantsStore";
 import { profileApi } from "@/api/profile";
 import SearchableModal from "@/components/shared/SearchableModal";
 import logger from "@/config/logger";
-import { DARK, MUTED, PRIMARY } from "@/constants/theme";
+import { DARK, MUTED, PRIMARY, GRADIENT } from "@/constants/theme";
 
 /**
  * InterestsSection Component
@@ -200,9 +201,15 @@ export default function InterestsSection() {
         {interests.length > 0 ? (
           <View style={styles.badgesContainer}>
             {interests.map((interest) => (
-              <View key={interest} style={styles.badge}>
+              <LinearGradient
+                key={interest}
+                colors={GRADIENT}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.badge}
+              >
                 <Text style={styles.badgeText}>{interest}</Text>
-              </View>
+              </LinearGradient>
             ))}
           </View>
         ) : (
@@ -251,6 +258,7 @@ export default function InterestsSection() {
                   } else if (editingInterests.includes("All") && interestArray.length === 0) {
                     // If user deselects "All", clear interests
                     setEditingInterests([]);
+// sourcery skip: merge-else-if
                   } else if (editingInterests.includes("All")) {
                     // If "All" was previously selected and user tries to select something else, reject it
                     Alert.alert("Info", "Deselect 'All' to choose specific interests");
@@ -349,7 +357,13 @@ export default function InterestsSection() {
                   </Text>
                   <View style={styles.selectedBadgesContainer}>
                     {editingInterests.map((interest) => (
-                      <View key={interest} style={styles.selectedBadge}>
+                      <LinearGradient
+                        key={interest}
+                        colors={GRADIENT}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.selectedBadge}
+                      >
                         <Text style={styles.selectedBadgeText}>
                           {interest}
                         </Text>
@@ -360,10 +374,10 @@ export default function InterestsSection() {
                           <Ionicons
                             name="close-circle"
                             size={18}
-                            color={isSaving ? "#ccc" : DARK}
+                            color={isSaving ? "#ccc" : "white"}
                           />
                         </TouchableOpacity>
-                      </View>
+                      </LinearGradient>
                     ))}
                   </View>
                 </View>
@@ -415,11 +429,10 @@ const styles = StyleSheet.create({
   },
 
   badge: {
-    backgroundColor: PRIMARY,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    shadowColor: PRIMARY,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 3,
@@ -544,11 +557,10 @@ const styles = StyleSheet.create({
   selectedBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: PRIMARY,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 24,
-    shadowColor: PRIMARY,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 3,
