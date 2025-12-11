@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 // React Native
 import {
   ActivityIndicator,
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -110,13 +111,44 @@ export default function Step10({
       if (field === "campus_name") return profileData?.campus_name || "Not set";
       const value = profileData?.[field];
       if (Array.isArray(value)) return value.join(", ");
+      if (typeof value === "object" && value !== null) return "Not set";
       if (value === null || value === undefined || value === "") return "Not set";
       return String(value);
     },
     [profileData]
   );
 
-  const isValid = useMemo(() => true, []);
+  const isValid = useMemo(() => {
+    const requiredFields = [
+      "name",
+      "birthdate",
+      "gender",
+      "pronouns",
+      "university_name",
+      "campus_name",
+      "major",
+      "university_year",
+      "grad_year",
+      "sexual_orientation",
+      "gender_preference",
+      "intent",
+      "min_age",
+      "max_age",
+      "bio",
+      "avatar_url",
+      "interests",
+      "photos",
+    ];
+
+    return requiredFields.every((field) => {
+      const value = profileData?.[field as keyof ProfileData];
+      if (field === "photos" || field === "interests") {
+        return Array.isArray(value) && value.length > 0;
+      }
+      return value !== undefined && value !== null && value !== "";
+    });
+  }, [profileData]);
+
   useEffect(() => {
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
@@ -130,6 +162,7 @@ export default function Step10({
 
       if (!userId || !token) {
         console.error("User not authenticated");
+        Alert.alert("Error", "User not authenticated. Please log in again.");
         setSubmitting(false);
         return;
       }
@@ -139,6 +172,10 @@ export default function Step10({
       router.replace("/home/(tabs)/discover");
     } catch (err) {
       console.error("Error submitting profile:", err);
+      Alert.alert(
+        "Submission Failed",
+        "Failed to submit your profile. Please try again."
+      );
       setSubmitting(false);
     }
   }, [authState, router]);

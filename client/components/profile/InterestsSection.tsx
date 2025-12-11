@@ -112,14 +112,22 @@ export default function InterestsSection() {
   const addInterest = useCallback(
     (interest: string) => {
       const trimmed = interest.trim();
-      if (
-        trimmed &&
-        !editingInterests.includes(trimmed) &&
-        editingInterests.length < 10
-      ) {
-        setEditingInterests([...editingInterests, trimmed]);
-        logger.debug("Interest added", { interest: trimmed });
+      if (!trimmed) {
+        setCustomInput("");
+        return;
       }
+      if (editingInterests.includes(trimmed)) {
+        Alert.alert("Info", "This interest is already added");
+        setCustomInput("");
+        return;
+      }
+      if (editingInterests.length >= 10) {
+        Alert.alert("Interest Limit", "You can only add up to 10 interests");
+        setCustomInput("");
+        return;
+      }
+      setEditingInterests([...editingInterests, trimmed]);
+      logger.debug("Interest added", { interest: trimmed });
       setCustomInput("");
     },
     [editingInterests]
@@ -158,16 +166,19 @@ export default function InterestsSection() {
 
     try {
       setIsSaving(true);
+      // Deduplicate interests before saving
+      const dedupedInterests = Array.from(new Set(editingInterests));
+
       logger.debug("Saving interests", {
         userId,
-        newCount: editingInterests.length,
+        newCount: dedupedInterests.length,
       });
 
-      await profileApi.update(userId, { interests: editingInterests });
+      await profileApi.update(userId, { interests: dedupedInterests });
 
       logger.info("Interests updated successfully", {
         userId,
-        interestCount: editingInterests.length,
+        interestCount: dedupedInterests.length,
       });
 
       await refetch();
