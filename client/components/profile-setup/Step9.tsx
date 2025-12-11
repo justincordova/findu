@@ -1,311 +1,123 @@
 // React core
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 // React Native
 import {
-  ActivityIndicator,
+  Dimensions,
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
 
 // Third-party
+import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
 
 // Project imports
 import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
-import { useAuthStore } from "@/store/authStore";
-import { handleSubmitProfile } from "./handleSubmitProfile";
-import { Profile } from "@/types/Profile";
+
+// Constants
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const PHOTO_SIZE = (SCREEN_WIDTH - 64) / 2.5; // Bigger photos, 2.5 per row conceptually
 
 // Types
-type ProfileData = Partial<Profile> & {
-  university_name?: string;
-  campus_name?: string;
-};
-
 interface Step9Props {
-  onNext: () => void;
   onValidityChange?: (isValid: boolean) => void;
-  goToStep?: (step: string) => void;
 }
 
 /**
- * Step 9: Review - final profile review and submission
- * Displays all profile information for user confirmation before submitting
+ * Step 9: Photos - upload up to 6 profile photos
  */
-
-/** Format birthdate into readable string */
-function formatBirthdate(birthdate: string | Date | undefined) {
-  if (!birthdate) return "Not set";
-  const date = new Date(birthdate);
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-/** Format labels to remove underscores and capitalize */
-function formatLabel(field: string): string {
-  return field
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
 export default function Step9({
-  onNext,
   onValidityChange,
-  goToStep,
 }: Step9Props) {
-  const router = useRouter();
-  const authState = useAuthStore.getState();
-  const rawProfileData = useProfileSetupStore((state) => state.data);
-  const profileData: ProfileData = useMemo(() => rawProfileData ?? {}, [rawProfileData]);
+  const profileData = useProfileSetupStore((state) => state.data);
+  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
 
-  const [submitting, setSubmitting] = useState(false);
+  /** Pick multiple photos up to 6 */
+  const pickImages = useCallback(async () => {
+    const remaining = 6 - (profileData?.photos?.length || 0);
+    if (remaining <= 0) return;
 
-  const fieldToStep: Record<string, string> = {
-    name: "step2",
-    birthdate: "step2",
-    gender: "step2",
-    pronouns: "step2",
-    university_name: "step3",
-    campus_name: "step3",
-    major: "step3",
-    university_year: "step3",
-    grad_year: "step3",
-    sexual_orientation: "step4",
-    gender_preference: "step4",
-    intent: "step4",
-    min_age: "step5",
-    max_age: "step5",
-    bio: "step6",
-    avatar_url: "step6",
-    interests: "step7",
-    photos: "step8",
-  };
+    const result = await ImagePicker.launchImageLibraryAsync({
+      // @ts-ignore
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.7,
+      selectionLimit: remaining,
+    });
 
+    if (!result.canceled && result.assets?.length) {
+      const uris = result.assets.map((asset) => asset.uri);
+      setProfileField("photos", [...(profileData?.photos || []), ...uris].slice(0, 6));
+    }
+  }, [profileData?.photos, setProfileField]);
 
-  const renderValue = useCallback(
-    (field: keyof ProfileData) => {
-      if (field === "birthdate") return formatBirthdate(profileData?.birthdate);
-      if (field === "university_name") return profileData?.university_name || "Not set";
-      if (field === "campus_name") return profileData?.campus_name || "Not set";
-      const value = profileData?.[field];
-      if (Array.isArray(value)) return value.join(", ");
-      if (value === null || value === undefined || value === "") return "Not set";
-      return String(value);
+  /** Remove a photo by index */
+  const removePhoto = useCallback(
+    (index: number) => {
+      const updatedPhotos = [...(profileData?.photos || [])];
+      updatedPhotos.splice(index, 1);
+      setProfileField("photos", updatedPhotos);
     },
-    [profileData]
+    [profileData?.photos, setProfileField]
   );
 
-  const isValid = useMemo(() => true, []);
+  /** Step validity: at least 6 photos required */
+  const isValid = useMemo(
+    () => (profileData?.photos?.length || 0) >= 2,
+    [profileData?.photos]
+  );
+
   useEffect(() => {
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
-
-  /** Handle finishing the profile submission */
-  const handleFinish = useCallback(async () => {
-    setSubmitting(true);
-    try {
-      const userId = authState.userId;
-      const token = authState.token;
-
-      if (!userId || !token) {
-        console.error("User not authenticated");
-        setSubmitting(false);
-        return;
-      }
-
-      await handleSubmitProfile(userId);
-      // Navigate to main app after successful submission
-      router.replace("/home/(tabs)/discover");
-    } catch (err) {
-      console.error("Error submitting profile:", err);
-      setSubmitting(false);
-    }
-  }, [authState.userId, authState.token, router]);
-
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Review your profile</Text>
-          <Text style={styles.subtitle}>Tap any section to edit</Text>
-        </View>
+      <Text style={styles.title}>Add your photos</Text>
+      <Text style={styles.subtitle}>Add up to 6 photos for your profile</Text>
 
-        {/* Basic Info Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Basic Information</Text>
-            <View style={styles.sectionDivider} />
-          </View>
-          <View style={styles.sectionContent}>
-            {["name", "birthdate", "gender", "pronouns"].map((field, idx) => (
-              <TouchableOpacity
-                key={field}
-                style={[
-                  styles.fieldRow,
-                  idx !== 3 && styles.fieldRowBorder,
-                ]}
-                onPress={() => goToStep?.(fieldToStep[field])}
-                activeOpacity={0.6}
-              >
-                <View style={styles.fieldLeft}>
-                  <Text style={styles.fieldLabel}>{formatLabel(field)}</Text>
-                </View>
-                <Text style={styles.fieldValue} numberOfLines={2}>
-                  {renderValue(field as keyof ProfileData)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Academic Info Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Academic Details</Text>
-            <View style={styles.sectionDivider} />
-          </View>
-          <View style={styles.sectionContent}>
-            {["university_name", "campus_name", "major", "university_year", "grad_year"].map(
-              (field, idx) => (
+      {/* 3x2 Grid of photos */}
+      <View style={styles.gridContainer}>
+        {Array.from({ length: 6 }).map((_, idx) => {
+          const photo = (profileData?.photos || [])[idx];
+          
+          if (photo) {
+            // Show photo with remove button
+            return (
+              <View key={idx} style={styles.photoWrapper}>
+                <Image source={{ uri: photo }} style={styles.photo} />
                 <TouchableOpacity
-                  key={field}
-                  style={[
-                    styles.fieldRow,
-                    idx !== 4 && styles.fieldRowBorder,
-                  ]}
-                  onPress={() => goToStep?.(fieldToStep[field])}
-                  activeOpacity={0.6}
+                  style={styles.removeButton}
+                  onPress={() => removePhoto(idx)}
                 >
-                  <View style={styles.fieldLeft}>
-                    <Text style={styles.fieldLabel}>{formatLabel(field)}</Text>
-                  </View>
-                  <Text style={styles.fieldValue} numberOfLines={2}>
-                    {renderValue(field as keyof ProfileData)}
-                  </Text>
+                  <Ionicons name="close-circle" size={24} color="red" />
                 </TouchableOpacity>
-              )
-            )}
-          </View>
-        </View>
-
-        {/* Preferences Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Preferences</Text>
-            <View style={styles.sectionDivider} />
-          </View>
-          <View style={styles.sectionContent}>
-            {["sexual_orientation", "gender_preference", "intent", "min_age", "max_age"].map(
-              (field, idx) => (
-                <TouchableOpacity
-                  key={field}
-                  style={[
-                    styles.fieldRow,
-                    idx !== 4 && styles.fieldRowBorder,
-                  ]}
-                  onPress={() => goToStep?.(fieldToStep[field])}
-                  activeOpacity={0.6}
-                >
-                  <View style={styles.fieldLeft}>
-                    <Text style={styles.fieldLabel}>{formatLabel(field)}</Text>
-                  </View>
-                  <Text style={styles.fieldValue} numberOfLines={2}>
-                    {renderValue(field as keyof ProfileData)}
-                  </Text>
-                </TouchableOpacity>
-              )
-            )}
-          </View>
-        </View>
-
-        {/* Visual Content Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Your Story</Text>
-            <View style={styles.sectionDivider} />
-          </View>
-          <View style={styles.sectionContent}>
-            {/* Bio */}
-            <TouchableOpacity
-              style={styles.bioSection}
-              onPress={() => goToStep?.("step6")}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.bioLabel}>Bio</Text>
-              <Text style={styles.bioValue}>
-                {profileData?.bio || "No bio added"}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Avatar */}
-            {profileData?.avatar_url && (
-              <TouchableOpacity
-                style={styles.avatarSection}
-                onPress={() => goToStep?.("step6")}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.avatarLabel}>Profile Picture</Text>
-                <Image
-                  source={{ uri: profileData.avatar_url }}
-                  style={styles.avatar}
-                />
-              </TouchableOpacity>
-            )}
-
-            {/* Photos */}
-            {profileData?.photos && profileData.photos.length > 0 && (
-              <View style={styles.photosSection}>
-                <Text style={styles.photosLabel}>Photos ({profileData.photos.length})</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.photosContainer}
-                >
-                  {profileData.photos.map((uri: string, idx: number) => (
-                    <TouchableOpacity
-                      key={idx}
-                      onPress={() => goToStep?.("step8")}
-                      activeOpacity={0.7}
-                    >
-                      <Image source={{ uri }} style={styles.photoItem} />
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
               </View>
-            )}
-          </View>
-        </View>
-
-        {/* Spacer */}
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
-
-      {/* Finish Button */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          onPress={handleFinish}
-          disabled={submitting || !isValid}
-          style={[styles.button, (submitting) && styles.buttonDisabled]}
-          activeOpacity={0.8}
-        >
-          {submitting ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.buttonText}>Complete Profile</Text>
-          )}
-        </TouchableOpacity>
+            );
+          } else if (idx === (profileData?.photos?.length || 0)) {
+            // Show add button for next empty slot
+            return (
+              <TouchableOpacity
+                key={idx}
+                style={styles.addPhotoButton}
+                onPress={pickImages}
+              >
+                <Ionicons name="add" size={36} color={PRIMARY} />
+                <Text style={styles.addPhotoText}>Add Photo</Text>
+              </TouchableOpacity>
+            );
+          } else {
+            // Show empty placeholder
+            return (
+              <View key={idx} style={styles.emptySlot} />
+            );
+          }
+        })}
       </View>
     </View>
   );
@@ -314,19 +126,17 @@ export default function Step9({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BACKGROUND,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
     paddingHorizontal: 24,
     paddingVertical: 32,
-    paddingBottom: 24,
+    backgroundColor: BACKGROUND,
+  },
+  contentContainer: {
+    flex: 1,
+    paddingTop: 80,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "800",
+    fontSize: 24,
+    fontWeight: "bold",
     color: DARK,
     marginBottom: 8,
     textAlign: "center",
@@ -335,174 +145,56 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: MUTED,
     textAlign: "center",
-    fontWeight: "500",
+    marginBottom: 32,
   },
-  // Section styling
-  section: {
-    marginHorizontal: 24,
-    marginBottom: 28,
-    backgroundColor: "white",
-    borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  sectionHeader: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: "#f9fafb",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: DARK,
-    marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  sectionDivider: {
-    height: 3,
-    backgroundColor: PRIMARY,
-    borderRadius: 1.5,
-    width: 32,
-    marginTop: 4,
-  },
-  sectionContent: {
-    paddingHorizontal: 0,
-  },
-  // Field row styling
-  fieldRow: {
+  gridContainer: {
     flexDirection: "row",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  fieldRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-  },
-  fieldLeft: {
-    flex: 0,
-  },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: MUTED,
-    textTransform: "capitalize",
-    minWidth: 100,
-  },
-  fieldValue: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
-    color: DARK,
-    textAlign: "right",
-  },
-  // Bio section
-  bioSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-  },
-  bioLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: MUTED,
-    marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  bioValue: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: DARK,
-    lineHeight: 22,
-  },
-  // Avatar section
-  avatarSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-  },
-  avatarLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: MUTED,
-    marginBottom: 12,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 16,
-    backgroundColor: "#f3f4f6",
-  },
-  // Photos section
-  photosSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  photosLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: MUTED,
-    marginBottom: 12,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  photosContainer: {
-    flexDirection: "row",
-    gap: 12,
-    paddingRight: 20,
-  },
-  photoItem: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-    backgroundColor: "#f3f4f6",
-  },
-  // Spacing
-  bottomSpacer: {
-    height: 0,
-  },
-  // Button container
-  buttonContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    paddingBottom: 32,
-    backgroundColor: BACKGROUND,
-    borderTopWidth: 1,
-    borderTopColor: "#f3f4f6",
-  },
-  button: {
-    width: "100%",
-    backgroundColor: PRIMARY,
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 16,
+    paddingHorizontal: 8,
     justifyContent: "center",
   },
-  buttonDisabled: {
-    backgroundColor: "#d1d5db",
-    opacity: 0.6,
+  photoWrapper: {
+    position: "relative",
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
   },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "700",
+  photo: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 12,
+  },
+  removeButton: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    backgroundColor: "white",
+    borderRadius: 12,
+  },
+  addPhotoButton: {
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: PRIMARY,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f9f9f9",
+  },
+  addPhotoText: {
+    fontSize: 12,
+    color: PRIMARY,
+    marginTop: 4,
     textAlign: "center",
   },
-  buttonTextDisabled: {
-    color: MUTED,
+  emptySlot: {
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "#e0e0e0",
+    backgroundColor: "#fafafa",
   },
 });
