@@ -1,9 +1,12 @@
 // React core
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 // React Native
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+// Navigation & Hooks
+import { useFocusEffect } from "@react-navigation/native";
 
 // Project imports
 import SwipeCard from "@/components/discover/SwipeCard";
@@ -11,6 +14,8 @@ import logger from "@/config/logger";
 import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
 import { sendLike } from "@/services/likesService";
 import { getDiscoverFeed } from "@/services/discoverService";
+import { profileApi } from "@/api/profile";
+import { useDiscoverPreferencesStore } from "@/store/discoverPreferencesStore";
 import { Profile } from "@/types/Profile";
 
 // Constants
@@ -18,38 +23,164 @@ const INITIAL_FETCH_LIMIT = 10;
 const INITIAL_OFFSET = 0;
 
 /**
- * Discover screen - card-based matching interface
- * Displays profiles as swipeable cards with left/right gesture support
- * Left swipe: discard, Right swipe: like (with match detection)
+ * Discover Screen
+ *
+ * Card-based matching interface with smart refetch logic.
+ *
+ * Features:
+ * - Smart refetch: Only when out of profiles OR hard filters changed
+ * - Pull-to-refresh: Available on "No more profiles" screen
+ * - Hard filter tracking: Detects age range / gender preference changes
+ * - Automatic refetch on tab focus (when conditions met)
+ * - Comprehensive logging for debugging
+ *
+ * Refetch Conditions:
+ * 1. User has swiped through all profiles (out of profiles)
+ * 2. User changed age range or gender preferences on profile page
+ * 3. User manually triggers pull-to-refresh (on "No more profiles" screen)
+ *
+ * Note: Pull-to-refresh is available on the "No more profiles" screen to allow
+ * users to refresh when they run out of cards. During active swiping, users can
+ * still manually trigger refetch by switching tabs and returning (if conditions met).
+ *
+ * Architecture:
+ * - discover.tsx: UI and refetch orchestration
+ * - discoverPreferencesStore: Tracks preference changes
+ * - discoverService: API calls
  */
 
 export default function DiscoverScreen() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  logger.debug("DiscoverScreen rendered", { currentIndex, profilesCount: profiles.length });
+  // Store for tracking preference changes
+  const { hardFiltersChanged, updateHardFilters, initializeHardFilters } = useDiscoverPreferencesStore();
 
-  // Fetch initial discover feed
+  // Keep reference to current profile for hard filter comparison
+  const currentProfileRef = useRef<Partial<Profile> | null>(null);
+
+  /**
+   * Fetch discover feed with smart hard filter tracking
+   * Logs all key events and updates hard filter baselines after successful fetch
+   */
   const fetchProfiles = useCallback(async () => {
+    logger.debug("[discover] Fetching profiles", { limit: INITIAL_FETCH_LIMIT, offset: INITIAL_OFFSET });
     setLoading(true);
-    const res = await getDiscoverFeed(INITIAL_FETCH_LIMIT, INITIAL_OFFSET);
-    if (res.success && res.data?.profiles) {
-      setProfiles(res.data.profiles);
-    } else {
-      Alert.alert("Error", res.error || "Failed to load profiles.");
-    }
-    setLoading(false);
-  }, []);
 
+    try {
+      // Fetch current profile to get latest preferences and initialize/compare hard filters
+      const profile = await profileApi.me();
+
+      // Initialize hard filters on first load (check if currentProfileRef is null)
+      if (!currentProfileRef.current) {
+        logger.debug("[discover] Initializing hard filters on first load", {
+          minAge: profile.min_age,
+          maxAge: profile.max_age,
+          genderPreference: profile.gender_preference,
+        });
+        initializeHardFilters(profile.min_age, profile.max_age, profile.gender_preference);
+      }
+
+      currentProfileRef.current = profile;
+
+      // Fetch discover feed
+      const res = await getDiscoverFeed(INITIAL_FETCH_LIMIT, INITIAL_OFFSET);
+
+      if (res.success && res.data?.profiles) {
+        logger.info("[discover] Profiles fetched successfully", { count: res.data.profiles.length });
+        setProfiles(res.data.profiles);
+        setCurrentIndex(0); // Reset to first card on refetch
+
+        // Update hard filter baselines after successful fetch
+        updateHardFilters(profile.min_age, profile.max_age, profile.gender_preference);
+      } else {
+        logger.error("[discover] Failed to fetch profiles", { error: res.error });
+        Alert.alert("Error", res.error || "Failed to load profiles.");
+      }
+    } catch (err) {
+      logger.error("[discover] Error fetching profiles", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      Alert.alert("Error", "Failed to load profiles. Please try again.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [initializeHardFilters, updateHardFilters]);
+
+  /**
+   * Determine if refetch is needed based on current state
+   * Returns true if:
+   * 1. User has run out of profiles (out of profiles)
+   * 2. User changed hard filters (age range or gender preference)
+   */
+  const shouldRefetch = useCallback(async (): Promise<boolean> => {
+    // Condition 1: Out of profiles
+    const outOfProfiles = currentIndex >= profiles.length;
+    if (outOfProfiles) {
+      logger.debug("[discover] Should refetch: out of profiles", { currentIndex, profilesLength: profiles.length });
+      return true;
+    }
+
+    // Condition 2: Hard filters changed
+    try {
+      const profile = await profileApi.me();
+      const filtersChanged = hardFiltersChanged(profile.min_age, profile.max_age, profile.gender_preference);
+
+      if (filtersChanged) {
+        logger.debug("[discover] Should refetch: hard filters changed");
+        return true;
+      }
+    } catch (err) {
+      logger.error("[discover] Error checking hard filters", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    return false;
+  }, [currentIndex, profiles.length, hardFiltersChanged]);
+
+  /**
+   * Refetch on tab focus if conditions are met
+   * Uses useFocusEffect to trigger when user returns to discover tab
+   */
+  useFocusEffect(
+    useCallback(() => {
+      const checkAndRefetch = async () => {
+        const needsRefetch = await shouldRefetch();
+        if (needsRefetch) {
+          logger.debug("[discover] Tab focus refetch triggered");
+          await fetchProfiles();
+        }
+      };
+
+      checkAndRefetch();
+    }, [shouldRefetch, fetchProfiles])
+  );
+
+  /**
+   * Initial fetch on mount
+   */
   useEffect(() => {
     fetchProfiles();
+  }, [fetchProfiles]);
+
+  /**
+   * Handle pull-to-refresh gesture
+   * Allows user to manually refresh discover feed at any time
+   */
+  const handleRefresh = useCallback(async () => {
+    logger.debug("[discover] Pull-to-refresh triggered");
+    setRefreshing(true);
+    await fetchProfiles();
   }, [fetchProfiles]);
 
   const handleSwipeLeft = useCallback(() => {
     // Discard - just move to next
     const currentProfile = profiles[currentIndex];
-    logger.debug("Swiped left", { discardedUserId: currentProfile?.user_id });
+    logger.debug("[discover] Swiped left", { discardedUserId: currentProfile?.user_id });
     setCurrentIndex((prev) => prev + 1);
   }, [profiles, currentIndex]);
 
@@ -63,28 +194,37 @@ export default function DiscoverScreen() {
     // Send like API call
     const res = await sendLike(currentProfile.user_id);
     if (res.success) {
-      logger.info("Like sent", { likedUserId: currentProfile.user_id });
+      logger.info("[discover] Like sent", { likedUserId: currentProfile.user_id });
       if (res.match) {
-        logger.info("Match found", { matchedUserId: currentProfile.user_id, matchedName: currentProfile.name });
+        logger.info("[discover] Match found", { matchedUserId: currentProfile.user_id, matchedName: currentProfile.name });
         Alert.alert("It's a Match!", `You matched with ${currentProfile.name}`);
       }
     }
   }, [profiles, currentIndex]);
 
-  if (loading) {
+  if (loading && !profiles.length) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={PRIMARY} />
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={PRIMARY} />
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (currentIndex >= profiles.length) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.title}>No more profiles</Text>
-        <Text style={styles.subtitle}>Check back later for more people!</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={PRIMARY} />}
+        >
+          <View style={styles.centerContainer}>
+            <Text style={styles.title}>No more profiles</Text>
+            <Text style={styles.subtitle}>Check back later for more people!</Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
