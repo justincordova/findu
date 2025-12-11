@@ -1,5 +1,6 @@
 // React core
 import React, { useCallback, useEffect, useState } from "react";
+import { useRouter } from 'expo-router';
 
 // React Native
 import {
@@ -43,6 +44,7 @@ const AVATAR_MARGIN_RIGHT = 16;
 export default function MatchesScreen() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const fetchMatches = useCallback(async () => {
     setLoading(true);
@@ -60,7 +62,10 @@ export default function MatchesScreen() {
   }, [fetchMatches]);
 
   const renderItem = ({ item }: { item: Match }) => (
-    <TouchableOpacity style={styles.matchItem}>
+    <TouchableOpacity 
+      style={styles.matchItem}
+      onPress={() => router.push(`/chat/${item.id}` as any)} // 👈 ADD THIS
+    >
       <Image source={{ uri: item.otherUser.avatar_url }} style={styles.avatar} />
       <View style={styles.info}>
         <Text style={styles.name}>{item.otherUser.name}</Text>

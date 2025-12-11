@@ -25,6 +25,7 @@ import matchesRoutes from "@/modules/matches/routes";
 import discoverRoutes from "@/modules/discover/routes";
 import blocksRoutes from "@/modules/blocks/routes";
 import constantsRoutes from "@/modules/constants/routes";
+import chatRoutes from "@/modules/chats/routes";
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use("/api/likes", likesRoutes);
 app.use("/api/matches", matchesRoutes);
 app.use("/api/discover", discoverRoutes);
 app.use("/api/blocks", blocksRoutes);
+app.use('/api/chats', chatRoutes);
 
 // Root Route
 // Simple endpoint to indicate this is an API server
