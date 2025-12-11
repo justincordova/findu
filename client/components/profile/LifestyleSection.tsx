@@ -172,7 +172,7 @@ export default function LifestyleSection() {
       logger.debug("Saving lifestyle", { userId, lifestyle: editingLifestyle });
 
       await profileApi.update(userId, {
-        lifestyle: Object.keys(editingLifestyle).length > 0 ? editingLifestyle : null,
+        lifestyle: Object.keys(editingLifestyle).length > 0 ? editingLifestyle : undefined,
       });
 
       logger.info("Lifestyle updated successfully", {
