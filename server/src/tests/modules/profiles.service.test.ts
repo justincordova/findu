@@ -285,3 +285,62 @@ describe("resolveUniversityAndCampuses", () => {
     await expect(ProfileService.resolveUniversityAndCampuses(email)).rejects.toThrow("DB Error");
   });
 });
+
+describe("Lifestyle field handling", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should create profile with lifestyle data", async () => {
+    const lifestyleData = {
+      drinking: "Socially",
+      smoking: "Non-smoker",
+      fitness: "Casual gym-goer",
+    };
+    const profileWithLifestyle = { ...sampleProfile, lifestyle: lifestyleData };
+    (prisma.profiles.create as jest.Mock).mockResolvedValue(profileWithLifestyle);
+
+    const result = await ProfileService.createProfile(profileWithLifestyle);
+
+    expect(result.lifestyle).toEqual(lifestyleData);
+  });
+
+  it("should handle null lifestyle field", async () => {
+    const profileWithoutLifestyle = { ...sampleProfile, lifestyle: null };
+    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleProfile);
+    (prisma.profiles.update as jest.Mock).mockResolvedValue(profileWithoutLifestyle);
+
+    const result = await ProfileService.updateProfile(userId, { lifestyle: null });
+
+    expect(result?.lifestyle).toBeNull();
+  });
+
+  it("should update profile with partial lifestyle data", async () => {
+    const lifestyleData = {
+      drinking: "On occasion",
+      sleep_habits: "Irregular / random",
+      cleanliness: "Very clean",
+    };
+    const profileWithLifestyle = { ...sampleProfile, lifestyle: lifestyleData };
+    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleProfile);
+    (prisma.profiles.update as jest.Mock).mockResolvedValue(profileWithLifestyle);
+
+    const result = await ProfileService.updateProfile(userId, {
+      lifestyle: lifestyleData,
+    });
+
+    expect(result?.lifestyle).toEqual(lifestyleData);
+  });
+
+  it("should preserve existing lifestyle data when updating other fields", async () => {
+    const existingLifestyle = { drinking: "Never", fitness: "Gym regular" };
+    const profileWithLifestyle = { ...sampleProfile, lifestyle: existingLifestyle };
+    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(profileWithLifestyle);
+    (prisma.profiles.update as jest.Mock).mockResolvedValue(profileWithLifestyle);
+
+    await ProfileService.updateProfile(userId, { bio: "New bio" });
+
+    // Lifestyle should not be modified when updating other fields
+    expect((prisma.profiles.update as jest.Mock).mock.calls[0][0].data.lifestyle).not.toBeDefined();
+  });
+});

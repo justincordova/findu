@@ -1,5 +1,5 @@
 // React core
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 // React Native
 import {
@@ -26,7 +26,7 @@ import { useConstantsStore } from "@/store/constantsStore";
 import { Lifestyle } from "@/types/Lifestyle";
 
 // Types
-interface Step8LifestyleProps {
+interface Step8Props {
   onValidityChange?: (isValid: boolean) => void;
   onNext?: () => void;
 }
@@ -36,16 +36,20 @@ interface Step8LifestyleProps {
  * Users can select 0-11 lifestyle fields from predefined options.
  * This step is completely optional with no validation required.
  */
-export default function Step8Lifestyle({
+export default function Step8({
   onValidityChange,
   onNext,
-}: Step8LifestyleProps) {
+}: Step8Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
   const constants = useConstantsStore((state) => state.constants);
 
   const lifestyleOptions = constants?.lifestyleOptions;
-  const currentLifestyle = (profileData?.lifestyle || {}) as Lifestyle;
+
+  const currentLifestyle = useMemo(
+    () => (profileData?.lifestyle || {}) as Lifestyle,
+    [profileData?.lifestyle]
+  );
 
   /** Handle single-select field change */
   const handleSelectField = useCallback(
