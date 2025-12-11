@@ -17,7 +17,7 @@ const sanitizeData = <T extends object>(data: T): Partial<T> => {
  */
 export const createProfile = async (profileData: Profile): Promise<Profile> => {
   try {
-    const { created_at, updated_at, ...inputData } = profileData;
+    const { created_at: _created, updated_at: _updated, ...inputData } = profileData;
     const profile = await prisma.profiles.create({
       data: {
         ...inputData,
