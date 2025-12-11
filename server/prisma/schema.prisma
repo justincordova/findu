@@ -14,7 +14,6 @@ model User {
   email                           String          @unique
   emailVerified                   Boolean?        @default(false)
   image                           String?
-  profileSetup                    Boolean         @default(false)
   createdAt                       DateTime        @default(now())
   updatedAt                       DateTime        @updatedAt
   accounts                        Account[]
@@ -97,19 +96,23 @@ model blocks {
 }
 
 model chats {
-  id         String    @id @default(cuid())
-  match_id   String?
-  sender_id  String?
-  message    String
-  is_read    Boolean?  @default(false)
-  sent_at    DateTime? @default(now())
-  created_at DateTime? @default(now())
-  updated_at DateTime? @updatedAt
-  matches    matches?  @relation(fields: [match_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users      User?     @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id           String    @id @default(cuid())
+  match_id     String
+  sender_id    String
+  message      String
+  is_read      Boolean   @default(false)
+  sent_at      DateTime  @default(now())
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  media_url    String?
+  message_type String    @default("TEXT") @db.VarChar(20)
+  read_at      DateTime?
+  matches      matches   @relation(fields: [match_id], references: [id], onDelete: Cascade)
+  users        User      @relation(fields: [sender_id], references: [id], onDelete: Cascade)
 
   @@index([match_id], map: "idx_chats_match")
   @@index([sender_id], map: "idx_chats_sender")
+  @@index([match_id, sent_at], map: "idx_chats_match_sent")
 }
 
 model donations {
@@ -122,14 +125,14 @@ model donations {
 }
 
 model likes {
-  id                           String    @id @default(cuid())
-  from_user                    String?
-  to_user                      String?
-  is_superlike                 Boolean?  @default(false)
-  created_at                   DateTime? @default(now())
+  id                           String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  from_user                    String
+  to_user                      String
+  is_superlike                 Boolean   @default(false)
+  created_at                   DateTime  @default(now())
   updated_at                   DateTime? @updatedAt
-  users_likes_from_userTousers User?     @relation("likes_from_userTousers", fields: [from_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users_likes_to_userTousers   User?     @relation("likes_to_userTousers", fields: [to_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_likes_from_userTousers User      @relation("likes_from_userTousers", fields: [from_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_likes_to_userTousers   User      @relation("likes_to_userTousers", fields: [to_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([from_user, to_user])
   @@index([from_user], map: "idx_likes_from_user")
@@ -168,6 +171,7 @@ model profiles {
   min_age            Int
   max_age            Int
   photos             String[]     @default([])
+  lifestyle          Json?
   created_at         DateTime?    @default(now())
   updated_at         DateTime?    @updatedAt
   university_id      String
@@ -236,14 +240,3 @@ model university_domains {
 
   @@unique([university_id, domain], map: "university_domain_unique")
 }
-
-// PostgreSQL Trigger: Automatic Match Creation on Mutual Likes
-// When a user likes another user, this trigger checks if the recipient already liked them.
-// If mutual likes are found, a match record is automatically created.
-//
-// Trigger Function: create_match_on_mutual_like()
-// Trigger Name: on_mutual_like_trigger
-// Event: AFTER INSERT ON likes
-//
-// This ensures that matches are created as soon as mutual likes are detected.
-// Migration: 20251205_add_mutual_likes_trigger.sql
