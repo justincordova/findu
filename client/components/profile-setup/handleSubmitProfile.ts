@@ -60,6 +60,7 @@ export async function handleSubmitProfile(userId?: string) {
       max_age: Number(profileData.max_age) || 0,
       avatar_url: avatarUrl ?? "",
       photos: uploadedPhotos ?? [],
+      lifestyle: profileData.lifestyle ?? undefined,
     };
 
     // Validate before submission

@@ -9,7 +9,7 @@ const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/profiles`;
  * @returns {{Authorization?: string}} Headers object with Bearer token (if available)
  */
 const getAuthHeaders = () => {
-  const token = useAuthStore.getState().token;
+  const { token } = useAuthStore.getState();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
