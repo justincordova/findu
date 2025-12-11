@@ -304,13 +304,13 @@ export const calculateMajorCompatibilityScore = (major1?: string, major2?: strin
 };
 
 /**
- * Calculate lifestyle compatibility score based on exact field matches.
- * Simple matching: count exact matches across all 11 lifestyle fields.
- * Normalizes to 0-1 score: matchCount / 11
+ * Calculate lifestyle compatibility score based on field matches.
+ * Matching strategy:
+ * - Single-value fields (9): exact match = 1.0, no match = 0
+ * - Array fields (2): weighted by overlap percentage (e.g., 50% overlap = 0.5)
+ * Normalizes to 0-1 score across all 11 fields.
  *
  * Returns 0 if either user has no lifestyle data (optional field, no penalty).
- * For array fields (pets, dietary_preferences), checks for any overlap.
- * For single-value fields, checks for exact match.
  *
  * @param lifestyle1 - First user's lifestyle data
  * @param lifestyle2 - Second user's lifestyle data
@@ -326,10 +326,10 @@ export const calculateLifestyleCompatibilityScore = (
 
   if (!parsed1 || !parsed2) return 0;
 
-  let matchCount = 0;
+  let totalMatchScore = 0;
   const totalFields = 11;
 
-  // Single-value fields (9 fields)
+  // Single-value fields (9 fields): exact match = 1.0, no match = 0
   const singleValueFields: (keyof Lifestyle)[] = [
     'drinking', 'smoking', 'cannabis', 'sleep_habits',
     'study_style', 'cleanliness', 'caffeine', 'living_situation', 'fitness'
@@ -339,23 +339,27 @@ export const calculateLifestyleCompatibilityScore = (
     const value1 = parsed1[field];
     const value2 = parsed2[field];
     if (value1 && value2 && value1 === value2) {
-      matchCount += 1;
+      totalMatchScore += 1;
     }
   }
 
   // Array fields (2 fields: pets, dietary_preferences)
+  // Weight by overlap percentage for more nuanced scoring
   const arrayFields: ('pets' | 'dietary_preferences')[] = ['pets', 'dietary_preferences'];
 
   for (const field of arrayFields) {
     const arr1 = parsed1[field];
     const arr2 = parsed2[field];
     if (Array.isArray(arr1) && Array.isArray(arr2) && arr1.length && arr2.length) {
-      const hasOverlap = arr1.some((item: string) => arr2.includes(item));
-      if (hasOverlap) matchCount += 1;
+      // Calculate overlap: items that appear in both arrays
+      const overlappingItems = arr1.filter((item: string) => arr2.includes(item)).length;
+      // Weight by the maximum array length to account for different number of selections
+      const maxLength = Math.max(arr1.length, arr2.length);
+      totalMatchScore += overlappingItems / maxLength;
     }
   }
 
-  return matchCount / totalFields;
+  return totalMatchScore / totalFields;
 };
 
 /**

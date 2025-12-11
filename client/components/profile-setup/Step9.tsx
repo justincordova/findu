@@ -66,7 +66,7 @@ export default function Step9({
     [profileData?.photos, setProfileField]
   );
 
-  /** Step validity: at least 6 photos required */
+  /** Step validity: at least 2 photos required */
   const isValid = useMemo(
     () => (profileData?.photos?.length || 0) >= 2,
     [profileData?.photos]
