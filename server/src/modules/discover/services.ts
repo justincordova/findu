@@ -1,6 +1,7 @@
 import prisma from "@/lib/prismaClient";
 import logger from "@/config/logger";
 import { Profile } from "@/types/Profile";
+import { Lifestyle } from "@/types/Lifestyle";
 import {
   ProfileWithScore,
   CompatibilityWeights,
@@ -9,15 +10,17 @@ import {
 import { differenceInYears, subYears, addDays } from 'date-fns';
 import { getInterestCategory } from "@/constants/interests";
 import { genderPreferencesToIdentities } from "@/utils/genderMapping";
+import type { JsonValue } from "@prisma/client/runtime/library";
 
 // Algorithm weights - adjust based on testing/feedback
-// Updated: 35% interests, 30% intent, 15% orientation, 10% major, 10% age
+// Updated: 30% interests, 25% intent, 15% orientation, 10% major, 10% age, 10% lifestyle
 const COMPATIBILITY_WEIGHTS: CompatibilityWeights = {
-  sharedInterests: 0.35,        // 35% - shared hobbies/interests
-  intentCompatibility: 0.30,    // 30% - relationship goals alignment
+  sharedInterests: 0.30,        // 30% - shared hobbies/interests (reduced from 35%)
+  intentCompatibility: 0.25,    // 25% - relationship goals alignment (reduced from 30%)
   orientationCompatibility: 0.15, // 15% - sexual orientation match
   majorCompatibility: 0.10,     // 10% - same major/academic context
   ageCompatibility: 0.10,       // 10% - age alignment
+  lifestyleCompatibility: 0.10, // 10% - lifestyle compatibility (NEW)
 };
 
 /**
@@ -301,8 +304,63 @@ export const calculateMajorCompatibilityScore = (major1?: string, major2?: strin
 };
 
 /**
+ * Calculate lifestyle compatibility score based on exact field matches.
+ * Simple matching: count exact matches across all 11 lifestyle fields.
+ * Normalizes to 0-1 score: matchCount / 11
+ *
+ * Returns 0 if either user has no lifestyle data (optional field, no penalty).
+ * For array fields (pets, dietary_preferences), checks for any overlap.
+ * For single-value fields, checks for exact match.
+ *
+ * @param lifestyle1 - First user's lifestyle data
+ * @param lifestyle2 - Second user's lifestyle data
+ * @returns Compatibility score between 0-1
+ */
+export const calculateLifestyleCompatibilityScore = (
+  lifestyle1?: JsonValue,
+  lifestyle2?: JsonValue
+): number => {
+  // Cast JsonValue to Lifestyle (or null if not an object)
+  const parsed1 = typeof lifestyle1 === 'object' && lifestyle1 !== null ? (lifestyle1 as Lifestyle) : null;
+  const parsed2 = typeof lifestyle2 === 'object' && lifestyle2 !== null ? (lifestyle2 as Lifestyle) : null;
+
+  if (!parsed1 || !parsed2) return 0;
+
+  let matchCount = 0;
+  const totalFields = 11;
+
+  // Single-value fields (9 fields)
+  const singleValueFields: (keyof Lifestyle)[] = [
+    'drinking', 'smoking', 'cannabis', 'sleep_habits',
+    'study_style', 'cleanliness', 'caffeine', 'living_situation', 'fitness'
+  ];
+
+  for (const field of singleValueFields) {
+    const value1 = parsed1[field];
+    const value2 = parsed2[field];
+    if (value1 && value2 && value1 === value2) {
+      matchCount += 1;
+    }
+  }
+
+  // Array fields (2 fields: pets, dietary_preferences)
+  const arrayFields: ('pets' | 'dietary_preferences')[] = ['pets', 'dietary_preferences'];
+
+  for (const field of arrayFields) {
+    const arr1 = parsed1[field];
+    const arr2 = parsed2[field];
+    if (Array.isArray(arr1) && Array.isArray(arr2) && arr1.length && arr2.length) {
+      const hasOverlap = arr1.some((item: string) => arr2.includes(item));
+      if (hasOverlap) matchCount += 1;
+    }
+  }
+
+  return matchCount / totalFields;
+};
+
+/**
  * Calculates compatibility score between two users based on multiple factors.
- * Weights: 35% interests, 30% intent, 15% orientation, 10% major, 10% age
+ * Weights: 30% interests, 25% intent, 15% orientation, 10% major, 10% age, 10% lifestyle
  *
  * @param userProfile - Current user's profile
  * @param candidateProfile - Potential match's profile
@@ -311,14 +369,14 @@ export const calculateMajorCompatibilityScore = (major1?: string, major2?: strin
 export const calculateCompatibilityScore = (userProfile: Profile, candidateProfile: Profile): number => {
   let totalScore = 0;
 
-  // 1. Shared Interests Score (35% weight)
+  // 1. Shared Interests Score (30% weight)
   const sharedInterestsScore = calculateSharedInterestsScore(
     userProfile.interests,
     candidateProfile.interests
   );
   totalScore += sharedInterestsScore * COMPATIBILITY_WEIGHTS.sharedInterests;
 
-  // 2. Intent Compatibility Score (30% weight)
+  // 2. Intent Compatibility Score (25% weight)
   const intentScore = calculateIntentCompatibilityScore(
     userProfile.intent,
     candidateProfile.intent
@@ -348,6 +406,24 @@ export const calculateCompatibilityScore = (userProfile: Profile, candidateProfi
   const candidateAge = calculateAge(candidateProfile.birthdate);
   const ageScore = calculateAgeScore(userAge, candidateAge);
   totalScore += ageScore * COMPATIBILITY_WEIGHTS.ageCompatibility;
+
+  // 6. Lifestyle Compatibility (10% weight) - exact field matches
+  const lifestyleScore = calculateLifestyleCompatibilityScore(
+    userProfile.lifestyle,
+    candidateProfile.lifestyle
+  );
+  totalScore += lifestyleScore * COMPATIBILITY_WEIGHTS.lifestyleCompatibility;
+
+  logger.debug("COMPATIBILITY_SCORE_CALCULATED", {
+    candidateId: candidateProfile.user_id,
+    sharedInterestsScore,
+    intentScore,
+    orientationScore,
+    majorScore,
+    ageScore,
+    lifestyleScore,
+    totalScore
+  });
 
   return Math.round(totalScore * 100); // Convert to 0-100 scale
 };

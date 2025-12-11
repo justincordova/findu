@@ -1,3 +1,5 @@
+import { JsonValue } from "@prisma/client/runtime/library";
+
 export interface Profile {
   user_id: string;
   name: string;
@@ -20,6 +22,7 @@ export interface Profile {
   spotify_url?: string;
   instagram_url?: string;
   photos: string[];
+  lifestyle?: JsonValue;
   readonly created_at: Date | null;
   readonly updated_at: Date | null;
 }

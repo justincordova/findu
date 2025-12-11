@@ -17,11 +17,13 @@ const sanitizeData = <T extends object>(data: T): Partial<T> => {
  */
 export const createProfile = async (profileData: Profile): Promise<Profile> => {
   try {
+    const { created_at, updated_at, ...inputData } = profileData;
     const profile = await prisma.profiles.create({
       data: {
-        ...profileData,
+        ...inputData,
+        lifestyle: inputData.lifestyle || null,
         updated_at: new Date(),
-      },
+      } as any,
     });
 
     logger.info("PROFILE_CREATED", { userId: profileData.user_id });
@@ -59,9 +61,13 @@ export const updateProfile = async (
       return null;
     }
 
+    const updateData: any = { ...sanitized, updated_at: new Date() };
+    if ('lifestyle' in updateData && updateData.lifestyle === undefined) {
+      updateData.lifestyle = null;
+    }
     const updatedProfile = await prisma.profiles.update({
       where: { user_id: userId },
-      data: { ...sanitized, updated_at: new Date() },
+      data: updateData,
     });
 
     logger.info("PROFILE_UPDATED", { userId, data: sanitized });
