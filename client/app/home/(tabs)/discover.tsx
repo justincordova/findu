@@ -2,8 +2,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
 // React Native
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 // Navigation & Hooks
 import { useFocusEffect } from "@react-navigation/native";
@@ -60,6 +61,9 @@ export default function DiscoverScreen() {
 
   // Keep reference to current profile for hard filter comparison
   const currentProfileRef = useRef<Partial<Profile> | null>(null);
+
+  // Refresh button animation
+  const refreshRotation = useRef(new Animated.Value(0)).current;
 
   /**
    * Fetch discover feed with smart hard filter tracking
@@ -168,14 +172,27 @@ export default function DiscoverScreen() {
   }, [fetchProfiles]);
 
   /**
-   * Handle pull-to-refresh gesture
-   * Allows user to manually refresh discover feed at any time
+   * Handle refresh with rotation animation
+   * Rotates the icon while fetching and completes on success
    */
   const handleRefresh = useCallback(async () => {
-    logger.debug("[discover] Pull-to-refresh triggered");
+    logger.debug("[discover] Refresh triggered");
     setRefreshing(true);
+
+    // Animate rotation
+    Animated.loop(
+      Animated.timing(refreshRotation, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      })
+    ).start();
+
     await fetchProfiles();
-  }, [fetchProfiles]);
+
+    // Stop animation when done
+    refreshRotation.setValue(0);
+  }, [fetchProfiles, refreshRotation]);
 
   const handleSwipeLeft = useCallback(() => {
     // Discard - just move to next
@@ -212,18 +229,28 @@ export default function DiscoverScreen() {
     );
   }
 
+  const rotateInterpolation = refreshRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+
   if (currentIndex >= profiles.length) {
     return (
       <SafeAreaView style={styles.container}>
-        <ScrollView
-          style={styles.scrollView}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={PRIMARY} />}
-        >
-          <View style={styles.centerContainer}>
-            <Text style={styles.title}>No more profiles</Text>
-            <Text style={styles.subtitle}>Check back later for more people!</Text>
-          </View>
-        </ScrollView>
+        <View style={styles.header}>
+          <Pressable onPress={handleRefresh} disabled={refreshing} style={styles.headerButton}>
+            <Animated.View style={{ transform: [{ rotate: rotateInterpolation }] }}>
+              <Ionicons name="refresh" size={24} color={PRIMARY} />
+            </Animated.View>
+          </Pressable>
+          <Pressable onPress={() => {}} style={styles.headerButton}>
+            <Ionicons name="flash" size={24} color={PRIMARY} />
+          </Pressable>
+        </View>
+        <View style={styles.centerContainer}>
+          <Text style={styles.title}>No more profiles</Text>
+          <Text style={styles.subtitle}>Check back later for more people!</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -234,6 +261,16 @@ export default function DiscoverScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Pressable onPress={handleRefresh} disabled={refreshing} style={styles.headerButton}>
+          <Animated.View style={{ transform: [{ rotate: rotateInterpolation }] }}>
+            <Ionicons name="refresh" size={24} color={PRIMARY} />
+          </Animated.View>
+        </Pressable>
+        <Pressable onPress={() => {}} style={styles.headerButton}>
+          <Ionicons name="flash" size={24} color={PRIMARY} />
+        </Pressable>
+      </View>
       <View style={styles.cardsContainer}>
         {cardsToRender.map((profile, index) => {
           const isTopCard = index === cardsToRender.length - 1;
@@ -257,6 +294,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: BACKGROUND,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 16,
+  },
+  headerButton: {
+    padding: 8,
   },
   centerContainer: {
     flex: 1,
