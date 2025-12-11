@@ -24,6 +24,7 @@ import BioSection from "@/components/profile/BioSection";
 import InterestsSection from "@/components/profile/InterestsSection";
 import AcademicSection from "@/components/profile/AcademicSection";
 import PreferencesSection from "@/components/profile/PreferencesSection";
+import LifestyleSection from "@/components/profile/LifestyleSection";
 import logger from "@/config/logger";
 
 /**
@@ -146,6 +147,9 @@ export default function ProfileScreen() {
 
           {/* Preferences Section - Sexual Orientation, Looking For, Age Range, Interested In */}
           <PreferencesSection />
+
+          {/* Lifestyle Section - Drinking, Smoking, Cannabis, Sleep Habits, Pets, Dietary Preferences, etc. */}
+          <LifestyleSection />
         </ScrollView>
       </SafeAreaView>
     </ProfileContext.Provider>

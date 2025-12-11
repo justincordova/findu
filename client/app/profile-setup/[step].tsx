@@ -15,8 +15,9 @@ import Step4 from "@/components/profile-setup/Step4";
 import Step5 from "@/components/profile-setup/Step5";
 import Step6 from "@/components/profile-setup/Step6";
 import Step7 from "@/components/profile-setup/Step7";
-import Step8 from "@/components/profile-setup/Step8";
+import Step8Lifestyle from "@/components/profile-setup/Step8Lifestyle";
 import Step9 from "@/components/profile-setup/Step9";
+import Step10 from "@/components/profile-setup/Step10";
 import { BACKGROUND, DARK, PRIMARY } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
 
@@ -31,6 +32,7 @@ const STEPS = [
   "step7",
   "step8",
   "step9",
+  "step10",
 ] as const;
 type Step = (typeof STEPS)[number];
 const PROGRESS_BAR_HEIGHT = 8;
@@ -40,7 +42,7 @@ const CONTENT_PADDING_HORIZONTAL = 24;
 
 /**
  * Multi-step profile setup wizard
- * Guides users through 9 steps to complete their profile
+ * Guides users through 10 steps to complete their profile
  * Displays progress indicator and validates each step before advancing
  */
 
@@ -144,9 +146,11 @@ export default function ProfileSetupStep() {
       case "step7":
         return <Step7 {...stepProps} />;
       case "step8":
-        return <Step8 {...stepProps} />;
+        return <Step8Lifestyle {...stepProps} />;
       case "step9":
         return <Step9 {...stepProps} />;
+      case "step10":
+        return <Step10 {...stepProps} />;
       default:
         return null;
     }
@@ -155,10 +159,10 @@ export default function ProfileSetupStep() {
   const totalSteps = STEPS.length;
   const currentStepIndex = STEPS.indexOf(currentStep) + 1;
   const profileComplete = isProfileComplete(profileData);
-  const canGoToFinish = profileComplete || currentStep === "step9";
+  const canGoToFinish = profileComplete || currentStep === "step10";
 
   const handleGoToFinish = useCallback(() => {
-    setCurrentStep("step9");
+    setCurrentStep("step10");
     setIsCurrentStepValid(true);
   }, []);
 
@@ -211,7 +215,7 @@ export default function ProfileSetupStep() {
           {/* Wrap step content to allow dropdowns to expand */}
           <View style={styles.stepContentWrapper}>{renderStep()}</View>
 
-          {currentStep !== "step9" && (
+          {currentStep !== "step10" && (
             <Button
               label={currentStep === "step1" ? "Get Started" : "Continue"}
               onPress={goToNextStep}
