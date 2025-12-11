@@ -1,16 +1,15 @@
 // React core
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 // React Native
 import {
   ActivityIndicator,
   Alert,
-  Animated,
   Dimensions,
   Image,
   Pressable,
+  ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -22,31 +21,27 @@ import { useAuthStore } from "@/store/authStore";
 import { updatePhoto } from "@/services/uploadService";
 import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
-import { profileStyles } from "./shared/profileStyles";
-import { MUTED, PRIMARY } from "@/constants/theme";
+import { MUTED, GRADIENT } from "@/constants/theme";
+import { LinearGradient } from "expo-linear-gradient";
 
 // Constants
-const { width } = Dimensions.get("window");
-const SECTION_PADDING = 16; // Container padding (paddingHorizontal)
-const CARD_PADDING = 20; // Card internal padding
-const GAP = 12;
-const COLS = 2;
-// Available width: full width - section padding - card padding - gap between photos
-const AVAILABLE_WIDTH = width - SECTION_PADDING * 2 - CARD_PADDING * 2 - GAP;
-const PHOTO_WIDTH = AVAILABLE_WIDTH / COLS;
-const PHOTO_HEIGHT = PHOTO_WIDTH * 1.25; // 4:5 aspect ratio
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const CONTAINER_PADDING = 16; // Padding from container
+const CAROUSEL_WIDTH = SCREEN_WIDTH - CONTAINER_PADDING * 2; // Account for left/right padding
+const CAROUSEL_HEIGHT = (CAROUSEL_WIDTH * 5) / 4; // Exact 4:5 aspect ratio
 
 /**
  * PhotosSection Component
  *
- * Displays user's photos in a clean 2-column grid layout.
+ * Displays user's photos in a horizontal carousel with flat rectangle indicators.
  * Supports replacing photos via image picker with 4:5 crop ratio.
  *
  * Features:
- * - 2-column grid layout matching card style
- * - Tap photo to replace
+ * - Horizontal carousel layout for efficient space usage
+ * - Flat rectangle indicators at the bottom (highlight current index)
+ * - Tap photo to replace with new image
  * - Image cropping with 4:5 aspect ratio
- * - Uploading feedback
+ * - Uploading feedback with spinner
  * - Comprehensive logging and error handling
  */
 export default function PhotosSection() {
@@ -60,28 +55,17 @@ export default function PhotosSection() {
 
   // Upload state
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  // Animation refs for staggered entrance (initialize once)
-  const fadeAnimsRef = useRef<Animated.Value[]>([]);
-
-  // Initialize animation refs if needed
-  if (fadeAnimsRef.current.length !== photos.length) {
-    fadeAnimsRef.current = photos.map(() => new Animated.Value(0));
-  }
-
-  // Trigger entrance animation when photos count changes
-  useEffect(() => {
-    const animations = photos.map((_, index) =>
-      Animated.timing(fadeAnimsRef.current[index], {
-        toValue: 1,
-        duration: 400,
-        delay: index * 80,
-        useNativeDriver: true,
-      })
-    );
-
-    Animated.stagger(0, animations).start();
-  }, [photos]);
+  /**
+   * Handle carousel scroll to update active indicator
+   */
+  const handleCarouselScroll = useCallback((event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / SCREEN_WIDTH);
+    setCurrentPhotoIndex(Math.max(0, Math.min(index, photos.length - 1)));
+  }, [photos.length]);
 
   /**
    * Handle tapping a photo to replace it
@@ -175,112 +159,103 @@ export default function PhotosSection() {
     [userId, photos, refetch]
   );
 
-  // Empty state
+  // Empty state - don't show section if no photos
   if (photos.length === 0) {
-    return (
-      <View style={styles.container}>
-        <View style={profileStyles.card}>
-          <View style={styles.emptyHeader}>
-            <Ionicons name="image-outline" size={24} color={PRIMARY} />
-            <Text style={profileStyles.cardTitle}>Photos</Text>
-          </View>
-          <View style={styles.emptyContent}>
-            <Ionicons name="add-circle-outline" size={48} color={MUTED} />
-            <Text style={styles.emptyText}>Add your first photo</Text>
-          </View>
-        </View>
-      </View>
-    );
+    return null;
   }
 
   return (
     <View style={styles.container}>
-      <View style={profileStyles.card}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Ionicons name="image" size={24} color={PRIMARY} />
-          <Text style={profileStyles.cardTitle}>Photos</Text>
-        </View>
-
-        {/* Grid */}
-        <View style={styles.gridContainer}>
+      <View style={styles.carouselWrapper}>
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={handleCarouselScroll}
+          scrollEventThrottle={16}
+          style={styles.carousel}
+        >
           {photos.map((photo, index) => (
-            <Animated.View
+            <Pressable
               key={index}
-              style={[
-                styles.photoWrapper,
-                { opacity: fadeAnimsRef.current[index] },
+              onPress={() => handleTapPhotoToReplace(index)}
+              style={({ pressed }) => [
+                styles.photo,
+                pressed && styles.photoPressed,
               ]}
             >
-              <Pressable
-                onPress={() => handleTapPhotoToReplace(index)}
-                style={({ pressed }) => [
-                  styles.photoCard,
-                  pressed && styles.photoCardPressed,
-                ]}
-              >
-                {photo ? (
-                  <Image
-                    source={{ uri: photo }}
-                    style={styles.photo}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={styles.emptyPhoto}>
-                    <Ionicons name="add-outline" size={32} color={MUTED} />
-                  </View>
-                )}
+              {photo ? (
+                <Image
+                  source={{ uri: photo }}
+                  style={styles.photoImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.emptyPhoto}>
+                  <Ionicons name="add-outline" size={32} color={MUTED} />
+                </View>
+              )}
 
-                {/* Uploading indicator */}
-                {uploadingIndex === index && (
-                  <View style={styles.uploadingOverlay}>
-                    <ActivityIndicator size="small" color="white" />
-                  </View>
-                )}
-              </Pressable>
-            </Animated.View>
+              {uploadingIndex === index && (
+                <View style={styles.uploadingOverlay}>
+                  <ActivityIndicator size="small" color="white" />
+                </View>
+              )}
+            </Pressable>
           ))}
-        </View>
+        </ScrollView>
+
+        {photos.length > 1 && (
+          <View style={styles.indicatorsContainer}>
+            {photos.map((_, index) => (
+              index === currentPhotoIndex ? (
+                <LinearGradient
+                  key={index}
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.indicator}
+                />
+              ) : (
+                <View
+                  key={index}
+                  style={styles.indicator}
+                />
+              )
+            ))}
+          </View>
+        )}
       </View>
     </View>
   );
 }
 
-const SECTION_VERTICAL_PADDING = 8;
-
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingVertical: SECTION_VERTICAL_PADDING,
+    paddingVertical: 8,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 16,
-  },
-  gridContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: GAP,
-  },
-  photoWrapper: {
-    width: PHOTO_WIDTH,
-    height: PHOTO_HEIGHT,
-  },
-  photoCard: {
+  carouselWrapper: {
     width: "100%",
-    height: "100%",
-    borderRadius: 12,
+    height: CAROUSEL_HEIGHT + 30,
+    borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: "#f3f4f6",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
   },
-  photoCardPressed: {
-    opacity: 0.7,
+  carousel: {
+    width: "100%",
+    height: CAROUSEL_HEIGHT,
   },
   photo: {
+    width: CAROUSEL_WIDTH,
+    height: CAROUSEL_HEIGHT,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  photoPressed: {
+    opacity: 0.7,
+  },
+  photoImage: {
     width: "100%",
     height: "100%",
   },
@@ -301,20 +276,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  emptyHeader: {
+  indicatorsContainer: {
     flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    gap: 10,
-    marginBottom: 16,
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
   },
-  emptyContent: {
-    paddingVertical: 32,
-    alignItems: "center",
-    gap: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: MUTED,
-    fontStyle: "italic",
+  indicator: {
+    flex: 1,
+    maxWidth: 40,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: "rgba(0, 0, 0, 0.25)",
   },
 });
