@@ -65,6 +65,12 @@ export default function DiscoverScreen() {
   // Refresh button animation
   const refreshRotation = useRef(new Animated.Value(0)).current;
 
+  // Track animation to prevent memory leaks
+  const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  // Track if component has initialized to prevent double fetch on mount
+  const hasInitializedRef = useRef(false);
+
   /**
    * Fetch discover feed with smart hard filter tracking
    * Logs all key events and updates hard filter baselines after successful fetch
@@ -97,6 +103,9 @@ export default function DiscoverScreen() {
         setProfiles(res.data.profiles);
         setCurrentIndex(0); // Reset to first card on refetch
 
+        // Mark as initialized after first successful fetch to prevent double fetch on mount
+        hasInitializedRef.current = true;
+
         // Update hard filter baselines after successful fetch
         updateHardFilters(profile.min_age, profile.max_age, profile.gender_preference);
       } else {
@@ -121,6 +130,11 @@ export default function DiscoverScreen() {
    * 2. User changed hard filters (age range or gender preference)
    */
   const shouldRefetch = useCallback(async (): Promise<boolean> => {
+    // Skip refetch check on initial load - useEffect handles the first fetch
+    if (!hasInitializedRef.current) {
+      return false;
+    }
+
     // Condition 1: Out of profiles
     const outOfProfiles = currentIndex >= profiles.length;
     if (outOfProfiles) {
@@ -179,18 +193,25 @@ export default function DiscoverScreen() {
     logger.debug("[discover] Refresh triggered");
     setRefreshing(true);
 
-    // Animate rotation
-    Animated.loop(
+    // Stop any existing animation before starting new one
+    if (animationRef.current) {
+      animationRef.current.stop();
+    }
+
+    // Create and start new animation loop
+    animationRef.current = Animated.loop(
       Animated.timing(refreshRotation, {
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
       })
-    ).start();
+    );
+    animationRef.current.start();
 
     await fetchProfiles();
 
     // Stop animation when done
+    animationRef.current?.stop();
     refreshRotation.setValue(0);
   }, [fetchProfiles, refreshRotation]);
 
