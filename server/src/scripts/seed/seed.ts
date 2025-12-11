@@ -1296,11 +1296,10 @@ const northeasternUsersData = [
   },
 ];
 
-async function uploadAvatar(userId: string, avatarPath: string): Promise<string> {
+async function uploadFile(userId: string, localPath: string, targetFilename: string): Promise<string> {
   try {
-    const fileContent = fs.readFileSync(avatarPath);
-    const fileName = `avatar.jpeg`;
-    const filePath = `${userId}/${fileName}`;
+    const fileContent = fs.readFileSync(localPath);
+    const filePath = `${userId}/${targetFilename}`;
 
     // Remove existing file if any (though for seed we might not need to, but good practice)
     await supabaseAdmin.storage.from("profiles").remove([filePath]);
@@ -1313,15 +1312,15 @@ async function uploadAvatar(userId: string, avatarPath: string): Promise<string>
       });
 
     if (uploadError) {
-      console.error(`Failed to upload avatar for ${userId}:`, uploadError);
+      console.error(`Failed to upload file for ${userId}:`, uploadError);
       throw uploadError;
     }
 
     const { data } = supabaseAdmin.storage.from("profiles").getPublicUrl(filePath);
     return data.publicUrl;
   } catch (error) {
-    console.error(`Error uploading avatar for ${userId}:`, error);
-    // Fallback to a default or dicebear if upload fails, but for this task we want to use the samples
+    console.error(`Error uploading file for ${userId}:`, error);
+    // Fallback to a default or dicebear if upload fails
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`; 
   }
 }
@@ -1332,8 +1331,14 @@ async function seedUniversity(universityData: any, usersData: any[]) {
   const avatarsDir = path.join(__dirname, "..", "sample_avatars");
   const avatarFiles = fs.readdirSync(avatarsDir).filter(f => f.endsWith('.jpeg') || f.endsWith('.jpg'));
 
+  const photosDir = path.join(__dirname, "..", "sample_photos");
+  const photoFiles = fs.readdirSync(photosDir).filter(f => f.endsWith('.jpeg') || f.endsWith('.jpg'));
+
   if (avatarFiles.length === 0) {
     console.warn("No sample avatars found in sample_avatars directory!");
+  }
+  if (photoFiles.length === 0) {
+    console.warn("No sample photos found in sample_photos directory!");
   }
 
   // Ensure university exists
@@ -1408,18 +1413,19 @@ async function seedUniversity(universityData: any, usersData: any[]) {
     5 // Process 5 users at a time
   );
 
-  // Step 2: Upload all avatars in parallel (I/O bound, can handle more concurrency)
-  const uploadedAvatars = await batchedMap(
+  // Step 2: Upload avatars and photos in parallel
+  const uploadedData = await batchedMap(
     createdUsers.map((user, index) => ({ user, index })),
     async ({ user, index }) => {
       const userData = usersToCreate[index];
+      
+      // 1. Upload Avatar
       let avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.email}`;
-
       if (userData.avatarFile) {
         const specificAvatarPath = path.join(avatarsDir, userData.avatarFile);
         if (fs.existsSync(specificAvatarPath)) {
           try {
-            avatarUrl = await uploadAvatar(user.id, specificAvatarPath);
+            avatarUrl = await uploadFile(user.id, specificAvatarPath, 'avatar.jpeg');
           } catch {
             console.warn(`Failed to upload avatar for ${userData.name}, using default.`);
           }
@@ -1428,15 +1434,34 @@ async function seedUniversity(universityData: any, usersData: any[]) {
         }
       }
 
-      return { user, avatarUrl, userData };
+      // 2. Select and Upload 6 Random Photos
+      const profilePhotoUrls: string[] = [];
+      if (photoFiles.length > 0) {
+        // Shuffle and pick 6
+        const shuffled = [...photoFiles].sort(() => 0.5 - Math.random());
+        const selectedPhotos = shuffled.slice(0, 6);
+
+        for (let i = 0; i < selectedPhotos.length; i++) {
+          const photoFile = selectedPhotos[i];
+          const photoPath = path.join(photosDir, photoFile);
+          try {
+            const photoUrl = await uploadFile(user.id, photoPath, `photo_${i}.jpg`);
+            profilePhotoUrls.push(photoUrl);
+          } catch (e) {
+             console.warn(`Failed to upload photo ${photoFile} for ${userData.name}:`, e);
+          }
+        }
+      }
+
+      return { user, avatarUrl, profilePhotoUrls, userData };
     },
-    10 // Process 10 avatar uploads at a time
+    5 // Process 5 users (uploads) at a time
   );
 
   // Step 3: Create all profiles with concurrency limit
   await batchedMap(
-    uploadedAvatars,
-    ({ user, avatarUrl, userData }) =>
+    uploadedData,
+    ({ user, avatarUrl, profilePhotoUrls, userData }) =>
       prisma.profiles.create({
         data: {
           user_id: user.id,
@@ -1457,6 +1482,7 @@ async function seedUniversity(universityData: any, usersData: any[]) {
           max_age: userData.max_age,
           university_id: university.id,
           lifestyle: userData.lifestyle || null,
+          photos: profilePhotoUrls,
         },
       }),
     5 // Process 5 profiles at a time
