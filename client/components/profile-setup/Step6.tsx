@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: 120,
     padding: 16,
-    backgroundColor: BACKGROUND,
+    backgroundColor: "white",
     borderRadius: 12,
     fontSize: 16,
     color: DARK,

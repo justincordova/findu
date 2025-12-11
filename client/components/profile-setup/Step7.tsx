@@ -283,7 +283,7 @@ export default function Step7({ onValidityChange }: Step7Props) {
               : "chevron-down"
           }
           size={20}
-          color={PRIMARY}
+          color={DARK}
         />
       </TouchableOpacity>
 

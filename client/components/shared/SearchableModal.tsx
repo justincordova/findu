@@ -137,7 +137,7 @@ export default function SearchableModal({
         <Ionicons
           name={open ? "chevron-up" : "chevron-down"}
           size={20}
-          color={isCompleted ? SECONDARY : PRIMARY}
+          color={DARK}
           style={styles.dropdownIcon}
         />
       </TouchableOpacity>
@@ -263,23 +263,21 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   label: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "500",
     color: DARK,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   dropdown: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     backgroundColor: "white",
     borderRadius: 12,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: "#e5e7eb",
-    minHeight: 48,
+    minHeight: 44,
   },
   dropdownCompleted: {
     borderColor: SECONDARY,
@@ -287,9 +285,9 @@ const styles = StyleSheet.create({
   },
   dropdownValue: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
     color: DARK,
-    fontWeight: "500",
+    fontWeight: "400",
   },
   dropdownIcon: {
     marginLeft: 8,
