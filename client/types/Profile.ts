@@ -1,3 +1,5 @@
+import { Lifestyle } from "./Lifestyle";
+
 export interface Profile {
   user_id: string;
   name: string;
@@ -18,6 +20,7 @@ export interface Profile {
   min_age: number;
   max_age: number;
   photos: string[];
+  lifestyle?: Lifestyle | null;
 }
 
 // For display purposes of uni name

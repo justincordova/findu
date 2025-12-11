@@ -47,7 +47,15 @@ const jac352Data = {
       "https://gwaxrjeitjtxmlbahkye.supabase.co/storage/v1/object/public/profiles/cmiwet6z30000bi1f4a3cx1ci/photo_3.jpeg",
       "https://gwaxrjeitjtxmlbahkye.supabase.co/storage/v1/object/public/profiles/cmiwet6z30000bi1f4a3cx1ci/photo_4.jpeg",
       "https://gwaxrjeitjtxmlbahkye.supabase.co/storage/v1/object/public/profiles/cmiwet6z30000bi1f4a3cx1ci/photo_5.jpeg?t=1765334506957?t=1765334506957"
-    ]
+    ],
+    lifestyle: {
+      drinking: "On occasion",
+      sleep_habits: "Irregular / random",
+      cleanliness: "Very clean",
+      caffeine: "Daily coffee/tea",
+      living_situation: "On-campus dorm",
+      fitness: "Gym regular"
+    }
   }
 };
 
@@ -115,6 +123,7 @@ async function seedJac352() {
         min_age: jac352Data.profile.min_age,
         max_age: jac352Data.profile.max_age,
         photos: jac352Data.profile.photos,
+        lifestyle: jac352Data.profile.lifestyle,
         university_id: university.id,
       },
     });

@@ -9,6 +9,19 @@ import { MAJORS } from "@/constants/majors";
 import { GENDER_PREFERENCES } from "@/constants/genderPreferences";
 import { SEXUAL_ORIENTATIONS } from "@/constants/sexualOrientations";
 import { PRONOUNS } from "@/constants/pronouns";
+import {
+  DRINKING,
+  SMOKING,
+  CANNABIS,
+  SLEEP_HABITS,
+  PETS,
+  DIETARY_PREFERENCES,
+  STUDY_STYLE,
+  CLEANLINESS,
+  CAFFEINE,
+  LIVING_SITUATION,
+  FITNESS
+} from "@/constants/lifestyleOptions";
 
 /*
 login:
@@ -79,6 +92,62 @@ function getRandomPronouns(userIndex: number): string {
   return PRONOUNS[userIndex % PRONOUNS.length];
 }
 
+/**
+ * Generate diverse lifestyle data using modulo pattern for seeding.
+ * Each user gets 3-8 random lifestyle fields filled out to simulate real user behavior
+ * where not all users complete all lifestyle preferences.
+ */
+function getLifestyleForUser(userIndex: number): object {
+  // All 11 lifestyle field keys
+  const allFields = [
+    'drinking', 'smoking', 'cannabis', 'sleep_habits', 'pets',
+    'dietary_preferences', 'study_style', 'cleanliness', 'caffeine',
+    'living_situation', 'fitness'
+  ];
+
+  // Randomly select 3-8 fields for this user (use userIndex for pseudo-randomness)
+  const numFields = 3 + (userIndex % 6); // 3-8 fields
+  const selectedFields = allFields.slice(userIndex % 11, (userIndex % 11) + numFields);
+
+  const lifestyle: any = {};
+
+  if (selectedFields.includes('drinking')) {
+    lifestyle.drinking = DRINKING[userIndex % DRINKING.length];
+  }
+  if (selectedFields.includes('smoking')) {
+    lifestyle.smoking = SMOKING[userIndex % SMOKING.length];
+  }
+  if (selectedFields.includes('cannabis')) {
+    lifestyle.cannabis = CANNABIS[userIndex % CANNABIS.length];
+  }
+  if (selectedFields.includes('sleep_habits')) {
+    lifestyle.sleep_habits = SLEEP_HABITS[userIndex % SLEEP_HABITS.length];
+  }
+  if (selectedFields.includes('pets')) {
+    lifestyle.pets = [PETS[userIndex % PETS.length]];
+  }
+  if (selectedFields.includes('dietary_preferences')) {
+    lifestyle.dietary_preferences = [DIETARY_PREFERENCES[userIndex % DIETARY_PREFERENCES.length]];
+  }
+  if (selectedFields.includes('study_style')) {
+    lifestyle.study_style = STUDY_STYLE[userIndex % STUDY_STYLE.length];
+  }
+  if (selectedFields.includes('cleanliness')) {
+    lifestyle.cleanliness = CLEANLINESS[userIndex % CLEANLINESS.length];
+  }
+  if (selectedFields.includes('caffeine')) {
+    lifestyle.caffeine = CAFFEINE[userIndex % CAFFEINE.length];
+  }
+  if (selectedFields.includes('living_situation')) {
+    lifestyle.living_situation = LIVING_SITUATION[userIndex % LIVING_SITUATION.length];
+  }
+  if (selectedFields.includes('fitness')) {
+    lifestyle.fitness = FITNESS[userIndex % FITNESS.length];
+  }
+
+  return lifestyle;
+}
+
 const njitUsersData = [
   {
     email: "testuser1@njit.edu",
@@ -97,6 +166,7 @@ const njitUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p1.jpeg",
+    lifestyle: getLifestyleForUser(0),
   },
   {
     email: "testuser2@njit.edu",
@@ -115,6 +185,7 @@ const njitUsersData = [
     min_age: 19,
     max_age: 23,
     avatarFile: "p2.jpeg",
+    lifestyle: getLifestyleForUser(1),
   },
   {
     email: "testuser3@njit.edu",
@@ -133,6 +204,7 @@ const njitUsersData = [
     min_age: 21,
     max_age: 26,
     avatarFile: "p3.jpeg",
+    lifestyle: getLifestyleForUser(2),
   },
   {
     email: "testuser4@njit.edu",
@@ -151,6 +223,7 @@ const njitUsersData = [
     min_age: 18,
     max_age: 22,
     avatarFile: "p4.jpeg",
+    lifestyle: getLifestyleForUser(3),
   },
   {
     email: "testuser5@njit.edu",
@@ -169,6 +242,7 @@ const njitUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p5.jpeg",
+    lifestyle: getLifestyleForUser(4),
   },
   {
     email: "testuser6@njit.edu",
@@ -187,6 +261,7 @@ const njitUsersData = [
     min_age: 21,
     max_age: 26,
     avatarFile: "p6.jpeg",
+    lifestyle: getLifestyleForUser(5),
   },
   {
     email: "testuser7@njit.edu",
@@ -205,6 +280,7 @@ const njitUsersData = [
     min_age: 19,
     max_age: 23,
     avatarFile: "p7.jpeg",
+    lifestyle: getLifestyleForUser(6),
   },
   {
     email: "testuser8@njit.edu",
@@ -223,6 +299,7 @@ const njitUsersData = [
     min_age: 18,
     max_age: 22,
     avatarFile: "p8.jpeg",
+    lifestyle: getLifestyleForUser(7),
   },
   {
     email: "testuser9@njit.edu",
@@ -241,6 +318,7 @@ const njitUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p9.jpeg",
+    lifestyle: getLifestyleForUser(8),
   },
   {
     email: "testuser10@njit.edu",
@@ -259,6 +337,7 @@ const njitUsersData = [
     min_age: 21,
     max_age: 26,
     avatarFile: "p10.jpeg",
+    lifestyle: getLifestyleForUser(9),
   },
   // Edge cases and additional diversity
   {
@@ -278,6 +357,7 @@ const njitUsersData = [
     min_age: 19,
     max_age: 23,
     avatarFile: "p1.jpeg",
+    lifestyle: getLifestyleForUser(10),
   },
   {
     email: "testuser12@njit.edu",
@@ -296,6 +376,7 @@ const njitUsersData = [
     min_age: 20,
     max_age: 25,
     avatarFile: "p3.jpeg",
+    lifestyle: getLifestyleForUser(11),
   },
   {
     email: "testuser13@njit.edu",
@@ -314,6 +395,7 @@ const njitUsersData = [
     min_age: 21,
     max_age: 25,
     avatarFile: "p2.jpeg",
+    lifestyle: getLifestyleForUser(12),
   },
   {
     email: "testuser14@njit.edu",
@@ -332,6 +414,7 @@ const njitUsersData = [
     min_age: 19,
     max_age: 24,
     avatarFile: "p8.jpeg",
+    lifestyle: getLifestyleForUser(13),
   },
   {
     email: "testuser15@njit.edu",
@@ -350,6 +433,7 @@ const njitUsersData = [
     min_age: 20,
     max_age: 26,
     avatarFile: "p4.jpeg",
+    lifestyle: getLifestyleForUser(14),
   },
   {
     email: "testuser16@njit.edu",
@@ -368,6 +452,7 @@ const njitUsersData = [
     min_age: 18,
     max_age: 22,
     avatarFile: "p10.jpeg",
+    lifestyle: getLifestyleForUser(15),
   },
   {
     email: "testuser17@njit.edu",
@@ -386,6 +471,7 @@ const njitUsersData = [
     min_age: 23,
     max_age: 35,
     avatarFile: "p5.jpeg",
+    lifestyle: getLifestyleForUser(16),
   },
   {
     email: "testuser18@njit.edu",
@@ -404,6 +490,7 @@ const njitUsersData = [
     min_age: 18,
     max_age: 21,
     avatarFile: "p8.jpeg",
+    lifestyle: getLifestyleForUser(13),
   },
   {
     email: "testuser19@njit.edu",
@@ -422,6 +509,7 @@ const njitUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p2.jpeg",
+    lifestyle: getLifestyleForUser(18),
   },
   {
     email: "testuser20@njit.edu",
@@ -440,6 +528,7 @@ const njitUsersData = [
     min_age: 21,
     max_age: 26,
     avatarFile: "p3.jpeg",
+    lifestyle: getLifestyleForUser(19),
   },
   {
     email: "testuser21@njit.edu",
@@ -458,6 +547,7 @@ const njitUsersData = [
     min_age: 19,
     max_age: 23,
     avatarFile: "p7.jpeg",
+    lifestyle: getLifestyleForUser(20),
   },
   {
     email: "testuser22@njit.edu",
@@ -476,6 +566,7 @@ const njitUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p6.jpeg",
+    lifestyle: getLifestyleForUser(21),
   },
   {
     email: "testuser23@njit.edu",
@@ -494,6 +585,7 @@ const njitUsersData = [
     min_age: 22,
     max_age: 27,
     avatarFile: "p1.jpeg",
+    lifestyle: getLifestyleForUser(22),
   },
   {
     email: "testuser24@njit.edu",
@@ -512,6 +604,7 @@ const njitUsersData = [
     min_age: 18,
     max_age: 21,
     avatarFile: "p9.jpeg",
+    lifestyle: getLifestyleForUser(23),
   },
   {
     email: "testuser25@njit.edu",
@@ -530,6 +623,7 @@ const njitUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p4.jpeg",
+    lifestyle: getLifestyleForUser(14),
   },
   {
     email: "testuser26@njit.edu",
@@ -548,6 +642,7 @@ const njitUsersData = [
     min_age: 21,
     max_age: 26,
     avatarFile: "p10.jpeg",
+    lifestyle: getLifestyleForUser(15),
   },
   {
     email: "testuser27@njit.edu",
@@ -566,6 +661,7 @@ const njitUsersData = [
     min_age: 19,
     max_age: 23,
     avatarFile: "p2.jpeg",
+    lifestyle: getLifestyleForUser(18),
   },
   {
     email: "testuser28@njit.edu",
@@ -584,6 +680,7 @@ const njitUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p8.jpeg",
+    lifestyle: getLifestyleForUser(13),
   },
   {
     email: "testuser29@njit.edu",
@@ -602,6 +699,7 @@ const njitUsersData = [
     min_age: 21,
     max_age: 26,
     avatarFile: "p5.jpeg",
+    lifestyle: getLifestyleForUser(16),
   },
   {
     email: "testuser30@njit.edu",
@@ -620,6 +718,7 @@ const njitUsersData = [
     min_age: 18,
     max_age: 21,
     avatarFile: "p9.jpeg",
+    lifestyle: getLifestyleForUser(23),
   },
 ];
 
@@ -641,6 +740,7 @@ const northeasternUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p1.jpeg",
+    lifestyle: getLifestyleForUser(22),
   },
   {
     email: "testuser2@northeastern.edu",
@@ -659,6 +759,7 @@ const northeasternUsersData = [
     min_age: 19,
     max_age: 23,
     avatarFile: "p2.jpeg",
+    lifestyle: getLifestyleForUser(18),
   },
   {
     email: "testuser3@northeastern.edu",
@@ -677,6 +778,7 @@ const northeasternUsersData = [
     min_age: 21,
     max_age: 26,
     avatarFile: "p3.jpeg",
+    lifestyle: getLifestyleForUser(19),
   },
   {
     email: "testuser4@northeastern.edu",
@@ -695,6 +797,7 @@ const northeasternUsersData = [
     min_age: 18,
     max_age: 22,
     avatarFile: "p4.jpeg",
+    lifestyle: getLifestyleForUser(14),
   },
   {
     email: "testuser5@northeastern.edu",
@@ -713,6 +816,7 @@ const northeasternUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p5.jpeg",
+    lifestyle: getLifestyleForUser(16),
   },
   {
     email: "testuser6@northeastern.edu",
@@ -731,6 +835,7 @@ const northeasternUsersData = [
     min_age: 21,
     max_age: 26,
     avatarFile: "p6.jpeg",
+    lifestyle: getLifestyleForUser(21),
   },
   {
     email: "testuser7@northeastern.edu",
@@ -749,6 +854,7 @@ const northeasternUsersData = [
     min_age: 19,
     max_age: 23,
     avatarFile: "p7.jpeg",
+    lifestyle: getLifestyleForUser(20),
   },
   {
     email: "testuser8@northeastern.edu",
@@ -767,6 +873,7 @@ const northeasternUsersData = [
     min_age: 18,
     max_age: 22,
     avatarFile: "p8.jpeg",
+    lifestyle: getLifestyleForUser(13),
   },
   {
     email: "testuser9@northeastern.edu",
@@ -785,6 +892,7 @@ const northeasternUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p9.jpeg",
+    lifestyle: getLifestyleForUser(23),
   },
   {
     email: "testuser10@northeastern.edu",
@@ -803,6 +911,7 @@ const northeasternUsersData = [
     min_age: 21,
     max_age: 26,
     avatarFile: "p10.jpeg",
+    lifestyle: getLifestyleForUser(15),
   },
   // Edge cases and additional diversity
   {
@@ -822,6 +931,7 @@ const northeasternUsersData = [
     min_age: 19,
     max_age: 23,
     avatarFile: "p1.jpeg",
+    lifestyle: getLifestyleForUser(22),
   },
   {
     email: "testuser12@northeastern.edu",
@@ -840,6 +950,7 @@ const northeasternUsersData = [
     min_age: 20,
     max_age: 25,
     avatarFile: "p3.jpeg",
+    lifestyle: getLifestyleForUser(19),
   },
   {
     email: "testuser13@northeastern.edu",
@@ -858,6 +969,7 @@ const northeasternUsersData = [
     min_age: 21,
     max_age: 25,
     avatarFile: "p2.jpeg",
+    lifestyle: getLifestyleForUser(18),
   },
   {
     email: "testuser14@northeastern.edu",
@@ -876,6 +988,7 @@ const northeasternUsersData = [
     min_age: 19,
     max_age: 24,
     avatarFile: "p8.jpeg",
+    lifestyle: getLifestyleForUser(13),
   },
   {
     email: "testuser15@northeastern.edu",
@@ -894,6 +1007,7 @@ const northeasternUsersData = [
     min_age: 20,
     max_age: 26,
     avatarFile: "p4.jpeg",
+    lifestyle: getLifestyleForUser(14),
   },
   {
     email: "testuser16@northeastern.edu",
@@ -912,6 +1026,7 @@ const northeasternUsersData = [
     min_age: 18,
     max_age: 22,
     avatarFile: "p10.jpeg",
+    lifestyle: getLifestyleForUser(15),
   },
   {
     email: "testuser17@northeastern.edu",
@@ -930,6 +1045,7 @@ const northeasternUsersData = [
     min_age: 23,
     max_age: 35,
     avatarFile: "p5.jpeg",
+    lifestyle: getLifestyleForUser(16),
   },
   {
     email: "testuser18@northeastern.edu",
@@ -948,6 +1064,7 @@ const northeasternUsersData = [
     min_age: 18,
     max_age: 21,
     avatarFile: "p8.jpeg",
+    lifestyle: getLifestyleForUser(13),
   },
   {
     email: "testuser19@northeastern.edu",
@@ -966,6 +1083,7 @@ const northeasternUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p2.jpeg",
+    lifestyle: getLifestyleForUser(18),
   },
   {
     email: "testuser20@northeastern.edu",
@@ -984,6 +1102,7 @@ const northeasternUsersData = [
     min_age: 21,
     max_age: 26,
     avatarFile: "p3.jpeg",
+    lifestyle: getLifestyleForUser(19),
   },
   {
     email: "testuser21@northeastern.edu",
@@ -1002,6 +1121,7 @@ const northeasternUsersData = [
     min_age: 19,
     max_age: 23,
     avatarFile: "p7.jpeg",
+    lifestyle: getLifestyleForUser(20),
   },
   {
     email: "testuser22@northeastern.edu",
@@ -1020,6 +1140,7 @@ const northeasternUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p6.jpeg",
+    lifestyle: getLifestyleForUser(21),
   },
   {
     email: "testuser23@northeastern.edu",
@@ -1038,6 +1159,7 @@ const northeasternUsersData = [
     min_age: 22,
     max_age: 27,
     avatarFile: "p1.jpeg",
+    lifestyle: getLifestyleForUser(22),
   },
   {
     email: "testuser24@northeastern.edu",
@@ -1056,6 +1178,7 @@ const northeasternUsersData = [
     min_age: 18,
     max_age: 21,
     avatarFile: "p9.jpeg",
+    lifestyle: getLifestyleForUser(23),
   },
   {
     email: "testuser25@northeastern.edu",
@@ -1074,6 +1197,7 @@ const northeasternUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p4.jpeg",
+    lifestyle: getLifestyleForUser(14),
   },
   {
     email: "testuser26@northeastern.edu",
@@ -1092,6 +1216,7 @@ const northeasternUsersData = [
     min_age: 21,
     max_age: 26,
     avatarFile: "p10.jpeg",
+    lifestyle: getLifestyleForUser(15),
   },
   {
     email: "testuser27@northeastern.edu",
@@ -1110,6 +1235,7 @@ const northeasternUsersData = [
     min_age: 19,
     max_age: 23,
     avatarFile: "p2.jpeg",
+    lifestyle: getLifestyleForUser(18),
   },
   {
     email: "testuser28@northeastern.edu",
@@ -1128,6 +1254,7 @@ const northeasternUsersData = [
     min_age: 20,
     max_age: 24,
     avatarFile: "p8.jpeg",
+    lifestyle: getLifestyleForUser(13),
   },
   {
     email: "testuser29@northeastern.edu",
@@ -1146,6 +1273,7 @@ const northeasternUsersData = [
     min_age: 21,
     max_age: 26,
     avatarFile: "p5.jpeg",
+    lifestyle: getLifestyleForUser(16),
   },
   {
     email: "testuser30@northeastern.edu",
@@ -1164,6 +1292,7 @@ const northeasternUsersData = [
     min_age: 18,
     max_age: 21,
     avatarFile: "p9.jpeg",
+    lifestyle: getLifestyleForUser(23),
   },
 ];
 
@@ -1200,7 +1329,7 @@ async function uploadAvatar(userId: string, avatarPath: string): Promise<string>
 async function seedUniversity(universityData: any, usersData: any[]) {
   const passwordHash = await bcrypt.hash("password123", 12);
 
-  const avatarsDir = path.join(__dirname, "sample_avatars");
+  const avatarsDir = path.join(__dirname, "..", "sample_avatars");
   const avatarFiles = fs.readdirSync(avatarsDir).filter(f => f.endsWith('.jpeg') || f.endsWith('.jpg'));
 
   if (avatarFiles.length === 0) {
@@ -1291,7 +1420,7 @@ async function seedUniversity(universityData: any, usersData: any[]) {
         if (fs.existsSync(specificAvatarPath)) {
           try {
             avatarUrl = await uploadAvatar(user.id, specificAvatarPath);
-          } catch (error) {
+          } catch {
             console.warn(`Failed to upload avatar for ${userData.name}, using default.`);
           }
         } else {
@@ -1327,6 +1456,7 @@ async function seedUniversity(universityData: any, usersData: any[]) {
           min_age: userData.min_age,
           max_age: userData.max_age,
           university_id: university.id,
+          lifestyle: userData.lifestyle || null,
         },
       }),
     5 // Process 5 profiles at a time

@@ -11,6 +11,7 @@ export interface CompatibilityWeights {
   orientationCompatibility: number;
   majorCompatibility: number;
   ageCompatibility: number;
+  lifestyleCompatibility: number;
 }
 
 export interface DiscoverFilters {
