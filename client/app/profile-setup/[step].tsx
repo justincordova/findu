@@ -15,7 +15,7 @@ import Step4 from "@/components/profile-setup/Step4";
 import Step5 from "@/components/profile-setup/Step5";
 import Step6 from "@/components/profile-setup/Step6";
 import Step7 from "@/components/profile-setup/Step7";
-import Step8Lifestyle from "@/components/profile-setup/Step8Lifestyle";
+import Step8 from "@/components/profile-setup/Step8";
 import Step9 from "@/components/profile-setup/Step9";
 import Step10 from "@/components/profile-setup/Step10";
 import { BACKGROUND, DARK, PRIMARY } from "@/constants/theme";
@@ -146,7 +146,7 @@ export default function ProfileSetupStep() {
       case "step7":
         return <Step7 {...stepProps} />;
       case "step8":
-        return <Step8Lifestyle {...stepProps} />;
+        return <Step8 {...stepProps} />;
       case "step9":
         return <Step9 {...stepProps} />;
       case "step10":

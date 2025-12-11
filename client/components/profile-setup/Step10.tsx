@@ -140,7 +140,7 @@ export default function Step10({
       console.error("Error submitting profile:", err);
       setSubmitting(false);
     }
-  }, [authState.userId, authState.token, router]);
+  }, [authState, router]);
 
   return (
     <View style={styles.container}>
