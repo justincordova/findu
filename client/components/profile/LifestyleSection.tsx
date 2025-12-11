@@ -24,7 +24,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useConstantsStore } from "@/store/constantsStore";
 import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
-import { PRIMARY, SECONDARY } from "@/constants/theme";
+import { PRIMARY } from "@/constants/theme";
 import { Lifestyle } from "@/types/Lifestyle";
 
 /**
@@ -49,12 +49,6 @@ export default function LifestyleSection() {
   const lifestyle = useMemo(
     () => (profile?.lifestyle as Lifestyle | undefined) || {},
     [profile?.lifestyle]
-  );
-
-  // Check if any lifestyle fields are filled
-  const hasLifestyleData = useMemo(
-    () => Object.keys(lifestyle).length > 0,
-    [lifestyle]
   );
 
   // Modal and dropdown state
@@ -107,7 +101,8 @@ export default function LifestyleSection() {
       };
 
       const constantKey = fieldToConstant[field];
-      return (constants?.lifestyleOptions?.[constantKey as any] as string[]) || [];
+      if (!constantKey || !constants?.lifestyleOptions) return [];
+      return ((constants.lifestyleOptions as Record<string, readonly string[]>)[constantKey] as string[]) || [];
     },
     [constants]
   );
@@ -134,7 +129,10 @@ export default function LifestyleSection() {
 
   // Handle single-select field change
   const handleSelectField = useCallback((field: keyof Lifestyle, value: string) => {
-    setEditingLifestyle((prev) => ({ ...prev, [field]: value }));
+    setEditingLifestyle((prev) => ({
+      ...prev,
+      [field]: value.length > 0 ? value : undefined,
+    }));
     setActiveDropdowns((prev) => ({ ...prev, [field]: false }));
   }, []);
 
@@ -142,6 +140,10 @@ export default function LifestyleSection() {
   const handleToggleMultiField = useCallback(
     (field: keyof Lifestyle, value: string) => {
       setEditingLifestyle((prev) => {
+        // Clear all selections if empty string passed
+        if (value === "") {
+          return { ...prev, [field]: undefined };
+        }
         const current = (prev[field] as string[]) || [];
         const updated = current.includes(value)
           ? current.filter((v) => v !== value)
@@ -194,11 +196,6 @@ export default function LifestyleSection() {
     }
   }, [userId, editingLifestyle, refetch, handleCloseModal]);
 
-  // Don't show section if no lifestyle data
-  if (!hasLifestyleData) {
-    return null;
-  }
-
   return (
     <View style={styles.container}>
       {/* Card Header */}
@@ -208,30 +205,40 @@ export default function LifestyleSection() {
         activeOpacity={0.7}
       >
         <View style={[profileStyles.cardHeader, { gap: 10 }]}>
-          <Ionicons name="sparkles-outline" size={24} color={SECONDARY} />
+          <Ionicons name="sparkles-outline" size={24} color={PRIMARY} />
           <Text style={profileStyles.cardTitle}>Lifestyle</Text>
         </View>
 
-        {/* Info Grid - Show filled lifestyle fields */}
+        {/* Info Grid - Display only filled fields, or N/A if none */}
         <View style={profileStyles.infoGrid}>
-          {lifestyleFields
-            .filter((field) => lifestyle[field.key] !== undefined)
-            .map((field) => {
-              const value = lifestyle[field.key];
-              const displayValue = Array.isArray(value)
-                ? value.join(", ")
-                : String(value || "");
+          {lifestyleFields.filter((field) => lifestyle[field.key] !== undefined).length > 0 ? (
+            lifestyleFields
+              .filter((field) => lifestyle[field.key] !== undefined)
+              .map((field) => {
+                const value = lifestyle[field.key];
+                const displayValue = Array.isArray(value)
+                  ? value.join(", ")
+                  : String(value);
 
-              return (
-                <View key={field.key} style={profileStyles.infoItem}>
-                  <Ionicons name="ellipsis-horizontal-outline" size={20} color={SECONDARY} />
-                  <View style={profileStyles.infoTextContainer}>
-                    <Text style={profileStyles.infoLabel}>{field.label}</Text>
-                    <Text style={profileStyles.infoValue}>{displayValue}</Text>
+                return (
+                  <View key={field.key} style={profileStyles.infoItem}>
+                    <Ionicons name="ellipsis-horizontal-outline" size={20} color={PRIMARY} style={{ opacity: 1 }} />
+                    <View style={profileStyles.infoTextContainer}>
+                      <Text style={profileStyles.infoLabel}>{field.label}</Text>
+                      <Text style={profileStyles.infoValue}>{displayValue}</Text>
+                    </View>
                   </View>
-                </View>
-              );
-            })}
+                );
+              })
+          ) : (
+            <View style={profileStyles.infoItem}>
+              <Ionicons name="ellipsis-horizontal-outline" size={20} color={PRIMARY} style={{ opacity: 1 }} />
+              <View style={profileStyles.infoTextContainer}>
+                <Text style={profileStyles.infoLabel}>Lifestyle</Text>
+                <Text style={[profileStyles.infoValue, { color: "#999" }]}>N/A</Text>
+              </View>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
 
@@ -266,107 +273,95 @@ export default function LifestyleSection() {
                   const options = getFieldOptions(fieldConfig.key);
                   if (options.length === 0) return null;
 
-                  const isMultiSelect = fieldConfig.type === "multi";
                   const currentValue = editingLifestyle[fieldConfig.key];
-                  const selectedValues = isMultiSelect
-                    ? (currentValue as string[]) || []
-                    : [];
+                  const isMultiSelect = fieldConfig.type === "multi";
+                  const displayValue = isMultiSelect
+                    ? Array.isArray(currentValue)
+                      ? currentValue.join(", ")
+                      : "Select..."
+                    : (currentValue as string) || "Select...";
 
                   return (
                     <View key={fieldConfig.key} style={profileStyles.formField}>
                       <Text style={profileStyles.formLabel}>{fieldConfig.label}</Text>
 
-                      {isMultiSelect ? (
-                        // Multi-select buttons
-                        <View style={profileStyles.intentOptionsContainer}>
+                      {/* Unified dropdown for all field types */}
+                      <TouchableOpacity
+                        style={[
+                          profileStyles.dropdownButton,
+                          currentValue && profileStyles.formInputFilled,
+                        ]}
+                        onPress={() => toggleDropdown(fieldConfig.key)}
+                        disabled={isSaving}
+                      >
+                        <Text style={profileStyles.dropdownText}>
+                          {displayValue}
+                        </Text>
+                        <Ionicons
+                          name="chevron-down"
+                          size={20}
+                          color="#9CA3AF"
+                        />
+                      </TouchableOpacity>
+
+                      {/* Inline Dropdown */}
+                      {activeDropdowns[fieldConfig.key] && (
+                        <View
+                          style={[
+                            profileStyles.dropdownModalContent,
+                            { marginTop: 4, zIndex: 1000 },
+                          ]}
+                        >
+                          {/* Options */}
                           {options.map((option) => {
-                            const isSelected = selectedValues.includes(option);
+                            const isSelected = isMultiSelect
+                              ? Array.isArray(currentValue) &&
+                                currentValue.includes(option)
+                              : currentValue === option;
+
                             return (
                               <TouchableOpacity
                                 key={option}
-                                style={[
-                                  profileStyles.intentOption,
-                                  isSelected && profileStyles.intentOptionSelected,
-                                ]}
-                                onPress={() =>
-                                  handleToggleMultiField(fieldConfig.key, option)
-                                }
-                                disabled={isSaving}
+                                style={profileStyles.dropdownOption}
+                                onPress={() => {
+                                  if (isMultiSelect) {
+                                    handleToggleMultiField(fieldConfig.key, option);
+                                  } else {
+                                    // For single-select: click again to deselect
+                                    if (isSelected) {
+                                      handleSelectField(fieldConfig.key, "");
+                                    } else {
+                                      handleSelectField(fieldConfig.key, option);
+                                    }
+                                    setActiveDropdowns((prev) => ({
+                                      ...prev,
+                                      [fieldConfig.key]: false,
+                                    }));
+                                  }
+                                }}
                               >
                                 <Text
                                   style={[
-                                    profileStyles.intentOptionText,
-                                    isSelected &&
-                                      profileStyles.intentOptionTextSelected,
+                                    profileStyles.dropdownOptionText,
+                                    isSelected && {
+                                      fontWeight: "600",
+                                      color: PRIMARY,
+                                    },
                                   ]}
                                 >
                                   {option}
                                 </Text>
                                 {isSelected && (
                                   <Ionicons
-                                    name="checkmark-circle"
+                                    name="checkmark"
                                     size={20}
-                                    color="white"
+                                    color={PRIMARY}
                                   />
                                 )}
                               </TouchableOpacity>
                             );
                           })}
                         </View>
-                      ) : (
-                        // Single-select dropdown
-                        <>
-                          <TouchableOpacity
-                            style={[
-                              profileStyles.dropdownButton,
-                              currentValue && profileStyles.formInputFilled,
-                            ]}
-                            onPress={() => toggleDropdown(fieldConfig.key)}
-                            disabled={isSaving}
-                          >
-                            <Text style={profileStyles.dropdownText}>
-                              {(currentValue as string) || `Select ${fieldConfig.label.toLowerCase()}`}
-                            </Text>
-                            <Ionicons
-                              name="chevron-down"
-                              size={20}
-                              color="#9CA3AF"
-                            />
-                          </TouchableOpacity>
-
-                          {/* Inline Dropdown */}
-                          {activeDropdowns[fieldConfig.key] && (
-                            <View
-                              style={[
-                                profileStyles.dropdownModalContent,
-                                { marginTop: 4, zIndex: 1000 },
-                              ]}
-                            >
-                              {options.map((option) => (
-                                <TouchableOpacity
-                                  key={option}
-                                  style={profileStyles.dropdownOption}
-                                  onPress={() =>
-                                    handleSelectField(fieldConfig.key, option)
-                                  }
-                                >
-                                  <Text
-                                    style={profileStyles.dropdownOptionText}
-                                  >
-                                    {option}
-                                  </Text>
-                                  {currentValue === option && (
-                                    <Ionicons
-                                      name="checkmark"
-                                      size={20}
-                                      color={PRIMARY}
-                                    />
-                                  )}
-                                </TouchableOpacity>
-                              ))}
-                            </View>
-                          )}
-                        </>
                       )}
                     </View>
                   );
