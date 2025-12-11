@@ -1222,84 +1222,133 @@ async function seedUniversity(universityData: any, usersData: any[]) {
 
   console.log(`University: ${university.name} (${university.id})`);
 
-  for (const userData of usersData) {
-    const { email, name, birthdate, gender, pronouns, bio, university_year, major, grad_year, interests, intent, gender_preference, sexual_orientation, min_age, max_age, avatarFile } = userData;
-
-    // Check if user exists to avoid unique constraint errors on re-runs
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      console.log(`User ${email} already exists, skipping...`);
-      continue;
-    }
-
-    // Create user in Prisma first to get the ID
-    const user = await prisma.user.create({
-      data: {
-        email,
-        name,
-        emailVerified: true,
-        accounts: {
-          create: {
-            providerId: "credential",
-            accountId: email,
-            password: passwordHash,
-          },
+  // Check existing users in one query instead of per-user
+  const existingEmails = new Set(
+    (await prisma.user.findMany({
+      where: {
+        email: {
+          in: usersData.map(u => u.email),
         },
       },
-    });
+      select: { email: true },
+    })).map(u => u.email)
+  );
 
-    // Upload Avatar
-    let avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`;
-    if (avatarFile) {
-      const specificAvatarPath = path.join(avatarsDir, avatarFile);
-      if (fs.existsSync(specificAvatarPath)) {
-        avatarUrl = await uploadAvatar(user.id, specificAvatarPath);
-      } else {
-        console.warn(`Avatar file ${avatarFile} not found for user ${name}. Using default Dicebear avatar.`);
-      }
-    }
+  const usersToCreate = usersData.filter(u => !existingEmails.has(u.email));
 
-    // Create Profile
-    await prisma.profiles.create({
-      data: {
-        user_id: user.id,
-        name,
-        avatar_url: avatarUrl,
-        birthdate: new Date(birthdate),
-        gender,
-        pronouns,
-        bio,
-        university_year,
-        major,
-        grad_year,
-        interests,
-        intent,
-        gender_preference,
-        sexual_orientation,
-        min_age,
-        max_age,
-        university_id: university.id,
-      },
-    });
-
-    console.log(`Created user: ${user.email}`);
+  if (usersToCreate.length === 0) {
+    console.log("All users already exist, skipping...");
+    return;
   }
+
+  // Helper for batched parallel operations with concurrency limit
+  const batchedMap = async <T, U>(
+    items: T[],
+    fn: (item: T, index: number) => Promise<U>,
+    concurrency: number = 5
+  ): Promise<U[]> => {
+    const results: U[] = [];
+    for (let i = 0; i < items.length; i += concurrency) {
+      const batch = items.slice(i, i + concurrency);
+      const batchResults = await Promise.all(
+        batch.map((item, idx) => fn(item, i + idx))
+      );
+      results.push(...batchResults);
+    }
+    return results;
+  };
+
+  // Step 1: Create all users with concurrency limit
+  const createdUsers = await batchedMap(
+    usersToCreate,
+    userData =>
+      prisma.user.create({
+        data: {
+          email: userData.email,
+          name: userData.name,
+          emailVerified: true,
+          accounts: {
+            create: {
+              providerId: "credential",
+              accountId: userData.email,
+              password: passwordHash,
+            },
+          },
+        },
+      }),
+    5 // Process 5 users at a time
+  );
+
+  // Step 2: Upload all avatars in parallel (I/O bound, can handle more concurrency)
+  const uploadedAvatars = await batchedMap(
+    createdUsers.map((user, index) => ({ user, index })),
+    async ({ user, index }) => {
+      const userData = usersToCreate[index];
+      let avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.email}`;
+
+      if (userData.avatarFile) {
+        const specificAvatarPath = path.join(avatarsDir, userData.avatarFile);
+        if (fs.existsSync(specificAvatarPath)) {
+          try {
+            avatarUrl = await uploadAvatar(user.id, specificAvatarPath);
+          } catch (error) {
+            console.warn(`Failed to upload avatar for ${userData.name}, using default.`);
+          }
+        } else {
+          console.warn(`Avatar file ${userData.avatarFile} not found for user ${userData.name}.`);
+        }
+      }
+
+      return { user, avatarUrl, userData };
+    },
+    10 // Process 10 avatar uploads at a time
+  );
+
+  // Step 3: Create all profiles with concurrency limit
+  await batchedMap(
+    uploadedAvatars,
+    ({ user, avatarUrl, userData }) =>
+      prisma.profiles.create({
+        data: {
+          user_id: user.id,
+          name: userData.name,
+          avatar_url: avatarUrl,
+          birthdate: new Date(userData.birthdate),
+          gender: userData.gender,
+          pronouns: userData.pronouns,
+          bio: userData.bio,
+          university_year: userData.university_year,
+          major: userData.major,
+          grad_year: userData.grad_year,
+          interests: userData.interests,
+          intent: userData.intent,
+          gender_preference: userData.gender_preference,
+          sexual_orientation: userData.sexual_orientation,
+          min_age: userData.min_age,
+          max_age: userData.max_age,
+          university_id: university.id,
+        },
+      }),
+    5 // Process 5 profiles at a time
+  );
+
+  console.log(`Created ${createdUsers.length} users for ${university.name}`);
 }
 
 async function main() {
   console.log("Start seeding...");
 
-  // Seed NJIT users
-  await seedUniversity(
-    { name: "New Jersey Institute of Technology", slug: "njit", domain: "njit.edu" },
-    njitUsersData
-  );
-
-  // Seed Northeastern users
-  await seedUniversity(
-    { name: "Northeastern University", slug: "northeastern", domain: "northeastern.edu" },
-    northeasternUsersData
-  );
+  // Seed both universities in parallel
+  await Promise.all([
+    seedUniversity(
+      { name: "New Jersey Institute of Technology", slug: "njit", domain: "njit.edu" },
+      njitUsersData
+    ),
+    seedUniversity(
+      { name: "Northeastern University", slug: "northeastern", domain: "northeastern.edu" },
+      northeasternUsersData
+    ),
+  ]);
 
   console.log("Seeding finished.");
 }
