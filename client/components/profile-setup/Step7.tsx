@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 // React Native
 import {
   Keyboard,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -360,7 +361,7 @@ export default function Step7({ onValidityChange }: Step7Props) {
                     {/* Pagination Controls */}
                     {totalPages > 1 && (
                       <View style={styles.paginationContainer}>
-                        <TouchableOpacity
+                        <Pressable
                           style={[
                             styles.paginationButton,
                             currentPage === 0 &&
@@ -368,17 +369,22 @@ export default function Step7({ onValidityChange }: Step7Props) {
                           ]}
                           onPress={() => prevPage(category)}
                           disabled={currentPage === 0}
+                          accessible={true}
+                          accessibilityRole="button"
+                          accessibilityLabel="Previous page"
+                          accessibilityHint={`Page ${currentPage} of ${totalPages}`}
+                          accessibilityState={{ disabled: currentPage === 0 }}
                         >
                           <Ionicons
                             name="chevron-back"
                             size={16}
-                            color={currentPage === 0 ? "#CCC" : PRIMARY}
+                            color={currentPage === 0 ? "#d1d5db" : PRIMARY}
                           />
-                        </TouchableOpacity>
+                        </Pressable>
                         <Text style={styles.paginationText}>
                           {currentPage + 1} / {totalPages}
                         </Text>
-                        <TouchableOpacity
+                        <Pressable
                           style={[
                             styles.paginationButton,
                             currentPage >= totalPages - 1 &&
@@ -386,15 +392,22 @@ export default function Step7({ onValidityChange }: Step7Props) {
                           ]}
                           onPress={() => nextPage(category)}
                           disabled={currentPage >= totalPages - 1}
+                          accessible={true}
+                          accessibilityRole="button"
+                          accessibilityLabel="Next page"
+                          accessibilityHint={`Page ${currentPage + 2} of ${totalPages}`}
+                          accessibilityState={{
+                            disabled: currentPage >= totalPages - 1,
+                          }}
                         >
                           <Ionicons
                             name="chevron-forward"
                             size={16}
                             color={
-                              currentPage >= totalPages - 1 ? "#CCC" : PRIMARY
+                              currentPage >= totalPages - 1 ? "#d1d5db" : PRIMARY
                             }
                           />
-                        </TouchableOpacity>
+                        </Pressable>
                       </View>
                     )}
                   </View>
@@ -541,7 +554,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   pillDisabled: {
-    opacity: 0.5,
+    backgroundColor: "#f3f4f6",
     borderColor: "#d1d5db",
   },
   pillTextDisabled: {
@@ -618,7 +631,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   categoryItemDisabled: {
-    opacity: 0.5,
+    backgroundColor: "#f3f4f6",
     borderColor: "#d1d5db",
   },
   categoryItemText: {
@@ -645,15 +658,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   paginationButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: PRIMARY,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
   },
   paginationButtonDisabled: {
-    opacity: 0.5,
-    borderColor: "#CCC",
+    backgroundColor: "#f3f4f6",
+    borderColor: "#d1d5db",
   },
   paginationText: {
     fontSize: 13,
