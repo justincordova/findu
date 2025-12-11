@@ -263,7 +263,7 @@ describe("Discover API - Overall Compatibility Score", () => {
     expect(Number.isInteger(score)).toBe(true);
   });
 
-  it("should weight interests at 35%, intent at 30%, orientation at 15%, major at 10%, age at 10%", () => {
+  it("should weight interests at 30%, intent at 25%, orientation at 15%, major at 10%, age at 10%, lifestyle at 10%", () => {
     // Create profiles with clear scores to verify weighting
     const user: Profile = {
       ...sampleUserProfile,
@@ -485,5 +485,101 @@ describe("Discover API - Error Handling", () => {
 
   it("should throw error if user ID is missing for getDiscoverProfiles", async () => {
     await expect(DiscoverService.getDiscoverProfiles("", 10, 0)).rejects.toThrow("User ID is required");
+  });
+});
+
+// New tests for Lifestyle Compatibility
+
+describe("Discover API - Lifestyle Compatibility", () => {
+  it("should return 0 when either lifestyle is missing", () => {
+    const score1 = DiscoverService.calculateLifestyleCompatibilityScore(undefined, { drinking: "Socially" } as any);
+    const score2 = DiscoverService.calculateLifestyleCompatibilityScore({ drinking: "Socially" } as any, undefined);
+    expect(score1).toBe(0);
+    expect(score2).toBe(0);
+  });
+
+  it("should compute exact matches across single-value fields", () => {
+    const l1 = {
+      drinking: "Socially",
+      smoking: "Non-smoker",
+      cannabis: "Never",
+      sleep_habits: "Early bird",
+      study_style: "Solo",
+      cleanliness: "Very clean",
+      caffeine: "Daily coffee/tea",
+      living_situation: "On-campus dorm",
+      fitness: "Gym regular",
+    } as any;
+
+    const l2 = {
+      drinking: "Socially",           // match
+      smoking: "Smoker",               // no match
+      cannabis: "Never",               // match
+      sleep_habits: "Night owl",       // no match
+      study_style: "Solo",             // match
+      cleanliness: "Very clean",       // match
+      caffeine: "Daily coffee/tea",    // match
+      living_situation: "Off-campus apartment", // no match
+      fitness: "Athlete",              // no match
+    } as any;
+
+    // Matches: drinking, cannabis, study_style, cleanliness, caffeine = 5
+    // Total fields considered = 11 (including array fields)
+    const expected = 5 / 11;
+    const score = DiscoverService.calculateLifestyleCompatibilityScore(l1, l2);
+    expect(score).toBeCloseTo(expected, 5);
+  });
+
+  it("should count overlap for array fields (pets, dietary_preferences)", () => {
+    const l1 = {
+      pets: ["Dog"],
+      dietary_preferences: ["Vegan"],
+    } as any;
+    const l2 = {
+      pets: ["Dog", "Cat"],
+      dietary_preferences: ["Vegetarian"],
+    } as any;
+
+    // Overlap only in pets => 1 match out of 11
+    const expected = 1 / 11;
+    const score = DiscoverService.calculateLifestyleCompatibilityScore(l1, l2);
+    expect(score).toBeCloseTo(expected, 5);
+  });
+
+  it("should integrate lifestyle score into overall compatibility (10% weight)", () => {
+    const user: Profile = {
+      ...sampleUserProfile,
+      lifestyle: {
+        drinking: "Socially",
+        smoking: "Non-smoker",
+        cannabis: "Never",
+        sleep_habits: "Early bird",
+        study_style: "Solo",
+        cleanliness: "Very clean",
+        caffeine: "Daily coffee/tea",
+        living_situation: "On-campus dorm",
+        fitness: "Gym regular",
+        pets: ["Dog"],
+        dietary_preferences: ["Vegetarian"],
+      } as any,
+    };
+
+    const candidateNoLifestyle: Profile = {
+      ...sampleCandidateProfile,
+      lifestyle: undefined,
+    };
+
+    const candidateFullMatch: Profile = {
+      ...sampleCandidateProfile,
+      lifestyle: user.lifestyle,
+    };
+
+    const baseScore = DiscoverService.calculateCompatibilityScore(user, candidateNoLifestyle);
+    const boostedScore = DiscoverService.calculateCompatibilityScore(user, candidateFullMatch);
+
+    // Full lifestyle match should add roughly 10 points (10% of 100)
+    expect(boostedScore).toBeGreaterThan(baseScore);
+    expect(boostedScore - baseScore).toBeGreaterThanOrEqual(8);
+    expect(boostedScore - baseScore).toBeLessThanOrEqual(12);
   });
 });
