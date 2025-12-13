@@ -34,8 +34,8 @@ export const profileApi = {
    */
   create: async (data: Profile) => {
     const headers = getAuthHeaders();
-    const response = await axios.post(API_BASE, data, { headers });
-    return response.data;
+    const { data: profileData } = await axios.post(API_BASE, data, { headers });
+    return profileData;
   },
 
   /**
@@ -46,10 +46,10 @@ export const profileApi = {
    */
   update: async (userId: string, data: Partial<Profile>) => {
     const headers = getAuthHeaders();
-    const response = await axios.patch(`${API_BASE}/${userId}`, data, {
+    const { data: profileData } = await axios.patch(`${API_BASE}/${userId}`, data, {
       headers,
     });
-    return response.data;
+    return profileData;
   },
 
   /**
@@ -59,8 +59,8 @@ export const profileApi = {
    */
   get: async (userId: string) => {
     const headers = getAuthHeaders();
-    const response = await axios.get(`${API_BASE}/${userId}`, { headers });
-    return response.data;
+    const { data: profileData } = await axios.get(`${API_BASE}/${userId}`, { headers });
+    return profileData;
   },
 
   /**
@@ -70,8 +70,8 @@ export const profileApi = {
    */
   delete: async (userId: string) => {
     const headers = getAuthHeaders();
-    const response = await axios.delete(`${API_BASE}/${userId}`, { headers });
-    return response.data;
+    const { data: profileData } = await axios.delete(`${API_BASE}/${userId}`, { headers });
+    return profileData;
   },
 
   /**
@@ -80,8 +80,8 @@ export const profileApi = {
    */
   me: async () => {
     const headers = getAuthHeaders();
-    const response = await axios.get(`${API_BASE}/me`, { headers });
-    return response.data;
+    const { data: profileData } = await axios.get(`${API_BASE}/me`, { headers });
+    return profileData;
   },
 
   /**
@@ -92,11 +92,11 @@ export const profileApi = {
    */
   domainMap: async (email: string): Promise<DomainMapResponse> => {
     const headers = getAuthHeaders();
-    const response = await axios.post<DomainMapResponse>(
+    const { data: domainData } = await axios.post<DomainMapResponse>(
       `${API_BASE}/domain-map`,
       { email },
       { headers }
     );
-    return response.data;
+    return domainData;
   },
 };

@@ -111,7 +111,7 @@ export const signinController = async (req: Request, res: Response) => {
  */
 export const refreshSessionController = async (req: Request, res: Response) => {
   try {
-    const authHeader = req.headers.authorization;
+    const { authorization: authHeader } = req.headers;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ success: false, message: "Missing or invalid Authorization header" });
     }
@@ -145,7 +145,7 @@ export const refreshSessionController = async (req: Request, res: Response) => {
  */
 export const sessionController = async (req: Request, res: Response) => {
   try {
-    const authHeader = req.headers.authorization;
+    const { authorization: authHeader } = req.headers;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ success: false, message: "Missing or invalid Authorization header" });
     }
@@ -174,7 +174,7 @@ export const sessionController = async (req: Request, res: Response) => {
  */
 export const signoutController = async (req: Request, res: Response) => {
   try {
-    const authHeader = req.headers.authorization;
+    const { authorization: authHeader } = req.headers;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       // Still return 200 to not leak info, but log it.
       logger.warn("SIGNOUT_ATTEMPT_WITHOUT_HEADER");

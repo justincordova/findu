@@ -44,10 +44,10 @@ export const OTPService = {
       }
 
       // In production, send the email
-      const emailResult = await sendOTPEmail({ email, otp });
-      if (!emailResult.success) {
+      const { success: emailSuccess, error: emailError } = await sendOTPEmail({ email, otp });
+      if (!emailSuccess) {
         await redis.del(`otp:${email}`);
-        return { success: false, error: "Failed to send OTP email" };
+        return { success: false, error: emailError || "Failed to send OTP email" };
       }
 
       logger.info("OTP_SENT", { email });
@@ -113,10 +113,11 @@ export const AuthService = {
 
       return await AuthService.signIn(email, password);
     } catch (error: any) {
+      const { message: errorMessage, name: errorName, stack: errorStack } = error || {};
       logger.error("SIGN_UP_ERROR", {
-        error: error?.message || error,
-        errorName: error?.name,
-        stack: error?.stack,
+        error: errorMessage || error,
+        errorName,
+        stack: errorStack,
         email,
       });
       const user = await prisma.user.findUnique({ where: { email } });
@@ -125,7 +126,7 @@ export const AuthService = {
       }
       return {
         success: false,
-        error: error?.message || "Failed to create user account",
+        error: errorMessage || "Failed to create user account",
       };
     }
   },
@@ -166,18 +167,19 @@ export const AuthService = {
         };
       }
 
+      const { user: signedInUser, token } = signInResult;
       logger.info("USER_LOGIN_SUCCESSFUL", {
         email,
-        userId: signInResult.user.id,
+        userId: signedInUser.id,
       });
 
       return {
         success: true,
-        user: { 
-          id: signInResult.user.id, 
-          email: signInResult.user.email
+        user: {
+          id: signedInUser.id,
+          email: signedInUser.email
         },
-        token: signInResult.token,
+        token,
       };
     } catch (error) {
       logger.error("SIGN_IN_ERROR", { error, email });

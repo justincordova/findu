@@ -24,15 +24,15 @@ export async function login(email: string, password: string) {
     const res = await AuthAPI.signin(email, password);
 
     if (res?.success && res.token && res.user?.id) {
-      const token = res.token;
+      const { token, user } = res;
       await saveSecureItem(ACCESS_TOKEN_KEY, token);
 
-      setUserId(res.user.id);
-      setEmail(res.user.email || email);
+      setUserId(user.id);
+      setEmail(user.email || email);
       setToken(token);
       setLoggedIn(true);
 
-      logger.info("Login successful", { userId: res.user.id });
+      logger.info("Login successful", { userId: user.id });
       return { success: true };
     }
 
@@ -94,15 +94,15 @@ export async function verifyAndSignup(
     const res = await AuthAPI.signup(email, password, otp);
 
     if (res?.success && res.token && res.user?.id) {
-      const token = res.token;
+      const { token, user } = res;
       await saveSecureItem(ACCESS_TOKEN_KEY, token);
 
-      setUserId(res.user.id);
-      setEmail(res.user.email || email);
+      setUserId(user.id);
+      setEmail(user.email || email);
       setToken(token);
       setLoggedIn(true);
 
-      logger.info("Signup successful", { userId: res.user.id });
+      logger.info("Signup successful", { userId: user.id });
       return { success: true };
     }
 

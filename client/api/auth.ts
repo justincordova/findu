@@ -1,5 +1,40 @@
 const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/auth`;
 
+// Type definitions for auth API responses
+interface AuthUser {
+  id: string;
+  email: string;
+}
+
+interface SigninResponse {
+  success: boolean;
+  token: string;
+  user: AuthUser;
+  error?: string;
+}
+
+interface SignupResponse {
+  success: boolean;
+  token: string;
+  user: AuthUser;
+  error?: string;
+}
+
+interface SendOtpResponse {
+  success: boolean;
+  error?: string;
+}
+
+interface GetMeResponse {
+  user: AuthUser;
+  error?: string;
+}
+
+interface SignoutResponse {
+  success: boolean;
+  error?: string;
+}
+
 /**
  * Helper to extract JSON response and handle errors
  * @template T
@@ -14,73 +49,49 @@ async function handleResponse<T = unknown>(res: Response): Promise<T> {
 }
 
 export const AuthAPI = {
-  /**
-   * Request OTP for passwordless signup
-   * @param {string} email - User email address
-   * @returns {Promise<{success: boolean; error?: string}>}
-   */
-  sendOtp: async (email: string) => {
+  sendOtp: async (email: string): Promise<SendOtpResponse> => {
     const res = await fetch(`${API_BASE}/send-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
-    return handleResponse(res);
+    return handleResponse<SendOtpResponse>(res);
   },
 
-  /**
-   * Create account with email, password, and OTP verification
-   * @param {string} email - User email address
-   * @param {string} password - User password
-   * @param {string} otp - One-time password from email
-   * @returns {Promise<{success: boolean; token: string; user: {id: string; email: string}; error?: string}>}
-   */
-  signup: async (email: string, password: string, otp: string) => {
+  signup: async (
+    email: string,
+    password: string,
+    otp: string
+  ): Promise<SignupResponse> => {
     const res = await fetch(`${API_BASE}/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, otp }),
     });
-    return handleResponse(res);
+    return handleResponse<SignupResponse>(res);
   },
 
-  /**
-   * Authenticate user with email and password
-   * @param {string} email - User email address
-   * @param {string} password - User password
-   * @returns {Promise<{success: boolean; token: string; user: {id: string; email: string}; error?: string}>}
-   */
-  signin: async (email: string, password: string) => {
+  signin: async (email: string, password: string): Promise<SigninResponse> => {
     const res = await fetch(`${API_BASE}/signin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-    return handleResponse(res);
+    return handleResponse<SigninResponse>(res);
   },
 
-  /**
-   * Validate token and get current user session info
-   * @param {string} token - Authentication token
-   * @returns {Promise<{user: {id: string; email: string}; error?: string}>}
-   */
-  getMe: async (token: string) => {
+  getMe: async (token: string): Promise<GetMeResponse> => {
     const res = await fetch(`${API_BASE}/session`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return handleResponse(res);
+    return handleResponse<GetMeResponse>(res);
   },
 
-  /**
-   * Invalidate user session on backend
-   * @param {string} token - Authentication token
-   * @returns {Promise<{success: boolean; error?: string}>}
-   */
-  signout: async (token: string) => {
+  signout: async (token: string): Promise<SignoutResponse> => {
     const res = await fetch(`${API_BASE}/signout`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
-    return handleResponse(res);
+    return handleResponse<SignoutResponse>(res);
   },
 };

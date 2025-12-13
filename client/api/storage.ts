@@ -9,7 +9,7 @@ const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/storage`;
  * @returns {{Authorization?: string}} Headers object with Bearer token (if available)
  */
 const getAuthHeaders = () => {
-  const token = useAuthStore.getState().token;
+  const { token } = useAuthStore.getState();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
@@ -26,7 +26,7 @@ export const storageApi = {
     const headers = getAuthHeaders();
     logger.debug("Requesting signed URL", { filename });
 
-    const response = await axios.post(
+    const { data } = await axios.post(
       `${API_BASE}/url`,
       { userId, filename, mode },
       { headers }
@@ -34,10 +34,10 @@ export const storageApi = {
 
     logger.debug("Signed URL received", {
       filename,
-      path: response.data.path,
+      path: data.path,
     });
 
-    return response.data;
+    return data;
   },
 
   /**

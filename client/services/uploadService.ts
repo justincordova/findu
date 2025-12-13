@@ -64,8 +64,7 @@ async function uploadViaSignedUrl(
   logger.info("File uploaded", { uploadUrl });
 
   // Construct public URL with cache-busting parameter (make sure bucket name is correct & public)
-  const publicUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profiles/${path}?t=${Date.now()}`;
-  return publicUrl;
+  return `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/public/profiles/${path}?t=${Date.now()}`;
 }
 
 /**

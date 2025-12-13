@@ -8,13 +8,14 @@ import logger from "@/config/logger";
  */
 export const createLike = async (req: Request, res: Response) => {
   try {
+    const { from_user, to_user, is_superlike } = req.body;
     const result = await LikesService.createLike(req.body);
 
-    logger.info("Like created successfully", { 
-      fromUser: req.body.from_user, 
-      toUser: req.body.to_user, 
-      isSuperlike: req.body.is_superlike,
-      matched: result.matched 
+    logger.info("Like created successfully", {
+      fromUser: from_user,
+      toUser: to_user,
+      isSuperlike: is_superlike,
+      matched: result.matched
     });
 
     return res.status(201).json({
@@ -70,7 +71,7 @@ export const getReceivedLikes = async (req: Request, res: Response) => {
  */
 export const deleteLike = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const userId = req.body.userId; // ensure front-end passes userId for auth
+  const { userId } = req.body; // ensure front-end passes userId for auth
   try {
     await LikesService.removeLike(id, userId);
     return res.status(204).send();
