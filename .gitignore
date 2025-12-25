@@ -113,3 +113,5 @@ GEMINI.MD
 CLAUDE.MD
 .claude/
 .qodo/
+
+*.ttf
