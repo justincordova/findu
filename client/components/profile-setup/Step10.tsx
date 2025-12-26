@@ -125,7 +125,6 @@ export default function Step10({
       "gender",
       "pronouns",
       "university_name",
-      "campus_name",
       "major",
       "university_year",
       "grad_year",
