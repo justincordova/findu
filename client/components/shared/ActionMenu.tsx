@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, StyleSheet, Text, View, Pressable } from 'react-native';
+import { Modal, StyleSheet, Text, View, Pressable, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DANGER, DARK, MUTED } from '@/constants/theme';
 
@@ -12,7 +12,7 @@ interface ActionOption {
 
 interface ActionMenuProps {
   options: ActionOption[];
-  style?: any;
+  style?: ViewStyle;
   iconColor?: string;
   iconSize?: number;
 }
@@ -51,7 +51,11 @@ export default function ActionMenu({
           style={styles.overlay}
           onPress={() => setShowMenu(false)}
         >
-          <View style={styles.menuContainer}>
+          <View
+            style={styles.menuContainer}
+            onStartShouldSetResponder={() => true}
+            onTouchEndCapture={(e) => e.stopPropagation()}
+          >
             {options.map((option, index) => (
               <Pressable
                 key={index}
