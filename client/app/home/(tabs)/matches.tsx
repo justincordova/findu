@@ -48,6 +48,7 @@ export default function MatchesScreen() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [blockingUserId, setBlockingUserId] = useState<string | null>(null);
+  const [isBlockingInProgress, setIsBlockingInProgress] = useState(false);
 
   const fetchMatches = useCallback(async () => {
     setLoading(true);
@@ -62,13 +63,18 @@ export default function MatchesScreen() {
 
   const handleBlockUser = async (userId: string) => {
     setBlockingUserId(null);
-    const result = await blockUser(userId);
-    if (result.success) {
-      logger.info("User blocked from matches", { userId });
-      await fetchMatches();
-    } else {
-      logger.error("Failed to block user", { error: result.error });
-      Alert.alert("Error", "Failed to block user");
+    setIsBlockingInProgress(true);
+    try {
+      const result = await blockUser(userId);
+      if (result.success) {
+        logger.info("User blocked from matches", { userId });
+        await fetchMatches();
+      } else {
+        logger.error("Failed to block user", { error: result.error });
+        Alert.alert("Error", result.error || "Failed to block user");
+      }
+    } finally {
+      setIsBlockingInProgress(false);
     }
   };
 
@@ -78,7 +84,14 @@ export default function MatchesScreen() {
 
   const renderItem = ({ item }: { item: Match }) => (
     <View style={styles.matchItem}>
-      <TouchableOpacity style={styles.matchContent}>
+      <TouchableOpacity
+        style={styles.matchContent}
+        onPress={() => {
+          // TODO: Navigate to profile view when implemented
+          logger.info("View match profile", { userId: item.otherUser.id });
+        }}
+        disabled={isBlockingInProgress}
+      >
         <Image source={{ uri: item.otherUser.avatar_url }} style={styles.avatar} />
         <View style={styles.info}>
           <Text style={styles.name}>{item.otherUser.name}</Text>
@@ -125,12 +138,12 @@ export default function MatchesScreen() {
         />
       )}
       <AlertModal
-        visible={blockingUserId !== null}
+        visible={blockingUserId !== null && !isBlockingInProgress}
         title="Block User"
         message="This person will be removed from your matches and you won't see each other anymore."
         type="warning"
         onConfirm={() => handleBlockUser(blockingUserId!)}
-        onClose={() => setBlockingUserId(null)}
+        onClose={() => !isBlockingInProgress && setBlockingUserId(null)}
       />
     </SafeAreaView>
   );
