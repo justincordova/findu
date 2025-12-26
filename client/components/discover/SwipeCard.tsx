@@ -1,5 +1,5 @@
 // React core
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 // React Native
 import {
@@ -27,6 +27,10 @@ import { Ionicons } from "@expo/vector-icons";
 // Project imports
 import { DANGER, SUCCESS } from "@/constants/theme";
 import { Profile } from "@/types/Profile";
+import ActionMenu from "@/components/shared/ActionMenu";
+import AlertModal from "@/components/shared/AlertModal";
+import { blockUser } from "@/services/blocksService";
+import logger from "@/config/logger";
 
 const { width, height } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.9;
@@ -71,6 +75,7 @@ export default function SwipeCard({
   onSwipeRight,
   active = true,
 }: SwipeCardProps) {
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const context = useSharedValue({ x: 0, y: 0 });
@@ -143,48 +148,84 @@ export default function SwipeCard({
     ),
   }));
 
+  const handleBlockUser = async () => {
+    setShowBlockConfirm(false);
+    const result = await blockUser(profile.user_id);
+    if (result.success) {
+      logger.info("User blocked from discover", { userId: profile.user_id });
+      onSwipeLeft();
+    } else {
+      logger.error("Failed to block user", { error: result.error });
+    }
+  };
+
   return (
-    <GestureDetector gesture={gesture}>
-      <Animated.View style={[styles.card, cardStyle]}>
-        <ImageBackground
-          source={{ uri: profile.avatar_url }}
-          style={styles.image}
-          imageStyle={{ borderRadius: 20 }}
-        >
-          <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.8)"]}
-            style={styles.gradient}
+    <>
+      <GestureDetector gesture={gesture}>
+        <Animated.View style={[styles.card, cardStyle]}>
+          <ImageBackground
+            source={{ uri: profile.avatar_url }}
+            style={styles.image}
+            imageStyle={{ borderRadius: 20 }}
           >
-            <View style={styles.infoContainer}>
-              <Text style={styles.name}>
-                {profile.name}, {new Date().getFullYear() - new Date(profile.birthdate).getFullYear()}
-              </Text>
-              <Text style={styles.bio} numberOfLines={2}>
-                {profile.bio}
-              </Text>
-            </View>
-          </LinearGradient>
-
-          {/* Like Overlay */}
-          <Animated.View style={[styles.overlay, styles.likeOverlay, likeOpacity]}>
-            <GradientIcon 
-              name="heart" 
-              size={100} 
-              colors={[SUCCESS, "#22c55e"] as const} // Gradient from theme SUCCESS to darker green
+            <ActionMenu
+              options={[
+                {
+                  label: "Block User",
+                  icon: "ban",
+                  onPress: () => setShowBlockConfirm(true),
+                  destructive: true,
+                },
+              ]}
+              style={styles.actionMenu}
+              iconColor="white"
+              iconSize={20}
             />
-          </Animated.View>
 
-          {/* Nope Overlay */}
-          <Animated.View style={[styles.overlay, styles.nopeOverlay, nopeOpacity]}>
-            <GradientIcon 
-              name="close" 
-              size={100} 
-              colors={[DANGER, "#dc2626"] as const} // Gradient from theme DANGER to darker red
-            />
-          </Animated.View>
-        </ImageBackground>
-      </Animated.View>
-    </GestureDetector>
+            <LinearGradient
+              colors={["transparent", "rgba(0,0,0,0.8)"]}
+              style={styles.gradient}
+            >
+              <View style={styles.infoContainer}>
+                <Text style={styles.name}>
+                  {profile.name}, {new Date().getFullYear() - new Date(profile.birthdate).getFullYear()}
+                </Text>
+                <Text style={styles.bio} numberOfLines={2}>
+                  {profile.bio}
+                </Text>
+              </View>
+            </LinearGradient>
+
+            {/* Like Overlay */}
+            <Animated.View style={[styles.overlay, styles.likeOverlay, likeOpacity]}>
+              <GradientIcon
+                name="heart"
+                size={100}
+                colors={[SUCCESS, "#22c55e"] as const}
+              />
+            </Animated.View>
+
+            {/* Nope Overlay */}
+            <Animated.View style={[styles.overlay, styles.nopeOverlay, nopeOpacity]}>
+              <GradientIcon
+                name="close"
+                size={100}
+                colors={[DANGER, "#dc2626"] as const}
+              />
+            </Animated.View>
+          </ImageBackground>
+        </Animated.View>
+      </GestureDetector>
+
+      <AlertModal
+        visible={showBlockConfirm}
+        title="Block User"
+        message="You won't see each other anymore. This can't be undone from here."
+        type="warning"
+        onConfirm={handleBlockUser}
+        onClose={() => setShowBlockConfirm(false)}
+      />
+    </>
   );
 }
 
@@ -203,6 +244,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     position: "absolute",
+  },
+  actionMenu: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    zIndex: 10,
   },
   image: {
     width: "100%",
