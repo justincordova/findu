@@ -12,6 +12,8 @@ import {
 // Third-party
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
+  Extrapolate,
+  interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -183,7 +185,7 @@ export default function SwipeCard({
               {
                 label: "View Profile",
                 icon: "person-outline",
-                onPress: onViewProfile,
+                onPress: onViewProfile || (() => {}),
               },
               {
                 label: "Block User",
