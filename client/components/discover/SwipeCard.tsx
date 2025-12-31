@@ -4,24 +4,21 @@ import { useMemo, useState } from "react";
 // React Native
 import {
   Dimensions,
-  ImageBackground,
+  Pressable,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 
 // Third-party
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
-  Extrapolate,
-  interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import MaskedView from "@react-native-masked-view/masked-view";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 
 // Project imports
@@ -29,6 +26,8 @@ import { DANGER, SUCCESS } from "@/constants/theme";
 import { Profile } from "@/types/Profile";
 import ActionMenu from "@/components/shared/ActionMenu";
 import AlertModal from "@/components/shared/AlertModal";
+import PhotoGalleryCard from "@/components/discover/PhotoGalleryCard";
+import PhotoLightbox from "@/components/discover/PhotoLightbox";
 import { blockUser } from "@/services/blocksService";
 import logger from "@/config/logger";
 
@@ -62,6 +61,7 @@ interface SwipeCardProps {
   profile: Profile;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
+  onViewProfile?: () => void;
   active?: boolean;
 }
 
@@ -73,9 +73,11 @@ export default function SwipeCard({
   profile,
   onSwipeLeft,
   onSwipeRight,
+  onViewProfile,
   active = true,
 }: SwipeCardProps) {
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const context = useSharedValue({ x: 0, y: 0 });
@@ -159,64 +161,69 @@ export default function SwipeCard({
     }
   };
 
+  const age = new Date().getFullYear() - new Date(profile.birthdate).getFullYear();
+  const photos = profile.photos || [profile.avatar_url];
+
   return (
     <>
       <GestureDetector gesture={gesture}>
-        <Animated.View style={[styles.card, cardStyle]}>
-          <ImageBackground
-            source={{ uri: profile.avatar_url }}
-            style={styles.image}
-            imageStyle={{ borderRadius: 20 }}
-          >
-            <ActionMenu
-              options={[
-                {
-                  label: "Block User",
-                  icon: "ban",
-                  onPress: () => setShowBlockConfirm(true),
-                  destructive: true,
-                },
-              ]}
-              style={styles.actionMenu}
-              iconColor="white"
-              iconSize={20}
+        <Animated.View style={[styles.cardWrapper, cardStyle]}>
+          <PhotoGalleryCard
+            photos={photos}
+            onPhotoTap={() => setShowLightbox(true)}
+            isActive={active}
+            userName={profile.name}
+            age={age}
+            bio={profile.bio}
+          />
+
+          {/* Action Menu */}
+          <ActionMenu
+            options={[
+              {
+                label: "View Profile",
+                icon: "person-outline",
+                onPress: onViewProfile,
+              },
+              {
+                label: "Block User",
+                icon: "ban",
+                onPress: () => setShowBlockConfirm(true),
+                destructive: true,
+              },
+            ]}
+            style={styles.actionMenu}
+            iconColor="white"
+            iconSize={20}
+          />
+
+          {/* Like/Nope Overlays */}
+          <Animated.View style={[styles.overlay, styles.likeOverlay, likeOpacity]}>
+            <GradientIcon
+              name="heart"
+              size={100}
+              colors={[SUCCESS, "#22c55e"] as const}
             />
+          </Animated.View>
 
-            <LinearGradient
-              colors={["transparent", "rgba(0,0,0,0.8)"]}
-              style={styles.gradient}
-            >
-              <View style={styles.infoContainer}>
-                <Text style={styles.name}>
-                  {profile.name}, {new Date().getFullYear() - new Date(profile.birthdate).getFullYear()}
-                </Text>
-                <Text style={styles.bio} numberOfLines={2}>
-                  {profile.bio}
-                </Text>
-              </View>
-            </LinearGradient>
-
-            {/* Like Overlay */}
-            <Animated.View style={[styles.overlay, styles.likeOverlay, likeOpacity]}>
-              <GradientIcon
-                name="heart"
-                size={100}
-                colors={[SUCCESS, "#22c55e"] as const}
-              />
-            </Animated.View>
-
-            {/* Nope Overlay */}
-            <Animated.View style={[styles.overlay, styles.nopeOverlay, nopeOpacity]}>
-              <GradientIcon
-                name="close"
-                size={100}
-                colors={[DANGER, "#dc2626"] as const}
-              />
-            </Animated.View>
-          </ImageBackground>
+          <Animated.View style={[styles.overlay, styles.nopeOverlay, nopeOpacity]}>
+            <GradientIcon
+              name="close"
+              size={100}
+              colors={[DANGER, "#dc2626"] as const}
+            />
+          </Animated.View>
         </Animated.View>
       </GestureDetector>
 
+      {/* Lightbox for profile picture */}
+      <PhotoLightbox
+        uri={photos[0]}
+        visible={showLightbox}
+        onClose={() => setShowLightbox(false)}
+      />
+
+      {/* Block confirmation */}
       <AlertModal
         visible={showBlockConfirm}
         title="Block User"
@@ -230,19 +237,7 @@ export default function SwipeCard({
 }
 
 const styles = StyleSheet.create({
-  card: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    borderRadius: 20,
-    backgroundColor: "white",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+  cardWrapper: {
     position: "absolute",
   },
   actionMenu: {
@@ -251,40 +246,9 @@ const styles = StyleSheet.create({
     right: 16,
     zIndex: 10,
   },
-  image: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  gradient: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: "40%",
-    justifyContent: "flex-end",
-    padding: 20,
-    borderRadius: 20,
-  },
-  infoContainer: {
-    marginBottom: 20,
-  },
-  name: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 8,
-  },
-  bio: {
-    fontSize: 16,
-    color: "white",
-    opacity: 0.9,
-  },
   overlay: {
     position: "absolute",
     top: 40,
-    // Removed box styles
     transform: [{ rotate: "-15deg" }],
   },
   likeOverlay: {
