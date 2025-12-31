@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import {
   Dimensions,
   Image,
@@ -11,7 +11,8 @@ import { LinearGradient } from "expo-linear-gradient";
 
 interface PhotoGalleryCardProps {
   photos: string[];
-  onPhotoTap: () => void;
+  avatarUrl: string;
+  onAvatarTap: () => void;
   isActive: boolean;
   userName: string;
   age: number;
@@ -24,7 +25,8 @@ const CARD_HEIGHT = SCREEN_HEIGHT * 0.7;
 
 export default function PhotoGalleryCard({
   photos,
-  onPhotoTap,
+  avatarUrl,
+  onAvatarTap,
   isActive,
   userName,
   age,
@@ -32,6 +34,15 @@ export default function PhotoGalleryCard({
 }: PhotoGalleryCardProps) {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
+  // Preload all photos on mount for instant switching
+  useMemo(() => {
+    photos.forEach((photo) => {
+      Image.prefetch(photo);
+    });
+    Image.prefetch(avatarUrl);
+  }, [photos, avatarUrl]);
+
+  // Use useCallback with empty dependency to ensure function reference doesn't change
   const handlePrevPhoto = useCallback(() => {
     setCurrentPhotoIndex((prev) => Math.max(0, prev - 1));
   }, []);
@@ -92,29 +103,29 @@ export default function PhotoGalleryCard({
         </View>
       )}
 
-      {/* Profile Picture Circle in Bottom Right */}
+      {/* Avatar Circle in Top Right - Click to expand */}
       <Pressable
-        onPress={onPhotoTap}
-        style={styles.profileCircle}
+        onPress={onAvatarTap}
+        style={styles.avatarCircle}
         disabled={!isActive}
       >
         <Image
-          source={{ uri: photos[0] }}
-          style={styles.profileCircleImage}
+          source={{ uri: avatarUrl }}
+          style={styles.avatarImage}
           resizeMode="cover"
         />
       </Pressable>
 
       {/* Info Gradient at Bottom */}
       <LinearGradient
-        colors={["transparent", "rgba(0,0,0,0.8)"]}
+        colors={["transparent", "rgba(0,0,0,0.85)"]}
         style={styles.gradient}
       >
         <View style={styles.infoContainer}>
-          <Text style={styles.name}>
+          <Text style={styles.name} numberOfLines={2}>
             {userName}, {age}
           </Text>
-          <Text style={styles.bio} numberOfLines={2}>
+          <Text style={styles.bio} numberOfLines={3}>
             {bio}
           </Text>
         </View>
@@ -174,40 +185,43 @@ const styles = StyleSheet.create({
   indicatorActive: {
     backgroundColor: "white",
   },
-  profileCircle: {
+  avatarCircle: {
     position: "absolute",
-    bottom: 20,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    top: 40,
+    left: 16,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: "white",
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: "white",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 6,
     overflow: "hidden",
+    zIndex: 5,
   },
-  profileCircleImage: {
+  avatarImage: {
     width: "100%",
     height: "100%",
-    borderRadius: 26,
+    borderRadius: 25,
   },
   gradient: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    height: "40%",
+    height: "42%",
     justifyContent: "flex-end",
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
     borderRadius: 20,
+    pointerEvents: "none",
   },
   infoContainer: {
-    marginBottom: 20,
+    paddingRight: 12,
   },
   name: {
     fontSize: 28,

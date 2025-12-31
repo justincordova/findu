@@ -172,7 +172,8 @@ export default function SwipeCard({
         <Animated.View style={[styles.cardWrapper, cardStyle]}>
           <PhotoGalleryCard
             photos={photos}
-            onPhotoTap={() => setShowLightbox(true)}
+            avatarUrl={profile.avatar_url}
+            onAvatarTap={() => setShowLightbox(true)}
             isActive={active}
             userName={profile.name}
             age={age}
@@ -218,11 +219,12 @@ export default function SwipeCard({
         </Animated.View>
       </GestureDetector>
 
-      {/* Lightbox for profile picture */}
+      {/* Lightbox for avatar */}
       <PhotoLightbox
-        uri={photos[0]}
+        uri={profile.avatar_url}
         visible={showLightbox}
         onClose={() => setShowLightbox(false)}
+        isCircle={true}
       />
 
       {/* Block confirmation */}
