@@ -1,16 +1,12 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import Animated, {
-  Extrapolate,
-  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   runOnJS,
 } from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import ProfileView from "@/components/profile/ProfileView";
 
@@ -32,37 +28,13 @@ export default function UserProfileModal({
     translateY.value = withSpring(0);
   }
 
-  // Pan gesture for swipe-down dismiss
-  const gesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .activeOffsetY([10, 10])
-        .onUpdate((e) => {
-          if (e.translationY > 0) {
-            translateY.value = e.translationY;
-          }
-        })
-        .onEnd((e) => {
-          if (e.velocityY > 500 || e.translationY > 100) {
-            translateY.value = withSpring(1000, {}, () => {
-              runOnJS(onDismiss)();
-            });
-          } else {
-            translateY.value = withSpring(0);
-          }
-        }),
-    [onDismiss, translateY]
-  );
-
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
 
   const handleClose = useCallback(() => {
-    translateY.value = withSpring(1000, {}, () => {
-      runOnJS(onDismiss)();
-    });
-  }, [onDismiss, translateY]);
+    runOnJS(onDismiss)();
+  }, [onDismiss]);
 
   return (
     <Modal visible={visible} transparent={true} animationType="none">
@@ -74,33 +46,30 @@ export default function UserProfileModal({
       />
 
       {/* Modal Content */}
-      <GestureDetector gesture={gesture}>
-        <Animated.View style={[styles.modalContainer, animatedStyle]}>
-          <SafeAreaView style={styles.safeArea} edges={["top"]}>
-            {/* Handle bar and close button */}
-            <View style={styles.header}>
-              <View style={styles.handleBar} />
-              <Pressable onPress={handleClose} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color="#333" />
-              </Pressable>
-            </View>
+      <Animated.View style={[styles.modalContainer, animatedStyle]}>
+        {/* Close button - top right */}
+        <Pressable
+          onPress={handleClose}
+          style={styles.closeButton}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Close profile"
+        >
+          <Ionicons name="close" size={24} color="#333" />
+        </Pressable>
 
-            {/* Profile content */}
-            <ProfileView userId={userId} isEditable={false} />
-          </SafeAreaView>
-        </Animated.View>
-      </GestureDetector>
+        {/* Profile content - scrollable */}
+        <View style={styles.content}>
+          <ProfileView userId={userId} isEditable={false} shouldFetch={visible} />
+        </View>
+      </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   backdrop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
   modalContainer: {
@@ -108,42 +77,30 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    maxHeight: "90%",
+    height: "90%",
     backgroundColor: "white",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 10,
-  },
-  safeArea: {
-    flex: 1,
-    backgroundColor: "white",
-  },
-  header: {
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 2,
-    marginBottom: 12,
+    flexDirection: "column",
+    overflow: "hidden",
   },
   closeButton: {
     position: "absolute",
-    top: 16,
+    top: 12,
     right: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 100,
+  },
+  content: {
+    flex: 1,
   },
 });

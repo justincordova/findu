@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -22,11 +22,13 @@ import logger from "@/config/logger";
 interface ProfileViewProps {
   userId: string;
   isEditable?: boolean;
+  shouldFetch?: boolean;
 }
 
 export default function ProfileView({
   userId,
   isEditable = false,
+  shouldFetch = true,
 }: ProfileViewProps) {
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -64,9 +66,12 @@ export default function ProfileView({
     }
   }, [userId]);
 
-  if (!hasLoadedRef.current) {
-    fetchProfile();
-  }
+  // Fetch profile only when shouldFetch is true (modal visible)
+  useEffect(() => {
+    if (shouldFetch && !hasLoadedRef.current) {
+      fetchProfile();
+    }
+  }, [shouldFetch, fetchProfile]);
 
   if (loading && !profileData) {
     return (
@@ -103,7 +108,7 @@ export default function ProfileView({
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
-        contentInsetAdjustmentBehavior="automatic"
+        contentInsetAdjustmentBehavior="never"
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         <UserInfoSection />
