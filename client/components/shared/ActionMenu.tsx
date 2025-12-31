@@ -61,6 +61,7 @@ export default function ActionMenu({
                 key={index}
                 style={({ pressed }) => [
                   styles.option,
+                  index === options.length - 1 && styles.lastOption,
                   pressed && styles.optionPressed,
                 ]}
                 onPress={() => {
@@ -127,6 +128,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
+  },
+  lastOption: {
+    borderBottomWidth: 0,
   },
   optionPressed: {
     backgroundColor: '#F9FAFB',
