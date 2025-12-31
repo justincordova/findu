@@ -37,6 +37,7 @@ export default function ActionMenu({
         accessible={true}
         accessibilityRole="button"
         accessibilityLabel="More options"
+        android_ripple={{ radius: 22, color: 'rgba(0, 0, 0, 0.1)' }}
       >
         <Ionicons name="ellipsis-vertical" size={iconSize} color={iconColor} />
       </Pressable>
@@ -106,6 +107,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 44,
     minHeight: 44,
+    borderRadius: 22,
   },
   overlay: {
     flex: 1,
