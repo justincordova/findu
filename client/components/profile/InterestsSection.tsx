@@ -63,7 +63,7 @@ const POPULAR_INTERESTS_UNBIASED = [
 
 
 export default function InterestsSection() {
-  const { profile, refetch } = useProfile();
+  const { profile, refetch, isEditable = true } = useProfile();
   const userId = useAuthStore((state) => state.userId);
   const constants = useConstantsStore((state) => state.constants);
 
@@ -202,6 +202,7 @@ export default function InterestsSection() {
         style={profileStyles.card}
         onPress={handleOpenModal}
         activeOpacity={0.7}
+        disabled={!isEditable}
       >
         <View style={[profileStyles.cardHeader, { gap: 10 }]}>
           <Ionicons name="heart-outline" size={24} color={PRIMARY} />

@@ -43,7 +43,7 @@ import { PRIMARY } from "@/constants/theme";
  * - Comprehensive logging and error handling
  */
 export default function AcademicSection() {
-  const { profile, refetch } = useProfile();
+  const { profile, refetch, isEditable = true } = useProfile();
   const userId = useAuthStore((state) => state.userId);
   const { constants } = useConstantsStore();
 
@@ -204,6 +204,7 @@ export default function AcademicSection() {
         style={profileStyles.card}
         onPress={handleOpenModal}
         activeOpacity={0.7}
+        disabled={!isEditable}
       >
         <View style={[profileStyles.cardHeader, { gap: 10 }]}>
           <Ionicons name="school-outline" size={24} color={PRIMARY} />
