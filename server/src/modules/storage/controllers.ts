@@ -4,7 +4,7 @@ import * as uploadsService from "./services";
 /**
  * Generate a signed upload URL for a user's personal folder
  *
- * @param req - Express request object containing `userId`, `filename`, and `mode` in body
+ * @param req - Express request object containing `userId`, `filename`, `mimeType`, `fileSize`, and `mode` in body
  * @param res - Express response object used to return the upload URL or an error
  */
 export const generateUploadUrlController = async (req: Request, res: Response) => {
