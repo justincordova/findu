@@ -3,7 +3,6 @@ import { useCallback, useRef, useState } from "react";
 
 // React Native
 import {
-  ActivityIndicator,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -25,6 +24,7 @@ import InterestsSection from "@/components/profile/InterestsSection";
 import AcademicSection from "@/components/profile/AcademicSection";
 import PreferencesSection from "@/components/profile/PreferencesSection";
 import LifestyleSection from "@/components/profile/LifestyleSection";
+import SkeletonLoader, { SkeletonGroup } from "@/components/shared/SkeletonLoader";
 import logger from "@/config/logger";
 
 /**
@@ -100,9 +100,61 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="white" />
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-        </View>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 16, paddingTop: 16 }}
+        >
+          {/* Avatar and name skeleton */}
+          <View style={styles.skeletonHeader}>
+            <SkeletonLoader width={80} height={80} borderRadius={40} />
+            <SkeletonLoader width="60%" height={24} borderRadius={4} style={{ marginTop: 16 }} />
+            <SkeletonLoader width="40%" height={16} borderRadius={4} style={{ marginTop: 8 }} />
+          </View>
+
+          {/* Photos skeleton */}
+          <View style={styles.skeletonSection}>
+            <SkeletonLoader width="40%" height={18} borderRadius={4} style={{ marginBottom: 12 }} />
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <SkeletonLoader width="48%" height={180} borderRadius={8} />
+              <SkeletonLoader width="48%" height={180} borderRadius={8} />
+            </View>
+          </View>
+
+          {/* Bio skeleton */}
+          <View style={styles.skeletonSection}>
+            <SkeletonLoader width="30%" height={18} borderRadius={4} style={{ marginBottom: 12 }} />
+            <SkeletonGroup count={3} spacing={4} style={{ marginBottom: 8 }} />
+          </View>
+
+          {/* Interests skeleton */}
+          <View style={styles.skeletonSection}>
+            <SkeletonLoader width="35%" height={18} borderRadius={4} style={{ marginBottom: 12 }} />
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkeletonLoader key={i} width="28%" height={32} borderRadius={16} />
+              ))}
+            </View>
+          </View>
+
+          {/* Academic skeleton */}
+          <View style={styles.skeletonSection}>
+            <SkeletonLoader width="30%" height={18} borderRadius={4} style={{ marginBottom: 12 }} />
+            <SkeletonGroup count={3} spacing={8} />
+          </View>
+
+          {/* Preferences skeleton */}
+          <View style={styles.skeletonSection}>
+            <SkeletonLoader width="35%" height={18} borderRadius={4} style={{ marginBottom: 12 }} />
+            <SkeletonGroup count={4} spacing={8} />
+          </View>
+
+          {/* Lifestyle skeleton */}
+          <View style={styles.skeletonSection}>
+            <SkeletonLoader width="30%" height={18} borderRadius={4} style={{ marginBottom: 12 }} />
+            <SkeletonGroup count={5} spacing={8} />
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -183,5 +235,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#ef4444",
     textAlign: "center",
+  },
+  skeletonHeader: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  skeletonSection: {
+    marginBottom: 24,
   },
 });
