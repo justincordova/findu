@@ -43,6 +43,13 @@ export const createLike = async (req: Request, res: Response) => {
  */
 export const getSentLikes = async (req: Request, res: Response) => {
   const { userId } = req.params;
+  const authenticatedUserId = (req as any).user?.id;
+
+  // Authorization check: user can only view their own sent likes
+  if (authenticatedUserId !== userId) {
+    return res.status(403).json({ message: "Unauthorized: Cannot view another user's sent likes" });
+  }
+
   try {
     const likes = await LikesService.getSentLikes(userId);
     return res.status(200).json(likes);
@@ -57,6 +64,13 @@ export const getSentLikes = async (req: Request, res: Response) => {
  */
 export const getReceivedLikes = async (req: Request, res: Response) => {
   const { userId } = req.params;
+  const authenticatedUserId = (req as any).user?.id;
+
+  // Authorization check: user can only view their own received likes
+  if (authenticatedUserId !== userId) {
+    return res.status(403).json({ message: "Unauthorized: Cannot view another user's received likes" });
+  }
+
   try {
     const likes = await LikesService.getReceivedLikes(userId);
     return res.status(200).json(likes);
