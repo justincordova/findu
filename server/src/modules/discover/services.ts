@@ -673,29 +673,30 @@ export const getDiscoverProfiles = async (
   // Get eligible candidates
   const candidates = await getEligibleCandidates(userId, currentUser);
 
-  // Calculate compatibility scores and mark mutual likes
-  const scoredCandidates = candidates.map(candidate => ({
+  // Separate mutual likes from other candidates for efficient scoring
+  // Score mutual likes first, then other candidates
+  const mutualLikeCandidates = candidates.filter(c => mutualLikedUserIds.includes(c.user_id));
+  const otherCandidates = candidates.filter(c => !mutualLikedUserIds.includes(c.user_id));
+
+  // Score mutual likes with compatibility scores
+  const scoredMutualLikes = mutualLikeCandidates.map(candidate => ({
     ...candidate,
     compatibilityScore: calculateCompatibilityScore(currentUser, candidate),
-    likedByUser: mutualLikedUserIds.includes(candidate.user_id)
+    likedByUser: true
   }));
 
-  // Sort with TIER 1 (mutual likes) first, then by compatibility score
-  // Priority: likedByUser (true first), then compatibilityScore (highest first), then stable sort by user_id
-  const rankedCandidates = scoredCandidates.sort((a, b) => {
-    // TIER 1: Mutual likes come first
-    if (a.likedByUser !== b.likedByUser) {
-      return a.likedByUser ? -1 : 1; // true comes before false
-    }
+  // Score other candidates with compatibility scores
+  const scoredOthers = otherCandidates.map(candidate => ({
+    ...candidate,
+    compatibilityScore: calculateCompatibilityScore(currentUser, candidate),
+    likedByUser: false
+  }));
 
-    // TIER 2+: Sort by compatibility score (highest first)
-    if (b.compatibilityScore !== a.compatibilityScore) {
-      return b.compatibilityScore - a.compatibilityScore;
-    }
-
-    // Stable sort by user_id for deterministic ordering
-    return a.user_id.localeCompare(b.user_id);
-  });
+  // Combine with mutual likes first, then sort others by score
+  const rankedCandidates = [
+    ...scoredMutualLikes.sort((a, b) => b.compatibilityScore - a.compatibilityScore || a.user_id.localeCompare(b.user_id)),
+    ...scoredOthers.sort((a, b) => b.compatibilityScore - a.compatibilityScore || a.user_id.localeCompare(b.user_id))
+  ];
 
   logger.info(`Discover: Ranked ${rankedCandidates.length} candidates`, {
     totalCandidates: rankedCandidates.length,
