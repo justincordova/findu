@@ -154,16 +154,33 @@ export default function SwipeCard({
 
   const handleBlockUser = async () => {
     setShowBlockConfirm(false);
-    const result = await blockUser(profile.user_id);
-    if (result.success) {
-      logger.info("User blocked from discover", { userId: profile.user_id });
-      onSwipeLeft();
-    } else {
-      logger.error("Failed to block user", { error: result.error });
+    try {
+      const result = await blockUser(profile.user_id);
+      if (result.success) {
+        logger.info("User blocked from discover", { userId: profile.user_id });
+        onSwipeLeft();
+      } else {
+        logger.error("Failed to block user", { error: result.error });
+      }
+    } catch (err) {
+      logger.error("Unexpected error blocking user", {
+        userId: profile.user_id,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   };
 
-  const age = new Date().getFullYear() - new Date(profile.birthdate).getFullYear();
+  const calculateAge = (birthdate: string): number => {
+    const birth = new Date(birthdate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+  const age = calculateAge(profile.birthdate);
   const photos = profile.photos || [profile.avatar_url];
 
   return (

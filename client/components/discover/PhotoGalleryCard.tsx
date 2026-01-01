@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState, useEffect } from "react";
 import {
   Dimensions,
   Image,
@@ -35,7 +35,7 @@ export default function PhotoGalleryCard({
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   // Preload all photos on mount for instant switching
-  useMemo(() => {
+  useEffect(() => {
     photos.forEach((photo) => {
       Image.prefetch(photo);
     });

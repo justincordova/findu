@@ -73,6 +73,11 @@ export default function ProfileView({
     }
   }, [shouldFetch, fetchProfile]);
 
+  // Reset hasLoaded when userId changes to allow re-fetching for different users
+  useEffect(() => {
+    hasLoadedRef.current = false;
+  }, [userId]);
+
   if (loading && !profileData) {
     return (
       <SafeAreaView style={styles.container}>

@@ -7,7 +7,7 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 
 const { width, height } = Dimensions.get("window");
 
@@ -26,6 +26,14 @@ export default function PhotoLightbox({
 }: PhotoLightboxProps) {
   const scale = useSharedValue(1);
   const translateY = useSharedValue(0);
+
+  // Reset shared values when lightbox opens
+  useEffect(() => {
+    if (visible) {
+      scale.value = 1;
+      translateY.value = 0;
+    }
+  }, [visible, scale, translateY]);
 
   // Pan gesture for swipe-down dismiss
   const gesture = useMemo(
