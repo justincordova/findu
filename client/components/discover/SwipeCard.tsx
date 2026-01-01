@@ -29,7 +29,6 @@ import { Profile } from "@/types/Profile";
 import ActionMenu from "@/components/shared/ActionMenu";
 import AlertModal from "@/components/shared/AlertModal";
 import PhotoGalleryCard from "@/components/discover/PhotoGalleryCard";
-import PhotoLightbox from "@/components/discover/PhotoLightbox";
 import { blockUser } from "@/services/blocksService";
 import logger from "@/config/logger";
 
@@ -79,7 +78,6 @@ export default function SwipeCard({
   active = true,
 }: SwipeCardProps) {
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
-  const [showLightbox, setShowLightbox] = useState(false);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const context = useSharedValue({ x: 0, y: 0 });
@@ -190,7 +188,6 @@ export default function SwipeCard({
           <PhotoGalleryCard
             photos={photos}
             avatarUrl={profile.avatar_url}
-            onAvatarTap={() => setShowLightbox(true)}
             isActive={active}
             userName={profile.name}
             age={age}
@@ -235,14 +232,6 @@ export default function SwipeCard({
           </Animated.View>
         </Animated.View>
       </GestureDetector>
-
-      {/* Lightbox for avatar */}
-      <PhotoLightbox
-        uri={profile.avatar_url}
-        visible={showLightbox}
-        onClose={() => setShowLightbox(false)}
-        isCircle={true}
-      />
 
       {/* Block confirmation */}
       <AlertModal
