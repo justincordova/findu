@@ -21,6 +21,13 @@
   export const updateProfileController = async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
+      const authenticatedUserId = (req as any).user?.id;
+
+      // Authorization check: user can only update their own profile
+      if (authenticatedUserId !== userId) {
+        return res.status(403).json({ error: "Unauthorized: Cannot update another user's profile" });
+      }
+
       const profileData = req.body;
       const updatedProfile = await profileService.updateProfile(userId, profileData);
       if (!updatedProfile) return res.status(404).json({ error: "Profile not found" });
@@ -33,6 +40,7 @@
 
   /**
    * Get a profile by user ID
+   * Note: Returns own profile or public profile view (future: add visibility controls)
    */
   export const getProfileController = async (req: Request, res: Response) => {
     try {
@@ -52,6 +60,13 @@
   export const deleteProfileController = async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
+      const authenticatedUserId = (req as any).user?.id;
+
+      // Authorization check: user can only delete their own profile
+      if (authenticatedUserId !== userId) {
+        return res.status(403).json({ error: "Unauthorized: Cannot delete another user's profile" });
+      }
+
       await profileService.deleteProfile(userId);
       res.status(204).send();
     } catch (error) {
