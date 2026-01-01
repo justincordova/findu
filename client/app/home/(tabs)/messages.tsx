@@ -7,6 +7,11 @@ import { BACKGROUND, DARK, MUTED } from "@/constants/theme";
 /**
  * Messages/Chats screen - placeholder for messaging functionality
  * Currently displays a stub message for future implementation
+ *
+ * TODO: Add skeleton loaders for loading state when implementing real messaging functionality
+ * - Use SkeletonLoader component for message list items
+ * - Show 5-10 skeleton message cards during initial load
+ * - Match the skeleton style used in discover and profile screens
  */
 export default function MessagesScreen() {
   return (
