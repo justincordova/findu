@@ -3,6 +3,7 @@ import { redis } from "@/lib/redis";
 import logger from "@/config/logger";
 
 // Rate limiting configuration for OTP requests
+const OTP_RATE_LIMIT_ENABLED = process.env.OTP_RATE_LIMIT_ENABLED !== "false";
 const OTP_RATE_LIMIT_WINDOW = 60; // 1 minute in seconds
 const OTP_RATE_LIMIT_MAX_ATTEMPTS = 3; // Max 3 OTP requests per minute per email
 const OTP_RATE_LIMIT_KEY_PREFIX = "otp_rate_limit:";
@@ -16,6 +17,11 @@ export async function rateLimitOTP(
   res: Response,
   next: NextFunction
 ) {
+  // Skip rate limiting if disabled via environment variable
+  if (!OTP_RATE_LIMIT_ENABLED) {
+    return next();
+  }
+
   try {
     const { email } = req.body;
 
