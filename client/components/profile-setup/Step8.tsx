@@ -1,5 +1,5 @@
 // React core
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 // React Native
 import {
@@ -11,14 +11,14 @@ import {
 } from "react-native";
 
 // Third-party
-import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 
 // Project imports
 import {
   BACKGROUND,
   DARK,
   MUTED,
-  GRADIENT,
+  PRIMARY,
 } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
 import { useConstantsStore } from "@/store/constantsStore";
@@ -40,6 +40,7 @@ export default function Step8({
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
   const constants = useConstantsStore((state) => state.constants);
+  const [activeDropdowns, setActiveDropdowns] = useState<Record<string, boolean>>({});
 
   const lifestyleOptions = constants?.lifestyleOptions;
 
@@ -48,11 +49,70 @@ export default function Step8({
     [profileData?.lifestyle]
   );
 
+  // Field metadata for all 11 lifestyle fields
+  const lifestyleFields = useMemo(
+    () => [
+      { key: "drinking" as const, label: "Drinking", type: "single" },
+      { key: "smoking" as const, label: "Smoking", type: "single" },
+      { key: "cannabis" as const, label: "Cannabis", type: "single" },
+      { key: "sleep_habits" as const, label: "Sleep Habits", type: "single" },
+      { key: "pets" as const, label: "Pets", type: "multi" },
+      {
+        key: "dietary_preferences" as const,
+        label: "Dietary Preferences",
+        type: "multi",
+      },
+      { key: "study_style" as const, label: "Study Style", type: "single" },
+      { key: "cleanliness" as const, label: "Cleanliness", type: "single" },
+      { key: "caffeine" as const, label: "Caffeine", type: "single" },
+      {
+        key: "living_situation" as const,
+        label: "Living Situation",
+        type: "single",
+      },
+      { key: "fitness" as const, label: "Fitness", type: "single" },
+    ],
+    []
+  );
+
+  // Get options for a field from constants
+  const getFieldOptions = useCallback(
+    (field: keyof Lifestyle) => {
+      const fieldToConstant: Record<string, string> = {
+        drinking: "drinking",
+        smoking: "smoking",
+        cannabis: "cannabis",
+        sleep_habits: "sleepHabits",
+        pets: "pets",
+        dietary_preferences: "dietaryPreferences",
+        study_style: "studyStyle",
+        cleanliness: "cleanliness",
+        caffeine: "caffeine",
+        living_situation: "livingSituation",
+        fitness: "fitness",
+      };
+
+      const constantKey = fieldToConstant[field];
+      if (!constantKey || !lifestyleOptions) return [];
+      return ((lifestyleOptions as Record<string, readonly string[]>)[constantKey] as string[]) || [];
+    },
+    [lifestyleOptions]
+  );
+
+  // Toggle dropdown visibility
+  const toggleDropdown = useCallback((field: keyof Lifestyle) => {
+    setActiveDropdowns((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
+  }, []);
+
   /** Handle single-select field change */
   const handleSelectField = useCallback(
     (field: keyof Lifestyle, value: string) => {
-      const updated = { ...currentLifestyle, [field]: value };
+      const updated = { ...currentLifestyle, [field]: value.length > 0 ? value : undefined };
       setProfileField("lifestyle", updated);
+      setActiveDropdowns((prev) => ({ ...prev, [field]: false }));
     },
     [currentLifestyle, setProfileField]
   );
@@ -92,423 +152,95 @@ export default function Step8({
       <Text style={styles.title}>Tell us about your lifestyle</Text>
       <Text style={styles.subtitle}>(Optional)</Text>
 
-      {/* Drinking */}
-      {lifestyleOptions.drinking && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.fieldLabel}>Drinking</Text>
-          <View style={styles.optionsGrid}>
-            {lifestyleOptions.drinking.map((option) => {
-              const selected = currentLifestyle.drinking === option;
-              return selected ? (
-                <LinearGradient
-                  key={option}
-                  colors={GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.optionButton}
-                >
-                  <TouchableOpacity
-                    onPress={() => handleSelectField("drinking", option)}
-                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-                  >
-                    <Text style={[styles.optionText, styles.optionTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-              ) : (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.optionButton}
-                  onPress={() => handleSelectField("drinking", option)}
-                >
-                  <Text style={styles.optionText}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
+      <View style={styles.formContainer}>
+        {lifestyleFields.map((fieldConfig) => {
+          const options = getFieldOptions(fieldConfig.key);
+          if (options.length === 0) return null;
 
-      {/* Smoking */}
-      {lifestyleOptions.smoking && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.fieldLabel}>Smoking</Text>
-          <View style={styles.optionsGrid}>
-            {lifestyleOptions.smoking.map((option) => {
-              const selected = currentLifestyle.smoking === option;
-              return selected ? (
-                <LinearGradient
-                  key={option}
-                  colors={GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.optionButton}
-                >
-                  <TouchableOpacity
-                    onPress={() => handleSelectField("smoking", option)}
-                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-                  >
-                    <Text style={[styles.optionText, styles.optionTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-              ) : (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.optionButton}
-                  onPress={() => handleSelectField("smoking", option)}
-                >
-                  <Text style={styles.optionText}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
+          const currentValue = currentLifestyle[fieldConfig.key];
+          const isMultiSelect = fieldConfig.type === "multi";
+          const displayValue = isMultiSelect
+            ? Array.isArray(currentValue)
+              ? currentValue.join(", ")
+              : "Select..."
+            : (currentValue as string) || "Select...";
 
-      {/* Cannabis */}
-      {lifestyleOptions.cannabis && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.fieldLabel}>Cannabis</Text>
-          <View style={styles.optionsGrid}>
-            {lifestyleOptions.cannabis.map((option) => {
-              const selected = currentLifestyle.cannabis === option;
-              return selected ? (
-                <LinearGradient
-                  key={option}
-                  colors={GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.optionButton}
-                >
-                  <TouchableOpacity
-                    onPress={() => handleSelectField("cannabis", option)}
-                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-                  >
-                    <Text style={[styles.optionText, styles.optionTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-              ) : (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.optionButton}
-                  onPress={() => handleSelectField("cannabis", option)}
-                >
-                  <Text style={styles.optionText}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
+          return (
+            <View key={fieldConfig.key} style={styles.formField}>
+              <Text style={styles.formLabel}>{fieldConfig.label}</Text>
 
-      {/* Sleep Habits */}
-      {lifestyleOptions.sleepHabits && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.fieldLabel}>Sleep Habits</Text>
-          <View style={styles.optionsGrid}>
-            {lifestyleOptions.sleepHabits.map((option) => {
-              const selected = currentLifestyle.sleep_habits === option;
-              return selected ? (
-                <LinearGradient
-                  key={option}
-                  colors={GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.optionButton}
-                >
-                  <TouchableOpacity
-                    onPress={() => handleSelectField("sleep_habits", option)}
-                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-                  >
-                    <Text style={[styles.optionText, styles.optionTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-              ) : (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.optionButton}
-                  onPress={() => handleSelectField("sleep_habits", option)}
-                >
-                  <Text style={styles.optionText}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
+              {/* Unified dropdown for all field types */}
+              <TouchableOpacity
+                style={[
+                  styles.dropdownButton,
+                  currentValue && styles.dropdownButtonFilled,
+                ]}
+                onPress={() => toggleDropdown(fieldConfig.key)}
+              >
+                <Text style={styles.dropdownText}>
+                  {displayValue}
+                </Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={20}
+                  color="#9CA3AF"
+                />
+              </TouchableOpacity>
 
-      {/* Pets (multi-select) */}
-      {lifestyleOptions.pets && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.fieldLabel}>Pets</Text>
-          <View style={styles.pillContainer}>
-            {lifestyleOptions.pets.map((option) => {
-              const selected = (currentLifestyle.pets || []).includes(option);
-              return selected ? (
-                <LinearGradient
-                  key={option}
-                  colors={GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.pill}
-                >
-                  <TouchableOpacity
-                    onPress={() => handleMultiSelectField("pets", option)}
-                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-                  >
-                    <Text style={[styles.pillText, styles.pillTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-              ) : (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.pill}
-                  onPress={() => handleMultiSelectField("pets", option)}
-                >
-                  <Text style={styles.pillText}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
+              {/* Inline Dropdown */}
+              {activeDropdowns[fieldConfig.key] && (
+                <View style={[styles.dropdownModalContent, { marginTop: 4 }]}>
+                  {/* Options */}
+                  {options.map((option) => {
+                    const isSelected = isMultiSelect
+                      ? Array.isArray(currentValue) &&
+                        currentValue.includes(option)
+                      : currentValue === option;
 
-      {/* Dietary Preferences (multi-select) */}
-      {lifestyleOptions.dietaryPreferences && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.fieldLabel}>Dietary Preferences</Text>
-          <View style={styles.pillContainer}>
-            {lifestyleOptions.dietaryPreferences.map((option) => {
-              const selected = (currentLifestyle.dietary_preferences || []).includes(option);
-              return selected ? (
-                <LinearGradient
-                  key={option}
-                  colors={GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.pill}
-                >
-                  <TouchableOpacity
-                    onPress={() => handleMultiSelectField("dietary_preferences", option)}
-                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-                  >
-                    <Text style={[styles.pillText, styles.pillTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-              ) : (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.pill}
-                  onPress={() => handleMultiSelectField("dietary_preferences", option)}
-                >
-                  <Text style={styles.pillText}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
-      {/* Study Style */}
-      {lifestyleOptions.studyStyle && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.fieldLabel}>Study Style</Text>
-          <View style={styles.optionsGrid}>
-            {lifestyleOptions.studyStyle.map((option) => {
-              const selected = currentLifestyle.study_style === option;
-              return selected ? (
-                <LinearGradient
-                  key={option}
-                  colors={GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.optionButton}
-                >
-                  <TouchableOpacity
-                    onPress={() => handleSelectField("study_style", option)}
-                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-                  >
-                    <Text style={[styles.optionText, styles.optionTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-              ) : (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.optionButton}
-                  onPress={() => handleSelectField("study_style", option)}
-                >
-                  <Text style={styles.optionText}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
-      {/* Cleanliness */}
-      {lifestyleOptions.cleanliness && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.fieldLabel}>Cleanliness</Text>
-          <View style={styles.optionsGrid}>
-            {lifestyleOptions.cleanliness.map((option) => {
-              const selected = currentLifestyle.cleanliness === option;
-              return selected ? (
-                <LinearGradient
-                  key={option}
-                  colors={GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.optionButton}
-                >
-                  <TouchableOpacity
-                    onPress={() => handleSelectField("cleanliness", option)}
-                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-                  >
-                    <Text style={[styles.optionText, styles.optionTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-              ) : (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.optionButton}
-                  onPress={() => handleSelectField("cleanliness", option)}
-                >
-                  <Text style={styles.optionText}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
-      {/* Caffeine */}
-      {lifestyleOptions.caffeine && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.fieldLabel}>Caffeine</Text>
-          <View style={styles.optionsGrid}>
-            {lifestyleOptions.caffeine.map((option) => {
-              const selected = currentLifestyle.caffeine === option;
-              return selected ? (
-                <LinearGradient
-                  key={option}
-                  colors={GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.optionButton}
-                >
-                  <TouchableOpacity
-                    onPress={() => handleSelectField("caffeine", option)}
-                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-                  >
-                    <Text style={[styles.optionText, styles.optionTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-              ) : (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.optionButton}
-                  onPress={() => handleSelectField("caffeine", option)}
-                >
-                  <Text style={styles.optionText}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
-      {/* Living Situation */}
-      {lifestyleOptions.livingSituation && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.fieldLabel}>Living Situation</Text>
-          <View style={styles.optionsGrid}>
-            {lifestyleOptions.livingSituation.map((option) => {
-              const selected = currentLifestyle.living_situation === option;
-              return selected ? (
-                <LinearGradient
-                  key={option}
-                  colors={GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.optionButton}
-                >
-                  <TouchableOpacity
-                    onPress={() => handleSelectField("living_situation", option)}
-                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-                  >
-                    <Text style={[styles.optionText, styles.optionTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-              ) : (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.optionButton}
-                  onPress={() => handleSelectField("living_situation", option)}
-                >
-                  <Text style={styles.optionText}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
-      {/* Fitness */}
-      {lifestyleOptions.fitness && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.fieldLabel}>Fitness</Text>
-          <View style={styles.optionsGrid}>
-            {lifestyleOptions.fitness.map((option) => {
-              const selected = currentLifestyle.fitness === option;
-              return selected ? (
-                <LinearGradient
-                  key={option}
-                  colors={GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.optionButton}
-                >
-                  <TouchableOpacity
-                    onPress={() => handleSelectField("fitness", option)}
-                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-                  >
-                    <Text style={[styles.optionText, styles.optionTextSelected]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                </LinearGradient>
-              ) : (
-                <TouchableOpacity
-                  key={option}
-                  style={styles.optionButton}
-                  onPress={() => handleSelectField("fitness", option)}
-                >
-                  <Text style={styles.optionText}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
+                    return (
+                      <TouchableOpacity
+                        key={option}
+                        style={styles.dropdownOption}
+                        onPress={() => {
+                          if (isMultiSelect) {
+                            handleMultiSelectField(fieldConfig.key, option);
+                          } else {
+                            // For single-select: click again to deselect
+                            if (isSelected) {
+                              handleSelectField(fieldConfig.key, "");
+                            } else {
+                              handleSelectField(fieldConfig.key, option);
+                            }
+                          }
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.dropdownOptionText,
+                            isSelected && {
+                              fontWeight: "600",
+                              color: PRIMARY,
+                            },
+                          ]}
+                        >
+                          {option}
+                        </Text>
+                        {isSelected && (
+                          <Ionicons
+                            name="checkmark"
+                            size={20}
+                            color={PRIMARY}
+                          />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
 
     </ScrollView>
   );
@@ -535,55 +267,57 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontStyle: "italic",
   },
-  sectionContainer: {
-    marginBottom: 24,
+  formContainer: {
+    gap: 16,
   },
-  fieldLabel: {
+  formField: {
+    marginBottom: 8,
+  },
+  formLabel: {
     fontSize: 14,
     fontWeight: "600",
     color: DARK,
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  optionsGrid: {
+  dropdownButton: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  optionButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#f9fafb",
   },
-  optionText: {
-    fontSize: 13,
+  dropdownButtonFilled: {
+    borderColor: PRIMARY,
+    backgroundColor: "#f0f9ff",
+  },
+  dropdownText: {
+    fontSize: 14,
     color: DARK,
-    fontWeight: "500",
+    flex: 1,
   },
-  optionTextSelected: {
-    color: "white",
-  },
-  pillContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  pill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+  dropdownModalContent: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
     backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
+    overflow: "hidden",
   },
-  pillText: {
-    fontSize: 13,
+  dropdownOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  dropdownOptionText: {
+    fontSize: 14,
     color: DARK,
-    fontWeight: "500",
-  },
-  pillTextSelected: {
-    color: "white",
+    flex: 1,
   },
 });
