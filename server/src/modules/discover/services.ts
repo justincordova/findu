@@ -363,17 +363,48 @@ export const calculateLifestyleCompatibilityScore = (
 };
 
 /**
- * Calculates compatibility score between two users based on multiple factors.
- * Weights: 30% interests, 25% intent, 15% orientation, 10% major, 10% age, 10% lifestyle
+ * Calculates overall compatibility score between two users based on 6 weighted factors.
+ *
+ * ALGORITHM OVERVIEW:
+ * - Weighted average of 6 compatibility metrics (each 0-1, then multiplied by weight)
+ * - Final score normalized to 0-100 scale
+ * - Allows cross-intent matching (different relationship goals still possible)
+ * - No single factor causes automatic disqualification; all dimensions contribute
+ *
+ * WEIGHT BREAKDOWN (must sum to 100%):
+ * 1. Shared Interests (30%) - Most important: hobbies, passions, categories
+ * 2. Intent Compatibility (25%) - Relationship goals (dating, hookup, friendship, etc.)
+ * 3. Sexual Orientation (15%) - Orientation match + bidirectional gender preferences
+ * 4. Major/Academic (10%) - Same field of study (shared classes, study groups)
+ * 5. Age Compatibility (10%) - Soft preference (not hard filter)
+ * 6. Lifestyle (10%) - Living habits, values, preferences
+ *
+ * DESIGN NOTES:
+ * - Interests weighted heavily (30%): strongest signal of compatibility
+ * - Intent allows cross-matching: Dating + Friendship = 0.5 (not 0.0)
+ * - Gender preference is BIDIRECTIONAL: both must find each other's gender acceptable
+ * - Age is SOFT: differences penalize score gradually, not eliminated at query time
+ * - Lifestyle includes: smoking, drinking, drugs, religion, relationship type, living situation
+ *
+ * RATIONALE FOR WEIGHTS:
+ * - Interests drive conversation, activities, connection depth
+ * - Intent alignment prevents miscommunication about relationship type
+ * - Orientation + gender pref ensures both parties are interested
+ * - Major creates natural connection points (classes, study partners)
+ * - Age handled gently: some age gaps are acceptable, depends on individual
+ * - Lifestyle covers values: shared preferences prevent conflicts
  *
  * @param userProfile - Current user's profile
  * @param candidateProfile - Potential match's profile
- * @returns Compatibility score (0-100)
+ * @returns Compatibility score (0-100), where 100 = perfect match, 0 = no compatibility
  */
 export const calculateCompatibilityScore = (userProfile: Profile, candidateProfile: Profile): number => {
   let totalScore = 0;
 
   // 1. Shared Interests Score (30% weight)
+  // Exact matches: 1.0 point each
+  // Category matches (no exact match): 0.5 points
+  // Formula: sharedPoints / max(3, min(user_interests, candidate_interests))
   const sharedInterestsScore = calculateSharedInterestsScore(
     userProfile.interests,
     candidateProfile.interests
@@ -381,13 +412,22 @@ export const calculateCompatibilityScore = (userProfile: Profile, candidateProfi
   totalScore += sharedInterestsScore * COMPATIBILITY_WEIGHTS.sharedInterests;
 
   // 2. Intent Compatibility Score (25% weight)
+  // Uses 8x8 matrix mapping relationship intent compatibility
+  // Same intent: 1.0
+  // Compatible (e.g., Dating + Casual Dating): 0.8
+  // Different but possible (e.g., Dating + Friendship): 0.5
+  // Incompatible (e.g., Serious Relationship + Hookup): 0.2
   const intentScore = calculateIntentCompatibilityScore(
     userProfile.intent,
     candidateProfile.intent
   );
   totalScore += intentScore * COMPATIBILITY_WEIGHTS.intentCompatibility;
 
-  // 3. Sexual Orientation Compatibility (15% weight) - includes gender preferences
+  // 3. Sexual Orientation Compatibility (15% weight)
+  // Includes two checks:
+  // - Orientation match (gay+gay > bisexual+gay, etc.)
+  // - BIDIRECTIONAL gender preferences: both must find each other's gender acceptable
+  // Returns 0.1 if either has wrong gender preference (low but not 0)
   const orientationScore = calculateOrientationCompatibilityScore(
     userProfile.sexual_orientation,
     candidateProfile.sexual_orientation,
@@ -398,20 +438,28 @@ export const calculateCompatibilityScore = (userProfile: Profile, candidateProfi
   );
   totalScore += orientationScore * COMPATIBILITY_WEIGHTS.orientationCompatibility;
 
-  // 4. Major Compatibility (10% weight) - binary: same major or not
+  // 4. Major Compatibility (10% weight)
+  // Binary: 1.0 if same major, 0.0 otherwise
+  // Reflects shared academic context: classes, labs, study groups
   const majorScore = calculateMajorCompatibilityScore(
     userProfile.major,
     candidateProfile.major
   );
   totalScore += majorScore * COMPATIBILITY_WEIGHTS.majorCompatibility;
 
-  // 5. Age Compatibility (10% weight) - soft preference, not hard filter
+  // 5. Age Compatibility (10% weight)
+  // SOFT preference (not hard filter), handled at scoring level
+  // Formula: 0-2 years = 1.0, 3-5 = 0.8, 6+ = 0.6 - (ageDiff - 5) * 0.02
+  // Minimum floor of 0.0 prevents negative scores
   const userAge = calculateAge(userProfile.birthdate);
   const candidateAge = calculateAge(candidateProfile.birthdate);
   const ageScore = calculateAgeScore(userAge, candidateAge);
   totalScore += ageScore * COMPATIBILITY_WEIGHTS.ageCompatibility;
 
-  // 6. Lifestyle Compatibility (10% weight) - exact field matches
+  // 6. Lifestyle Compatibility (10% weight)
+  // Covers 9 single-value fields (binary yes/no) + 2 array fields (multiple selections)
+  // Fields: smoking, drinking, drugs, religion, relationship type, living situation, etc.
+  // Score: % of matching fields
   const lifestyleScore = calculateLifestyleCompatibilityScore(
     userProfile.lifestyle,
     candidateProfile.lifestyle
@@ -557,14 +605,49 @@ export const getMutualLikedUsers = async (userId: string): Promise<string[]> => 
 };
 
 /**
- * Main discovery feed - returns potential matches for a user.
- * TIER 1 (Priority): Users who already liked this user appear first
- * TIER 2+: Remaining candidates ranked by compatibility score
+ * Main discovery feed - returns ranked potential matches for a user.
+ *
+ * RANKING ALGORITHM (Two-Tier System):
+ * =====================================
+ * TIER 1 (High Priority): Users who already liked the current user
+ *   - Appears first regardless of compatibility score
+ *   - Reduces friction: mutual interest already established
+ *   - Likelihood of match: much higher
+ *
+ * TIER 2+ (Standard Ranking): All other eligible candidates
+ *   - Ranked by compatibility score (highest first)
+ *   - Score already accounts for interests, intent, orientation, age, etc.
+ *   - Within same tier, higher compatibility always ranks first
+ *
+ * HARD FILTERS (Applied before ranking):
+ * ====================================
+ * - Same university_id and campus_id (strict enforcement)
+ * - Age range match (candidate's age must be in user's preferences)
+ * - Gender preference match (user only sees their preferred genders)
+ * - Not already liked, matched, or blocked
+ * - Must have at least one interest and gender preference set
+ *
+ * FLOW:
+ * 1. Fetch user profile and preferences
+ * 2. Get users who already liked this user (TIER 1 candidates)
+ * 3. Get all eligible candidates (hard filters applied via DB)
+ * 4. Calculate compatibility scores for each candidate
+ * 5. Sort: TIER 1 first, then by score (descending)
+ * 6. Apply pagination (limit/offset)
+ * 7. Return ranked list
  *
  * @param userId - ID of the user requesting matches
- * @param limit - Number of profiles to return (default: 10)
- * @param offset - For pagination (default: 0)
+ * @param limit - Number of profiles to return per page (default: 10, recommended: 10-20)
+ * @param offset - Pagination offset (default: 0). Use: page * limit
  * @returns Array of potential match profiles with compatibility scores and likedByUser flag
+ * @throws Error if user profile not found
+ *
+ * EXAMPLE:
+ * // Get first 10 discover profiles
+ * const profiles = await getDiscoverProfiles(userId);
+ *
+ * // Get next 10 (page 2)
+ * const moreProfiles = await getDiscoverProfiles(userId, 10, 10);
  */
 export const getDiscoverProfiles = async (
   userId: string,
