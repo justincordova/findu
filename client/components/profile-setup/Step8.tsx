@@ -19,6 +19,7 @@ import {
   DARK,
   MUTED,
   PRIMARY,
+  SECONDARY,
 } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
 import { useConstantsStore } from "@/store/constantsStore";
@@ -283,16 +284,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    backgroundColor: "#f9fafb",
+    backgroundColor: "white",
   },
   dropdownButtonFilled: {
-    borderColor: PRIMARY,
-    backgroundColor: "#f0f9ff",
+    borderColor: SECONDARY,
+    borderWidth: 2,
   },
   dropdownText: {
     fontSize: 14,
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dropdownModalContent: {
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e5e7eb",
     backgroundColor: "white",
