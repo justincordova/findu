@@ -68,13 +68,19 @@ export default function MatchesScreen() {
   const handleBlockUser = async (userId: string) => {
     setBlockingUserId(null);
     setIsActionInProgress(true);
+
+    // Optimistically remove the match from the list
+    const updatedMatches = matches.filter(match => match.otherUser.id !== userId);
+    setMatches(updatedMatches);
+
     try {
       const result = await blockUser(userId);
       if (result.success) {
         logger.info("User blocked from matches", { userId });
-        await fetchMatches();
       } else {
         logger.error("Failed to block user", { error: result.error });
+        // Restore the match if the action failed
+        await fetchMatches();
         Alert.alert("Error", result.error || "Failed to block user");
       }
     } finally {
@@ -85,16 +91,24 @@ export default function MatchesScreen() {
   const handleUnmatch = async (matchId: string) => {
     setUnmatchingMatchId(null);
     setIsActionInProgress(true);
+
+    // Optimistically remove the match from the list
+    const updatedMatches = matches.filter(match => match.id !== matchId);
+    setMatches(updatedMatches);
+
     try {
       if (!token) {
         Alert.alert("Error", "Authentication token not found");
+        // Restore the match if token is missing
+        await fetchMatches();
         return;
       }
       await MatchesAPI.unmatch(token, matchId);
       logger.info("Match removed", { matchId });
-      await fetchMatches();
     } catch (error) {
       logger.error("Failed to unmatch", { error });
+      // Restore the match if the action failed
+      await fetchMatches();
       Alert.alert("Error", "Failed to unmatch. Please try again.");
     } finally {
       setIsActionInProgress(false);
