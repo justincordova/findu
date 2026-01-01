@@ -13,7 +13,21 @@ router.post(
   AuthController.sendOtpController
 );
 
-// Signup a new user with OTP
+// Verify OTP (after email sent)
+router.post(
+  "/verify-otp",
+  AuthValidators.validateVerifyOtp,
+  AuthController.verifyOtpController
+);
+
+// Create account with password (after OTP verified)
+router.post(
+  "/create-account",
+  AuthValidators.validateCreateAccount,
+  AuthController.createAccountController
+);
+
+// Signup a new user with OTP (legacy - deprecated, kept for backwards compatibility)
 router.post(
   "/signup",
   AuthValidators.validateSignup,

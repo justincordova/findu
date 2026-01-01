@@ -321,4 +321,105 @@ export const AuthService = {
       return null;
     }
   },
+
+  /**
+   * Verifies an OTP for a given email address.
+   * Does not create an account - just validates the OTP.
+   *
+   * @param email - User's email address (must be a .edu address)
+   * @param otp - OTP provided by the user
+   * @returns Promise resolving to PendingSignupResult indicating success or error
+   */
+  verifyOtp: async (
+    email: string,
+    otp: string
+  ): Promise<PendingSignupResult> => {
+    try {
+      // Validate email is a .edu address
+      if (!/^[\w.+-]+@[\w-]+\.edu$/i.test(email)) {
+        return { success: false, error: "Email must be a .edu address" };
+      }
+
+      const storedOtp = await redis.get(`otp:${email}`);
+      if (storedOtp !== otp) {
+        return { success: false, error: "Invalid or expired OTP" };
+      }
+
+      logger.info("OTP_VERIFIED", { email });
+      return { success: true };
+    } catch (error) {
+      logger.error("VERIFY_OTP_ERROR", { error, email });
+      return { success: false, error: "Failed to verify OTP" };
+    }
+  },
+
+  /**
+   * Creates an account with email and password after OTP verification.
+   * Should only be called after OTP has been verified.
+   *
+   * @param email - User's email address (must be a .edu address)
+   * @param password - User's password
+   * @returns Promise resolving to AuthResult indicating success or failure
+   */
+  createAccountWithPassword: async (
+    email: string,
+    password: string
+  ): Promise<AuthResult> => {
+    try {
+      // Validate email is a .edu address
+      if (!/^[\w.+-]+@[\w-]+\.edu$/i.test(email)) {
+        return { success: false, error: "Email must be a .edu address" };
+      }
+
+      // Check if user already exists
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser) {
+        return { success: false, error: "User already exists" };
+      }
+
+      // Hash password and create user account
+      const ctx = await auth.$context;
+      const hashedPassword = await ctx.password.hash(password);
+
+      const user = await prisma.user.create({
+        data: {
+          email,
+          name: email.split("@")[0],
+        },
+      });
+
+      await prisma.account.create({
+        data: {
+          userId: user.id,
+          providerId: "credential",
+          accountId: email,
+          password: hashedPassword,
+        },
+      });
+
+      // Clean up OTP from Redis
+      await redis.del(`otp:${email}`);
+      logger.info("ACCOUNT_CREATED_SUCCESSFULLY", { email, userId: user.id });
+
+      // Sign in the user and return token
+      return await AuthService.signIn(email, password);
+    } catch (error: any) {
+      const { message: errorMessage, name: errorName, stack: errorStack } = error || {};
+      logger.error("CREATE_ACCOUNT_ERROR", {
+        error: errorMessage || error,
+        errorName,
+        stack: errorStack,
+        email,
+      });
+      // Clean up partially created user if something went wrong
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (user) {
+        await prisma.user.delete({ where: { id: user.id } });
+      }
+      return {
+        success: false,
+        error: errorMessage || "Failed to create account",
+      };
+    }
+  },
 };

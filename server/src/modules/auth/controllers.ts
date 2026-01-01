@@ -68,6 +68,70 @@ export const signupController = async (req: Request, res: Response) => {
 };
 
 /**
+ * Controller to handle OTP verification (after OTP sent).
+ * Verifies the OTP without creating an account.
+ *
+ * @route POST /auth/verify-otp
+ * @param req - Express request object, expects `req.body.email`, `req.body.otp`
+ * @param res - Express response object
+ * @returns JSON response indicating if OTP is valid
+ */
+export const verifyOtpController = async (req: Request, res: Response) => {
+  try {
+    const { valid, errors } = checkValidationErrors(req);
+    if (!valid) return res.status(400).json({ success: false, errors });
+
+    const { email, otp } = req.body;
+    const result = await AuthService.verifyOtp(email, otp);
+
+    if (!result.success) {
+      return res.status(400).json({ success: false, message: result.error });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP verified successfully. You can now create your account.',
+    });
+  } catch (error) {
+    logger.error('VERIFY_OTP_CONTROLLER_ERROR', { error });
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+/**
+ * Controller to handle account creation with password (after OTP verified).
+ * Creates the user account and automatically signs them in.
+ *
+ * @route POST /auth/create-account
+ * @param req - Express request object, expects `req.body.email`, `req.body.password`
+ * @param res - Express response object
+ * @returns JSON response with user info and token, or error message
+ */
+export const createAccountController = async (req: Request, res: Response) => {
+  try {
+    const { valid, errors } = checkValidationErrors(req);
+    if (!valid) return res.status(400).json({ success: false, errors });
+
+    const { email, password } = req.body;
+    const result = await AuthService.createAccountWithPassword(email, password);
+
+    if (!result.success) {
+      return res.status(400).json({ success: false, message: result.error });
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Account created successfully.',
+      user: result.user,
+      token: result.token,
+    });
+  } catch (error) {
+    logger.error('CREATE_ACCOUNT_CONTROLLER_ERROR', { error });
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+/**
  * Controller to handle user sign-in with email and password.
  * Validates credentials and returns a session token on success.
  *
