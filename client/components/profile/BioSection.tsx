@@ -36,7 +36,7 @@ import { MUTED, PRIMARY } from "@/constants/theme";
  * - Comprehensive logging and error handling
  */
 export default function BioSection() {
-  const { profile, refetch } = useProfile();
+  const { profile, refetch, isEditable = true } = useProfile();
   const userId = useAuthStore((state) => state.userId);
 
   // Display data
@@ -110,6 +110,7 @@ export default function BioSection() {
         style={profileStyles.card}
         onPress={handleOpenModal}
         activeOpacity={0.7}
+        disabled={!isEditable}
       >
         <View style={[profileStyles.cardHeader, styles.headerNoChevron]}>
           <Ionicons name="document-text-outline" size={24} color={PRIMARY} />

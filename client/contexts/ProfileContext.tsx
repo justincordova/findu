@@ -33,6 +33,7 @@ export interface Profile {
 export interface ProfileContextValue {
   profile: Profile | null;
   refetch: () => Promise<void>;
+  isEditable?: boolean;
 }
 
 /**

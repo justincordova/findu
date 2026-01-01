@@ -11,6 +11,7 @@ import { useFocusEffect } from "@react-navigation/native";
 
 // Project imports
 import SwipeCard from "@/components/discover/SwipeCard";
+import UserProfileModal from "@/components/discover/UserProfileModal";
 import logger from "@/config/logger";
 import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
 import { sendLike } from "@/services/likesService";
@@ -55,6 +56,8 @@ export default function DiscoverScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
 
   // Store for tracking preference changes
   const { hardFiltersChanged, updateHardFilters, initializeHardFilters } = useDiscoverPreferencesStore();
@@ -240,6 +243,17 @@ export default function DiscoverScreen() {
     }
   }, [profiles, currentIndex]);
 
+  const handleViewProfile = useCallback((userId: string) => {
+    logger.debug("[discover] Opening profile modal", { userId });
+    setSelectedUserId(userId);
+    setShowProfileModal(true);
+  }, []);
+
+  const handleProfileModalDismiss = useCallback(() => {
+    logger.debug("[discover] Closing profile modal");
+    setShowProfileModal(false);
+  }, []);
+
   if (loading && !profiles.length) {
     return (
       <SafeAreaView style={styles.container}>
@@ -302,11 +316,19 @@ export default function DiscoverScreen() {
                 active={isTopCard}
                 onSwipeLeft={isTopCard ? handleSwipeLeft : () => {}}
                 onSwipeRight={isTopCard ? handleSwipeRight : () => {}}
+                onViewProfile={isTopCard ? () => handleViewProfile(profile.user_id) : undefined}
               />
             </View>
           );
         })}
       </View>
+
+      {/* Profile Modal */}
+      <UserProfileModal
+        visible={showProfileModal}
+        userId={selectedUserId}
+        onDismiss={handleProfileModalDismiss}
+      />
     </SafeAreaView>
   );
 }

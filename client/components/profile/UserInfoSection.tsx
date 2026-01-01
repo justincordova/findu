@@ -69,7 +69,7 @@ function calculateAge(birthdate: string | undefined): number | null {
 type DropdownKey = "gender" | "pronouns" | null;
 
 export default function UserInfoSection() {
-  const { profile, refetch } = useProfile();
+  const { profile, refetch, isEditable = true } = useProfile();
   const userId = useAuthStore((state) => state.userId);
 
   // Display data
@@ -320,6 +320,7 @@ export default function UserInfoSection() {
           onPress={handleUpdateAvatar}
           activeOpacity={0.7}
           style={styles.avatarContainer}
+          disabled={!isEditable}
         >
           {avatarUrl ? (
             <Image source={{ uri: avatarUrl }} style={styles.avatar} resizeMode="cover" />
@@ -331,7 +332,7 @@ export default function UserInfoSection() {
         </TouchableOpacity>
 
         {/* Info - Tap to edit */}
-        <TouchableOpacity onPress={handleOpenEditModal} activeOpacity={0.7} style={{ flex: 1 }}>
+        <TouchableOpacity onPress={handleOpenEditModal} activeOpacity={0.7} style={{ flex: 1 }} disabled={!isEditable}>
           {displayName ? (
             <Text style={styles.name}>{displayName}</Text>
           ) : null}

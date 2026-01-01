@@ -1,12 +1,11 @@
 // React core
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 // React Native
 import {
   Dimensions,
-  ImageBackground,
+  Pressable,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 
@@ -20,13 +19,19 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import MaskedView from "@react-native-masked-view/masked-view";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 
 // Project imports
 import { DANGER, SUCCESS } from "@/constants/theme";
 import { Profile } from "@/types/Profile";
+import ActionMenu from "@/components/shared/ActionMenu";
+import AlertModal from "@/components/shared/AlertModal";
+import PhotoGalleryCard from "@/components/discover/PhotoGalleryCard";
+import PhotoLightbox from "@/components/discover/PhotoLightbox";
+import { blockUser } from "@/services/blocksService";
+import logger from "@/config/logger";
 
 const { width, height } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.9;
@@ -58,6 +63,7 @@ interface SwipeCardProps {
   profile: Profile;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
+  onViewProfile?: () => void;
   active?: boolean;
 }
 
@@ -69,8 +75,11 @@ export default function SwipeCard({
   profile,
   onSwipeLeft,
   onSwipeRight,
+  onViewProfile,
   active = true,
 }: SwipeCardProps) {
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const context = useSharedValue({ x: 0, y: 0 });
@@ -143,101 +152,124 @@ export default function SwipeCard({
     ),
   }));
 
+  const handleBlockUser = async () => {
+    setShowBlockConfirm(false);
+    try {
+      const result = await blockUser(profile.user_id);
+      if (result.success) {
+        logger.info("User blocked from discover", { userId: profile.user_id });
+        onSwipeLeft();
+      } else {
+        logger.error("Failed to block user", { error: result.error });
+      }
+    } catch (err) {
+      logger.error("Unexpected error blocking user", {
+        userId: profile.user_id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
+  const calculateAge = (birthdate: string): number => {
+    const birth = new Date(birthdate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+  const age = calculateAge(profile.birthdate);
+  const photos = profile.photos || [profile.avatar_url];
+
   return (
-    <GestureDetector gesture={gesture}>
-      <Animated.View style={[styles.card, cardStyle]}>
-        <ImageBackground
-          source={{ uri: profile.avatar_url }}
-          style={styles.image}
-          imageStyle={{ borderRadius: 20 }}
-        >
-          <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.8)"]}
-            style={styles.gradient}
-          >
-            <View style={styles.infoContainer}>
-              <Text style={styles.name}>
-                {profile.name}, {new Date().getFullYear() - new Date(profile.birthdate).getFullYear()}
-              </Text>
-              <Text style={styles.bio} numberOfLines={2}>
-                {profile.bio}
-              </Text>
-            </View>
-          </LinearGradient>
+    <>
+      <GestureDetector gesture={gesture}>
+        <Animated.View style={[styles.cardWrapper, cardStyle]}>
+          <PhotoGalleryCard
+            photos={photos}
+            avatarUrl={profile.avatar_url}
+            onAvatarTap={() => setShowLightbox(true)}
+            isActive={active}
+            userName={profile.name}
+            age={age}
+            bio={profile.bio}
+          />
 
-          {/* Like Overlay */}
+          {/* Action Menu */}
+          <ActionMenu
+            options={[
+              {
+                label: "View Profile",
+                icon: "person-outline",
+                onPress: onViewProfile || (() => {}),
+              },
+              {
+                label: "Block User",
+                icon: "ban",
+                onPress: () => setShowBlockConfirm(true),
+                destructive: true,
+              },
+            ]}
+            style={styles.actionMenu}
+            iconColor="white"
+            iconSize={20}
+          />
+
+          {/* Like/Nope Overlays */}
           <Animated.View style={[styles.overlay, styles.likeOverlay, likeOpacity]}>
-            <GradientIcon 
-              name="heart" 
-              size={100} 
-              colors={[SUCCESS, "#22c55e"] as const} // Gradient from theme SUCCESS to darker green
+            <GradientIcon
+              name="heart"
+              size={100}
+              colors={[SUCCESS, "#22c55e"] as const}
             />
           </Animated.View>
 
-          {/* Nope Overlay */}
           <Animated.View style={[styles.overlay, styles.nopeOverlay, nopeOpacity]}>
-            <GradientIcon 
-              name="close" 
-              size={100} 
-              colors={[DANGER, "#dc2626"] as const} // Gradient from theme DANGER to darker red
+            <GradientIcon
+              name="close"
+              size={100}
+              colors={[DANGER, "#dc2626"] as const}
             />
           </Animated.View>
-        </ImageBackground>
-      </Animated.View>
-    </GestureDetector>
+        </Animated.View>
+      </GestureDetector>
+
+      {/* Lightbox for avatar */}
+      <PhotoLightbox
+        uri={profile.avatar_url}
+        visible={showLightbox}
+        onClose={() => setShowLightbox(false)}
+        isCircle={true}
+      />
+
+      {/* Block confirmation */}
+      <AlertModal
+        visible={showBlockConfirm}
+        title="Block User"
+        message="You won't see each other anymore. This can't be undone from here."
+        type="warning"
+        onConfirm={handleBlockUser}
+        onClose={() => setShowBlockConfirm(false)}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    borderRadius: 20,
-    backgroundColor: "white",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+  cardWrapper: {
     position: "absolute",
   },
-  image: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  gradient: {
+  actionMenu: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: "40%",
-    justifyContent: "flex-end",
-    padding: 20,
-    borderRadius: 20,
-  },
-  infoContainer: {
-    marginBottom: 20,
-  },
-  name: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 8,
-  },
-  bio: {
-    fontSize: 16,
-    color: "white",
-    opacity: 0.9,
+    top: 16,
+    right: 16,
+    zIndex: 10,
   },
   overlay: {
     position: "absolute",
     top: 40,
-    // Removed box styles
     transform: [{ rotate: "-15deg" }],
   },
   likeOverlay: {

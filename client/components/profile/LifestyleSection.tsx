@@ -41,7 +41,7 @@ import { Lifestyle } from "@/types/Lifestyle";
  * - Comprehensive logging and error handling
  */
 export default function LifestyleSection() {
-  const { profile, refetch } = useProfile();
+  const { profile, refetch, isEditable = true } = useProfile();
   const userId = useAuthStore((state) => state.userId);
   const { constants } = useConstantsStore();
 
@@ -203,6 +203,7 @@ export default function LifestyleSection() {
         style={profileStyles.card}
         onPress={handleOpenModal}
         activeOpacity={0.7}
+        disabled={!isEditable}
       >
         <View style={[profileStyles.cardHeader, { gap: 10 }]}>
           <Ionicons name="sparkles-outline" size={24} color={PRIMARY} />

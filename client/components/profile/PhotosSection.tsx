@@ -45,7 +45,7 @@ const CAROUSEL_HEIGHT = (CAROUSEL_WIDTH * 5) / 4; // Exact 4:5 aspect ratio
  * - Comprehensive logging and error handling
  */
 export default function PhotosSection() {
-  const { profile, refetch } = useProfile();
+  const { profile, refetch, isEditable = true } = useProfile();
   const userId = useAuthStore((state) => state.userId);
 
   const photos = useMemo(
@@ -72,6 +72,10 @@ export default function PhotosSection() {
    */
   const handleTapPhotoToReplace = useCallback(
     async (photoIndex: number) => {
+      if (!isEditable) {
+        return;
+      }
+
       if (!userId) {
         logger.error("[PhotosSection] User ID not found");
         Alert.alert("Error", "You must be logged in to update photos.");
@@ -156,7 +160,7 @@ export default function PhotosSection() {
         Alert.alert("Error", "Could not open image picker. Please try again.");
       }
     },
-    [userId, photos, refetch]
+    [userId, photos, refetch, isEditable]
   );
 
   // Empty state - don't show section if no photos
