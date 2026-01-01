@@ -8,6 +8,9 @@ import * as bcrypt from "bcrypt";
 import { AuthResult, PendingSignupResult } from "@/types/auth";
 
 const OTP_EXPIRATION = Number(process.env.OTP_EXPIRATION_SECONDS) || 600;
+const OTP_RATE_LIMIT_KEY = (email: string) => `otp_rate_limit:${email}`;
+const OTP_RETRY_DELAY_MS = 1000;
+const MAX_RETRIES = 3;
 
 /**
  * Service for handling OTP-related functionality, including sending OTPs
@@ -17,6 +20,7 @@ export const OTPService = {
   /**
    * Sends an OTP to a given email address for signup verification.
    * Validates if the user already exists, stores OTP in Redis, and sends an email.
+   * Implements retry logic with exponential backoff for email failures.
    *
    * @param email - Email address to send the OTP to (must be a .edu address)
    * @returns Promise resolving to a PendingSignupResult indicating success or error
@@ -33,21 +37,45 @@ export const OTPService = {
         return { success: false, error: "User already exists" };
       }
 
+      // Check rate limiting
+      const rateLimitKey = OTP_RATE_LIMIT_KEY(email);
+      const attemptCount = await redis.get(rateLimitKey);
+      if (attemptCount && parseInt(attemptCount) >= MAX_RETRIES) {
+        return {
+          success: false,
+          error: "Too many OTP requests. Please try again later."
+        };
+      }
+
       const otp = generateOTP();
       await redis.set(`otp:${email}`, otp, "EX", OTP_EXPIRATION);
 
-      // In development, just log the OTP to console
-      if (process.env.NODE_ENV === "development") {
-        logger.info("OTP_GENERATED_DEV_MODE", { email, otp });
-        console.log(`\n🔐 OTP for ${email}: ${otp}\n`);
-        return { success: true };
+      // Send OTP email with retry logic
+      let emailSuccess = false;
+      let emailError = "";
+      let delayMs = OTP_RETRY_DELAY_MS;
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        const { success, error } = await sendOTPEmail({ email, otp });
+        if (success) {
+          emailSuccess = true;
+          break;
+        }
+        emailError = error || "Failed to send OTP email";
+
+        if (attempt < MAX_RETRIES) {
+          logger.debug("OTP_SEND_RETRY", { email, attempt, nextDelayMs: delayMs });
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+          delayMs *= 2; // Exponential backoff
+        }
       }
 
-      // In production, send the email
-      const { success: emailSuccess, error: emailError } = await sendOTPEmail({ email, otp });
       if (!emailSuccess) {
         await redis.del(`otp:${email}`);
-        return { success: false, error: emailError || "Failed to send OTP email" };
+        // Increment rate limit counter
+        await redis.incr(rateLimitKey);
+        await redis.expire(rateLimitKey, 3600); // 1 hour cooldown
+        return { success: false, error: emailError };
       }
 
       logger.info("OTP_SENT", { email });
