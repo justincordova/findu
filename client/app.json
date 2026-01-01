@@ -8,6 +8,16 @@
     "scheme": "findu",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "deeplinks": {
+      "enabled": true,
+      "config": [
+        {
+          "scheme": "findu",
+          "host": "profile",
+          "path": "/:userId"
+        }
+      ]
+    },
     "ios": {
       "supportsTablet": true
     },
