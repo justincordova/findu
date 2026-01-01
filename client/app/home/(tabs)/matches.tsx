@@ -19,6 +19,7 @@ import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
 import { getMatches } from "@/services/matchesService";
 import ActionMenu from "@/components/shared/ActionMenu";
 import AlertModal from "@/components/shared/AlertModal";
+import { SkeletonCard, SkeletonGroup } from "@/components/shared/SkeletonLoader";
 import { blockUser } from "@/services/blocksService";
 import { MatchesAPI } from "@/api/matches";
 import { useAuthStore } from "@/store/authStore";
@@ -158,9 +159,14 @@ export default function MatchesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={PRIMARY} />
-      </View>
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.headerTitle}>Matches</Text>
+        <View style={styles.listContent}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </View>
+      </SafeAreaView>
     );
   }
 

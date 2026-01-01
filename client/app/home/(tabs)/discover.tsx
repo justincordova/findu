@@ -12,6 +12,7 @@ import { useFocusEffect } from "@react-navigation/native";
 // Project imports
 import SwipeCard from "@/components/discover/SwipeCard";
 import UserProfileModal from "@/components/discover/UserProfileModal";
+import { SkeletonCard } from "@/components/shared/SkeletonLoader";
 import logger from "@/config/logger";
 import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
 import { sendLike } from "@/services/likesService";
@@ -257,8 +258,20 @@ export default function DiscoverScreen() {
   if (loading && !profiles.length) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={PRIMARY} />
+        <View style={styles.header}>
+          <Pressable disabled={true} style={styles.headerButton}>
+            <Ionicons name="refresh" size={24} color={MUTED} />
+          </Pressable>
+          <Pressable disabled={true} style={styles.headerButton}>
+            <Ionicons name="flash" size={24} color={MUTED} />
+          </Pressable>
+        </View>
+        <View style={styles.cardsContainer}>
+          {Array.from({ length: 2 }).map((_, i) => (
+            <View key={i} style={styles.cardWrapper}>
+              <SkeletonCard />
+            </View>
+          ))}
         </View>
       </SafeAreaView>
     );
