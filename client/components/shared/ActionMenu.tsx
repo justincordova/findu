@@ -32,7 +32,11 @@ export default function ActionMenu({
   return (
     <>
       <Pressable
-        style={[styles.menuButton, style]}
+        style={({ pressed }) => [
+          styles.menuButton,
+          pressed && styles.menuButtonPressed,
+          style,
+        ]}
         onPress={() => setShowMenu(true)}
         accessible={true}
         accessibilityRole="button"
@@ -108,6 +112,9 @@ const styles = StyleSheet.create({
     minWidth: 44,
     minHeight: 44,
     borderRadius: 22,
+  },
+  menuButtonPressed: {
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   overlay: {
     flex: 1,
