@@ -20,6 +20,8 @@ import { getMatches } from "@/services/matchesService";
 import ActionMenu from "@/components/shared/ActionMenu";
 import AlertModal from "@/components/shared/AlertModal";
 import { blockUser } from "@/services/blocksService";
+import { MatchesAPI } from "@/api/matches";
+import { useAuthStore } from "@/store/authStore";
 import logger from "@/config/logger";
 
 // Types
@@ -48,7 +50,9 @@ export default function MatchesScreen() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [blockingUserId, setBlockingUserId] = useState<string | null>(null);
-  const [isBlockingInProgress, setIsBlockingInProgress] = useState(false);
+  const [unmatchingMatchId, setUnmatchingMatchId] = useState<string | null>(null);
+  const [isActionInProgress, setIsActionInProgress] = useState(false);
+  const { token } = useAuthStore();
 
   const fetchMatches = useCallback(async () => {
     setLoading(true);
@@ -63,7 +67,7 @@ export default function MatchesScreen() {
 
   const handleBlockUser = async (userId: string) => {
     setBlockingUserId(null);
-    setIsBlockingInProgress(true);
+    setIsActionInProgress(true);
     try {
       const result = await blockUser(userId);
       if (result.success) {
@@ -74,7 +78,26 @@ export default function MatchesScreen() {
         Alert.alert("Error", result.error || "Failed to block user");
       }
     } finally {
-      setIsBlockingInProgress(false);
+      setIsActionInProgress(false);
+    }
+  };
+
+  const handleUnmatch = async (matchId: string) => {
+    setUnmatchingMatchId(null);
+    setIsActionInProgress(true);
+    try {
+      if (!token) {
+        Alert.alert("Error", "Authentication token not found");
+        return;
+      }
+      await MatchesAPI.unmatch(token, matchId);
+      logger.info("Match removed", { matchId });
+      await fetchMatches();
+    } catch (error) {
+      logger.error("Failed to unmatch", { error });
+      Alert.alert("Error", "Failed to unmatch. Please try again.");
+    } finally {
+      setIsActionInProgress(false);
     }
   };
 
@@ -90,7 +113,7 @@ export default function MatchesScreen() {
           // TODO: Navigate to profile view when implemented
           logger.info("View match profile", { userId: item.otherUser.id });
         }}
-        disabled={isBlockingInProgress}
+        disabled={isActionInProgress}
       >
         <Image source={{ uri: item.otherUser.avatar_url }} style={styles.avatar} />
         <View style={styles.info}>
@@ -102,6 +125,12 @@ export default function MatchesScreen() {
       </TouchableOpacity>
       <ActionMenu
         options={[
+          {
+            label: "Unmatch",
+            icon: "x",
+            onPress: () => setUnmatchingMatchId(item.id),
+            destructive: true,
+          },
           {
             label: "Block User",
             icon: "ban",
@@ -138,12 +167,20 @@ export default function MatchesScreen() {
         />
       )}
       <AlertModal
-        visible={blockingUserId !== null && !isBlockingInProgress}
+        visible={unmatchingMatchId !== null && !isActionInProgress}
+        title="Unmatch?"
+        message="You will no longer be able to message this person. You can still see them in discover if you want to connect again."
+        type="warning"
+        onConfirm={() => handleUnmatch(unmatchingMatchId!)}
+        onClose={() => !isActionInProgress && setUnmatchingMatchId(null)}
+      />
+      <AlertModal
+        visible={blockingUserId !== null && !isActionInProgress}
         title="Block User"
         message="This person will be removed from your matches and you won't see each other anymore."
         type="warning"
         onConfirm={() => handleBlockUser(blockingUserId!)}
-        onClose={() => !isBlockingInProgress && setBlockingUserId(null)}
+        onClose={() => !isActionInProgress && setBlockingUserId(null)}
       />
     </SafeAreaView>
   );

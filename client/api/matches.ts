@@ -25,4 +25,19 @@ export const MatchesAPI = {
     });
     return handleResponse(res);
   },
+
+  /**
+   * Unmatch with a user by match ID
+   * Removes the match record from the database
+   * @param {string} token - Authentication token
+   * @param {string} matchId - ID of the match to delete
+   * @returns {Promise<any>}
+   */
+  unmatch: async (token: string, matchId: string) => {
+    const res = await fetch(`${API_BASE}/${matchId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return handleResponse(res);
+  },
 };
