@@ -17,7 +17,7 @@ interface MatchesState {
   isLoading: boolean;
   error: string | null;
   lastFetched: number | null;
-  pollingIntervalId: NodeJS.Timeout | null;
+  pollingIntervalId: number | null;
 
   // Actions
   fetchMatches: () => Promise<void>;
