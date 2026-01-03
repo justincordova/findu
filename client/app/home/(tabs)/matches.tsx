@@ -1,10 +1,10 @@
 // React core
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 // React Native
 import {
-  ActivityIndicator,
   Alert,
+  AppState,
   FlatList,
   Image,
   StyleSheet,
@@ -13,16 +13,17 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 
 // Project imports
-import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
-import { getMatches } from "@/services/matchesService";
+import { BACKGROUND, DARK, MUTED } from "@/constants/theme";
 import ActionMenu from "@/components/shared/ActionMenu";
 import AlertModal from "@/components/shared/AlertModal";
-import { SkeletonCard, SkeletonGroup } from "@/components/shared/SkeletonLoader";
+import { SkeletonCard } from "@/components/shared/SkeletonLoader";
 import { blockUser } from "@/services/blocksService";
 import { MatchesAPI } from "@/api/matches";
 import { useAuthStore } from "@/store/authStore";
+import { useMatchesStore } from "@/store/matchesStore";
 import logger from "@/config/logger";
 
 // Types
@@ -44,35 +45,54 @@ const AVATAR_MARGIN_RIGHT = 16;
 
 /**
  * Matches screen - displays list of current matches
- * Shows matched user profiles with match timestamps
+ * Auto-polls server every 30s for new matches when tab is visible
  */
-
 export default function MatchesScreen() {
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [blockingUserId, setBlockingUserId] = useState<string | null>(null);
-  const [unmatchingMatchId, setUnmatchingMatchId] = useState<string | null>(null);
-  const [isActionInProgress, setIsActionInProgress] = useState(false);
   const { token } = useAuthStore();
+  const { matches, isLoading, error, startPolling, stopPolling, removeMatch } = useMatchesStore();
 
-  const fetchMatches = useCallback(async () => {
-    setLoading(true);
-    const res = await getMatches();
-    if (res.success && res.data) {
-      setMatches(res.data);
+  const appStateRef = useRef(AppState.currentState);
+  const unmatchingMatchId = useRef<string | null>(null);
+  const blockingUserId = useRef<string | null>(null);
+  const isActionInProgress = useRef(false);
+
+  // Start polling when tab becomes visible
+  useFocusEffect(
+    useCallback(() => {
+      logger.debug("MatchesScreen: focused, starting polling");
+      startPolling();
+
+      // Subscribe to app state changes to stop polling when app is backgrounded
+      const subscription = AppState.addEventListener("change", handleAppStateChange);
+
+      return () => {
+        logger.debug("MatchesScreen: unfocused, stopping polling");
+        stopPolling();
+        subscription.remove();
+      };
+    }, [startPolling, stopPolling])
+  );
+
+  const handleAppStateChange = (state: string) => {
+    appStateRef.current = state;
+    if (state === "active") {
+      logger.debug("MatchesScreen: app active, resuming polling");
+      startPolling();
     } else {
-      Alert.alert("Error", "Failed to load matches.");
+      logger.debug("MatchesScreen: app inactive, pausing polling");
+      stopPolling();
     }
-    setLoading(false);
-  }, []);
+  };
 
   const handleBlockUser = async (userId: string) => {
-    setBlockingUserId(null);
-    setIsActionInProgress(true);
+    blockingUserId.current = null;
+    isActionInProgress.current = true;
 
     // Optimistically remove the match from the list
-    const updatedMatches = matches.filter(match => match.otherUser.id !== userId);
-    setMatches(updatedMatches);
+    const matchToRemove = matches.find((m) => m.otherUser.id === userId);
+    if (matchToRemove) {
+      removeMatch(matchToRemove.id);
+    }
 
     try {
       const result = await blockUser(userId);
@@ -80,55 +100,49 @@ export default function MatchesScreen() {
         logger.info("User blocked from matches", { userId });
       } else {
         logger.error("Failed to block user", { error: result.error });
-        // Restore the match if the action failed
-        await fetchMatches();
+        // Refetch to restore the match if the action failed
+        useMatchesStore.getState().fetchMatches();
         Alert.alert("Error", result.error || "Failed to block user");
       }
     } finally {
-      setIsActionInProgress(false);
+      isActionInProgress.current = false;
     }
   };
 
   const handleUnmatch = async (matchId: string) => {
-    setUnmatchingMatchId(null);
-    setIsActionInProgress(true);
+    unmatchingMatchId.current = null;
+    isActionInProgress.current = true;
 
     // Optimistically remove the match from the list
-    const updatedMatches = matches.filter(match => match.id !== matchId);
-    setMatches(updatedMatches);
+    removeMatch(matchId);
 
     try {
       if (!token) {
         Alert.alert("Error", "Authentication token not found");
-        // Restore the match if token is missing
-        await fetchMatches();
+        // Refetch to restore the match if token is missing
+        useMatchesStore.getState().fetchMatches();
         return;
       }
       await MatchesAPI.unmatch(token, matchId);
       logger.info("Match removed", { matchId });
     } catch (error) {
       logger.error("Failed to unmatch", { error });
-      // Restore the match if the action failed
-      await fetchMatches();
+      // Refetch to restore the match if the action failed
+      useMatchesStore.getState().fetchMatches();
       Alert.alert("Error", "Failed to unmatch. Please try again.");
     } finally {
-      setIsActionInProgress(false);
+      isActionInProgress.current = false;
     }
   };
-
-  useEffect(() => {
-    fetchMatches();
-  }, [fetchMatches]);
 
   const renderItem = ({ item }: { item: Match }) => (
     <View style={styles.matchItem}>
       <TouchableOpacity
         style={styles.matchContent}
         onPress={() => {
-          // TODO: Navigate to profile view when implemented
           logger.info("View match profile", { userId: item.otherUser.id });
         }}
-        disabled={isActionInProgress}
+        disabled={isActionInProgress.current}
       >
         <Image source={{ uri: item.otherUser.avatar_url }} style={styles.avatar} />
         <View style={styles.info}>
@@ -143,13 +157,17 @@ export default function MatchesScreen() {
           {
             label: "Unmatch",
             icon: "x",
-            onPress: () => setUnmatchingMatchId(item.id),
+            onPress: () => {
+              unmatchingMatchId.current = item.id;
+            },
             destructive: true,
           },
           {
             label: "Block User",
             icon: "ban",
-            onPress: () => setBlockingUserId(item.otherUser.id),
+            onPress: () => {
+              blockingUserId.current = item.otherUser.id;
+            },
             destructive: true,
           },
         ]}
@@ -157,7 +175,7 @@ export default function MatchesScreen() {
     </View>
   );
 
-  if (loading) {
+  if (isLoading && matches.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <Text style={styles.headerTitle}>Matches</Text>
@@ -187,20 +205,20 @@ export default function MatchesScreen() {
         />
       )}
       <AlertModal
-        visible={unmatchingMatchId !== null && !isActionInProgress}
+        visible={unmatchingMatchId.current !== null && !isActionInProgress.current}
         title="Unmatch?"
         message="You will no longer be able to message this person. You can still see them in discover if you want to connect again."
         type="warning"
-        onConfirm={() => handleUnmatch(unmatchingMatchId!)}
-        onClose={() => !isActionInProgress && setUnmatchingMatchId(null)}
+        onConfirm={() => handleUnmatch(unmatchingMatchId.current!)}
+        onClose={() => !isActionInProgress.current && (unmatchingMatchId.current = null)}
       />
       <AlertModal
-        visible={blockingUserId !== null && !isActionInProgress}
+        visible={blockingUserId.current !== null && !isActionInProgress.current}
         title="Block User"
         message="This person will be removed from your matches and you won't see each other anymore."
         type="warning"
-        onConfirm={() => handleBlockUser(blockingUserId!)}
-        onClose={() => !isActionInProgress && setBlockingUserId(null)}
+        onConfirm={() => handleBlockUser(blockingUserId.current!)}
+        onClose={() => !isActionInProgress.current && (blockingUserId.current = null)}
       />
     </SafeAreaView>
   );
