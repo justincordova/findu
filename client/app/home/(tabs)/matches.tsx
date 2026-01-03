@@ -1,5 +1,5 @@
 // React core
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 // React Native
 import {
@@ -14,16 +14,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
+import { MessageCircle } from "lucide-react-native";
 
 // Project imports
-import { BACKGROUND, DARK, MUTED } from "@/constants/theme";
+import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
 import ActionMenu from "@/components/shared/ActionMenu";
 import AlertModal from "@/components/shared/AlertModal";
+import UserProfileModal from "@/components/discover/UserProfileModal";
 import { SkeletonCard } from "@/components/shared/SkeletonLoader";
 import { blockUser } from "@/services/blocksService";
 import { MatchesAPI } from "@/api/matches";
 import { useAuthStore } from "@/store/authStore";
 import { useMatchesStore } from "@/store/matchesStore";
+import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
 
 // Types
@@ -50,6 +53,10 @@ const AVATAR_MARGIN_RIGHT = 16;
 export default function MatchesScreen() {
   const { token } = useAuthStore();
   const { matches, isLoading, error, startPolling, stopPolling, removeMatch } = useMatchesStore();
+
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   const appStateRef = useRef(AppState.currentState);
   const unmatchingMatchId = useRef<string | null>(null);
@@ -81,6 +88,24 @@ export default function MatchesScreen() {
     } else {
       logger.debug("MatchesScreen: app inactive, pausing polling");
       stopPolling();
+    }
+  };
+
+  const handleViewProfile = async (userId: string) => {
+    setLoadingProfile(true);
+    try {
+      const res = await profileApi.getProfile(userId);
+      if (res.success && res.data) {
+        setSelectedProfile(res.data);
+        setShowProfileModal(true);
+      } else {
+        Alert.alert("Error", "Failed to load profile");
+      }
+    } catch (error) {
+      logger.error("Failed to load profile", error);
+      Alert.alert("Error", "Failed to load profile");
+    } finally {
+      setLoadingProfile(false);
     }
   };
 
@@ -139,10 +164,8 @@ export default function MatchesScreen() {
     <View style={styles.matchItem}>
       <TouchableOpacity
         style={styles.matchContent}
-        onPress={() => {
-          logger.info("View match profile", { userId: item.otherUser.id });
-        }}
-        disabled={isActionInProgress.current}
+        onPress={() => handleViewProfile(item.otherUser.id)}
+        disabled={isActionInProgress.current || loadingProfile}
       >
         <Image source={{ uri: item.otherUser.avatar_url }} style={styles.avatar} />
         <View style={styles.info}>
@@ -152,6 +175,21 @@ export default function MatchesScreen() {
           </Text>
         </View>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.chatButton}
+        onPress={() => {
+          logger.info("Chat with match", { userId: item.otherUser.id });
+          // TODO: Navigate to chat with this user
+        }}
+        disabled={isActionInProgress.current}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={`Message ${item.otherUser.name}`}
+      >
+        <MessageCircle size={24} color={PRIMARY} />
+      </TouchableOpacity>
+
       <ActionMenu
         options={[
           {
@@ -220,6 +258,11 @@ export default function MatchesScreen() {
         onConfirm={() => handleBlockUser(blockingUserId.current!)}
         onClose={() => !isActionInProgress.current && (blockingUserId.current = null)}
       />
+      <UserProfileModal
+        visible={showProfileModal}
+        profile={selectedProfile}
+        onClose={() => setShowProfileModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -282,6 +325,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: MUTED,
     marginTop: 4,
+  },
+  chatButton: {
+    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    minWidth: 44,
+    minHeight: 44,
   },
   emptyText: {
     fontSize: 20,
