@@ -66,11 +66,17 @@ export default function RootLayout() {
   useEffect(() => {
     (async () => {
       logger.debug("Restoring session and loading constants");
-      await restoreSession();
-      // Load cached constants immediately for instant availability
-      await loadCachedConstantsFromStore();
-      // Fetch fresh constants in background
-      await fetchConstantsFromStore();
+      try {
+        await restoreSession();
+        // Load cached constants immediately for instant availability
+        await loadCachedConstantsFromStore();
+      } catch (error) {
+        logger.error("Failed to restore session or load cached constants", { error });
+      }
+      // Fetch fresh constants in background (don't await to avoid blocking startup)
+      fetchConstantsFromStore().catch((error) =>
+        logger.error("Failed to fetch fresh constants", { error })
+      );
     })();
   }, [restoreSession]);
 
