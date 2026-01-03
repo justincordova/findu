@@ -54,10 +54,10 @@ async function setupMatches() {
     try {
       const graceMatch = await prisma.matches.create({
         data: {
-          user1: graceLeeName === 'Grace Lee' && graceLeeUser.id < jac352User.id
+          user1: graceLeeUser.id < jac352User.id
             ? graceLeeUser.id
             : jac352User.id,
-          user2: graceLeeName === 'Grace Lee' && graceLeeUser.id < jac352User.id
+          user2: graceLeeUser.id < jac352User.id
             ? jac352User.id
             : graceLeeUser.id,
         },
