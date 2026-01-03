@@ -161,7 +161,11 @@ export const useConstantsStore = create<ConstantsState>((set, get) => {
 
         // Fall back to hardcoded constants
         logger.info("ConstantsStore: using fallback constants");
-        logAndSet({ constants: FALLBACK_CONSTANTS, isLoading: false });
+        logAndSet({
+          constants: FALLBACK_CONSTANTS,
+          isLoading: false,
+          error: "Server unavailable, using offline constants",
+        });
       }
     },
 
