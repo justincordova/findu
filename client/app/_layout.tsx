@@ -57,16 +57,22 @@ export default function RootLayout() {
   });
 
   const { isLoading, restoreSession } = useAuth();
-  const fetchConstants = useConstantsStore((state) => state.fetchConstants);
+  const { fetchConstants, loadCachedConstants } = useConstantsStore((state) => ({
+    fetchConstants: state.fetchConstants,
+    loadCachedConstants: state.loadCachedConstants,
+  }));
 
   // Initialize session and app state on first render
   useEffect(() => {
     (async () => {
-      logger.debug("Restoring session and fetching constants");
+      logger.debug("Restoring session and loading constants");
       await restoreSession();
+      // Load cached constants immediately for instant availability
+      await loadCachedConstants();
+      // Fetch fresh constants in background
       await fetchConstants();
     })();
-  }, [restoreSession, fetchConstants]);
+  }, [restoreSession, fetchConstants, loadCachedConstants]);
 
   // Hide splash screen once fonts are loaded and app is ready
   useEffect(() => {
