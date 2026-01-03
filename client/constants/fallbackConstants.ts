@@ -227,7 +227,7 @@ export const FALLBACK_CONSTANTS: Constants = {
     "Sociology",
     "Special Education",
     "Urban Studies",
-    "Womens Studies",
+    "Women's Studies",
     "American Studies",
     "Ancient Languages",
     "Classics",
