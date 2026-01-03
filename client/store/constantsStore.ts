@@ -55,6 +55,25 @@ export const useConstantsStore = create<ConstantsState>((set, get) => {
   };
 
   /**
+   * Validate that cached Constants have required structure
+   * @param {unknown} data - Data to validate
+   * @returns {boolean} True if data is valid Constants shape
+   */
+  const validateConstantsStructure = (data: unknown): data is Constants => {
+    if (!data || typeof data !== "object") return false;
+    const obj = data as Record<string, unknown>;
+    // Check for required top-level properties (all should be arrays)
+    return (
+      Array.isArray(obj.intents) &&
+      Array.isArray(obj.majors) &&
+      Array.isArray(obj.genderPreferences) &&
+      Array.isArray(obj.sexualOrientations) &&
+      Array.isArray(obj.pronouns) &&
+      Array.isArray(obj.lifestyleOptions)
+    );
+  };
+
+  /**
    * Load constants from AsyncStorage cache
    * @returns {Promise<Constants | null>} Cached constants or null
    */
@@ -62,8 +81,13 @@ export const useConstantsStore = create<ConstantsState>((set, get) => {
     try {
       const cached = await AsyncStorage.getItem(CONSTANTS_CACHE_KEY);
       if (cached) {
-        logger.debug("ConstantsStore: loaded from cache");
-        return JSON.parse(cached);
+        const parsed = JSON.parse(cached);
+        // Validate structure to ensure cache is compatible with current app version
+        if (validateConstantsStructure(parsed)) {
+          logger.debug("ConstantsStore: loaded from cache");
+          return parsed;
+        }
+        logger.warn("ConstantsStore: cached data has invalid structure, discarding");
       }
     } catch (error) {
       logger.error("ConstantsStore: cache read failed", error);
