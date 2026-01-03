@@ -94,13 +94,9 @@ export default function MatchesScreen() {
   const handleViewProfile = async (userId: string) => {
     setLoadingProfile(true);
     try {
-      const res = await profileApi.getProfile(userId);
-      if (res.success && res.data) {
-        setSelectedProfile(res.data);
-        setShowProfileModal(true);
-      } else {
-        Alert.alert("Error", "Failed to load profile");
-      }
+      const profileData = await profileApi.get(userId);
+      setSelectedProfile(profileData);
+      setShowProfileModal(true);
     } catch (error) {
       logger.error("Failed to load profile", error);
       Alert.alert("Error", "Failed to load profile");
