@@ -156,7 +156,7 @@ export default function MatchesScreen() {
         options={[
           {
             label: "Unmatch",
-            icon: "x",
+            icon: "close",
             onPress: () => {
               unmatchingMatchId.current = item.id;
             },
