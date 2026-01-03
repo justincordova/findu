@@ -26,6 +26,10 @@ import { useConstantsStore } from "@/store/constantsStore";
 // Prevent splash screen from auto hiding
 SplashScreen.preventAutoHideAsync();
 
+// Get store methods outside of component to avoid recreation
+const fetchConstantsFromStore = () => useConstantsStore.getState().fetchConstants();
+const loadCachedConstantsFromStore = () => useConstantsStore.getState().loadCachedConstants();
+
 // Constants
 const DEFAULT_FONT_FAMILY = "Inter_400Regular";
 const LOADING_INDICATOR_COLOR = "#007AFF";
@@ -57,10 +61,6 @@ export default function RootLayout() {
   });
 
   const { isLoading, restoreSession } = useAuth();
-  const { fetchConstants, loadCachedConstants } = useConstantsStore((state) => ({
-    fetchConstants: state.fetchConstants,
-    loadCachedConstants: state.loadCachedConstants,
-  }));
 
   // Initialize session and app state on first render
   useEffect(() => {
@@ -68,11 +68,11 @@ export default function RootLayout() {
       logger.debug("Restoring session and loading constants");
       await restoreSession();
       // Load cached constants immediately for instant availability
-      await loadCachedConstants();
+      await loadCachedConstantsFromStore();
       // Fetch fresh constants in background
-      await fetchConstants();
+      await fetchConstantsFromStore();
     })();
-  }, [restoreSession, fetchConstants, loadCachedConstants]);
+  }, [restoreSession]);
 
   // Hide splash screen once fonts are loaded and app is ready
   useEffect(() => {
