@@ -55,11 +55,11 @@ export default function MatchesScreen() {
 
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [unmatchingMatchId, setUnmatchingMatchId] = useState<string | null>(null);
+  const [blockingUserId, setBlockingUserId] = useState<string | null>(null);
+  const [isActionInProgress, setIsActionInProgress] = useState(false);
 
   const appStateRef = useRef(AppState.currentState);
-  const unmatchingMatchId = useRef<string | null>(null);
-  const blockingUserId = useRef<string | null>(null);
-  const isActionInProgress = useRef(false);
 
   // Start polling when tab becomes visible
   useFocusEffect(
@@ -95,8 +95,8 @@ export default function MatchesScreen() {
   };
 
   const handleBlockUser = async (userId: string) => {
-    blockingUserId.current = null;
-    isActionInProgress.current = true;
+    setBlockingUserId(null);
+    setIsActionInProgress(true);
 
     // Optimistically remove the match from the list
     const matchToRemove = matches.find((m) => m.otherUser.id === userId);
@@ -115,13 +115,13 @@ export default function MatchesScreen() {
         Alert.alert("Error", result.error || "Failed to block user");
       }
     } finally {
-      isActionInProgress.current = false;
+      setIsActionInProgress(false);
     }
   };
 
   const handleUnmatch = async (matchId: string) => {
-    unmatchingMatchId.current = null;
-    isActionInProgress.current = true;
+    setUnmatchingMatchId(null);
+    setIsActionInProgress(true);
 
     // Optimistically remove the match from the list
     removeMatch(matchId);
@@ -141,7 +141,7 @@ export default function MatchesScreen() {
       useMatchesStore.getState().fetchMatches();
       Alert.alert("Error", "Failed to unmatch. Please try again.");
     } finally {
-      isActionInProgress.current = false;
+      setIsActionInProgress(false);
     }
   };
 
@@ -150,7 +150,7 @@ export default function MatchesScreen() {
       <TouchableOpacity
         style={styles.matchContent}
         onPress={() => handleViewProfile(item.otherUser.id)}
-        disabled={isActionInProgress.current || showProfileModal}
+        disabled={isActionInProgress || showProfileModal}
       >
         <Image source={{ uri: item.otherUser.avatar_url }} style={styles.avatar} />
         <View style={styles.info}>
@@ -167,7 +167,7 @@ export default function MatchesScreen() {
           logger.info("Chat with match", { userId: item.otherUser.id });
           // TODO: Navigate to chat with this user
         }}
-        disabled={isActionInProgress.current}
+        disabled={isActionInProgress}
         accessible={true}
         accessibilityRole="button"
         accessibilityLabel={`Message ${item.otherUser.name}`}
@@ -181,7 +181,7 @@ export default function MatchesScreen() {
             label: "Unmatch",
             icon: "close",
             onPress: () => {
-              unmatchingMatchId.current = item.id;
+              setUnmatchingMatchId(item.id);
             },
             destructive: true,
           },
@@ -189,7 +189,7 @@ export default function MatchesScreen() {
             label: "Block User",
             icon: "ban",
             onPress: () => {
-              blockingUserId.current = item.otherUser.id;
+              setBlockingUserId(item.otherUser.id);
             },
             destructive: true,
           },
@@ -228,20 +228,20 @@ export default function MatchesScreen() {
         />
       )}
       <AlertModal
-        visible={unmatchingMatchId.current !== null && !isActionInProgress.current}
+        visible={unmatchingMatchId !== null && !isActionInProgress}
         title="Unmatch?"
         message="You will no longer be able to message this person. You can still see them in discover if you want to connect again."
         type="warning"
-        onConfirm={() => handleUnmatch(unmatchingMatchId.current!)}
-        onClose={() => !isActionInProgress.current && (unmatchingMatchId.current = null)}
+        onConfirm={() => handleUnmatch(unmatchingMatchId!)}
+        onClose={() => !isActionInProgress && setUnmatchingMatchId(null)}
       />
       <AlertModal
-        visible={blockingUserId.current !== null && !isActionInProgress.current}
+        visible={blockingUserId !== null && !isActionInProgress}
         title="Block User"
         message="This person will be removed from your matches and you won't see each other anymore."
         type="warning"
-        onConfirm={() => handleBlockUser(blockingUserId.current!)}
-        onClose={() => !isActionInProgress.current && (blockingUserId.current = null)}
+        onConfirm={() => handleBlockUser(blockingUserId!)}
+        onClose={() => !isActionInProgress && setBlockingUserId(null)}
       />
       {selectedUserId && (
         <UserProfileModal
