@@ -61,6 +61,17 @@ export default function MatchesScreen() {
 
   const appStateRef = useRef(AppState.currentState);
 
+  const handleAppStateChange = useCallback((state: AppState.AppStateStatus) => {
+    appStateRef.current = state;
+    if (state === "active") {
+      logger.debug("MatchesScreen: app active, resuming polling");
+      startPolling();
+    } else {
+      logger.debug("MatchesScreen: app inactive, pausing polling");
+      stopPolling();
+    }
+  }, [startPolling, stopPolling]);
+
   // Start polling when tab becomes visible
   useFocusEffect(
     useCallback(() => {
@@ -75,19 +86,8 @@ export default function MatchesScreen() {
         stopPolling();
         subscription.remove();
       };
-    }, [startPolling, stopPolling])
+    }, [startPolling, stopPolling, handleAppStateChange])
   );
-
-  const handleAppStateChange = (state: string) => {
-    appStateRef.current = state;
-    if (state === "active") {
-      logger.debug("MatchesScreen: app active, resuming polling");
-      startPolling();
-    } else {
-      logger.debug("MatchesScreen: app inactive, pausing polling");
-      stopPolling();
-    }
-  };
 
   const handleViewProfile = (userId: string) => {
     setSelectedUserId(userId);
