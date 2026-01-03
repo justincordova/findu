@@ -20,14 +20,12 @@
     "seed:uni": "ts-node -r tsconfig-paths/register src/scripts/seed/setupUniversities.ts",
     "cleanup:jac352": "ts-node -r tsconfig-paths/register src/scripts/seed/cleanupJac352.ts",
     "cleanup:users": "ts-node -r tsconfig-paths/register src/scripts/seed/cleanupSeed.ts",
-    "cleanup:all-likes-matches": "ts-node -r tsconfig-paths/register src/scripts/likes/cleanupLikesMatches.ts",
-    "cleanup:test-likes": "ts-node -r tsconfig-paths/register src/scripts/likes/cleanupTestData.ts",
+
+    "_comment_matches": "Match setup utilities",
+    "setup:matches": "ts-node -r tsconfig-paths/register src/scripts/matches/setupMatches.ts",
 
     "_comment_debug": "Debugging and inspection utilities",
     "getuser": "ts-node -r tsconfig-paths/register src/scripts/debug/getuser.ts",
-    "test:setup-likes": "ts-node -r tsconfig-paths/register src/scripts/likes/testLikes.ts",
-    "show:likes": "ts-node -r tsconfig-paths/register src/scripts/likes/showTestLikes.ts",
-    "check:matches": "ts-node -r tsconfig-paths/register src/scripts/debug/checkMatches.ts",
     "debug:discover": "ts-node -r tsconfig-paths/register src/scripts/debug/debugDiscover.ts"
   },
   "keywords": [],
