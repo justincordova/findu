@@ -26,7 +26,6 @@ import { blockUser } from "@/services/blocksService";
 import { MatchesAPI } from "@/api/matches";
 import { useAuthStore } from "@/store/authStore";
 import { useMatchesStore } from "@/store/matchesStore";
-import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
 
 // Types
@@ -55,8 +54,7 @@ export default function MatchesScreen() {
   const { matches, isLoading, error, startPolling, stopPolling, removeMatch } = useMatchesStore();
 
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<any>(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const appStateRef = useRef(AppState.currentState);
   const unmatchingMatchId = useRef<string | null>(null);
@@ -91,18 +89,9 @@ export default function MatchesScreen() {
     }
   };
 
-  const handleViewProfile = async (userId: string) => {
-    setLoadingProfile(true);
-    try {
-      const profileData = await profileApi.get(userId);
-      setSelectedProfile(profileData);
-      setShowProfileModal(true);
-    } catch (error) {
-      logger.error("Failed to load profile", error);
-      Alert.alert("Error", "Failed to load profile");
-    } finally {
-      setLoadingProfile(false);
-    }
+  const handleViewProfile = (userId: string) => {
+    setSelectedUserId(userId);
+    setShowProfileModal(true);
   };
 
   const handleBlockUser = async (userId: string) => {
@@ -161,7 +150,7 @@ export default function MatchesScreen() {
       <TouchableOpacity
         style={styles.matchContent}
         onPress={() => handleViewProfile(item.otherUser.id)}
-        disabled={isActionInProgress.current || loadingProfile}
+        disabled={isActionInProgress.current || showProfileModal}
       >
         <Image source={{ uri: item.otherUser.avatar_url }} style={styles.avatar} />
         <View style={styles.info}>
@@ -254,11 +243,13 @@ export default function MatchesScreen() {
         onConfirm={() => handleBlockUser(blockingUserId.current!)}
         onClose={() => !isActionInProgress.current && (blockingUserId.current = null)}
       />
-      <UserProfileModal
-        visible={showProfileModal}
-        profile={selectedProfile}
-        onClose={() => setShowProfileModal(false)}
-      />
+      {selectedUserId && (
+        <UserProfileModal
+          visible={showProfileModal}
+          userId={selectedUserId}
+          onDismiss={() => setShowProfileModal(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }
