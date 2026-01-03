@@ -23,7 +23,7 @@ export default function TabLayout() {
 
   // Prevent back navigation from home screens, but allow it if user is logged out
   useEffect(() => {
-    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+    return navigation.addListener("beforeRemove", (e) => {
       // Get current auth state from store (not from closure) to ensure we have latest value
       const { isLoggedIn } = useAuthStore.getState();
       // Allow navigation if user is not logged in (e.g., after signout)
@@ -33,8 +33,6 @@ export default function TabLayout() {
       // Prevent default behavior of leaving the screen
       e.preventDefault();
     });
-
-    return unsubscribe;
   }, [navigation]);
 
   return (
