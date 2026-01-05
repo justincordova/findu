@@ -11,6 +11,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  type AppStateStatus,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
@@ -62,10 +63,10 @@ export default function MatchesScreen() {
   const [isActionInProgress, setIsActionInProgress] = useState(false);
 
   const appStateRef = useRef(AppState.currentState);
-  const subscriptionRef = useRef<AppState.Subscription | null>(null);
+  const subscriptionRef = useRef<ReturnType<typeof AppState.addEventListener> | null>(null);
 
   const handleAppStateChange = useCallback(
-    (state: AppState.AppStateStatus) => {
+    (state: AppStateStatus) => {
       appStateRef.current = state;
       if (state === "active") {
         logger.debug("MatchesScreen: app active, resuming polling");
