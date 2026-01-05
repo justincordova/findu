@@ -190,6 +190,20 @@ export default function DiscoverScreen() {
   }, [fetchProfiles]);
 
   /**
+   * Cleanup animation on component unmount
+   * Prevents memory leaks and ensures animation stops if component is destroyed
+   */
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.stop();
+        logger.debug("[discover] Cleaned up animation on unmount");
+      }
+      refreshRotation.setValue(0);
+    };
+  }, [refreshRotation]);
+
+  /**
    * Handle refresh with rotation animation
    * Rotates the icon while fetching and completes on success
    */
