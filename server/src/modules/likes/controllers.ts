@@ -85,9 +85,9 @@ export const getReceivedLikes = async (req: Request, res: Response) => {
  */
 export const deleteLike = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { userId } = req.body; // ensure front-end passes userId for auth
+  const authenticatedUserId = (req as any).user?.id; // Use authenticated user, not body parameter
   try {
-    await LikesService.removeLike(id, userId);
+    await LikesService.removeLike(id, authenticatedUserId);
     return res.status(204).send();
   } catch (err: any) {
     if (err.message === "Like not found or unauthorized") {
