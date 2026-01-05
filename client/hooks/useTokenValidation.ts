@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "@/store/authStore";
 import * as AuthService from "@/services/authService";
@@ -14,13 +14,19 @@ import logger from "@/config/logger";
 export function useTokenValidation(): void {
   const router = useRouter();
   const { token, isLoggedIn } = useAuthStore();
+  const hasValidatedRef = useRef(false);
 
   useEffect(() => {
     async function validateToken() {
+      // Only validate once per component mount to prevent infinite loops
+      if (hasValidatedRef.current) {
+        return;
+      }
+      hasValidatedRef.current = true;
+
       // If not logged in, let navigation handle the redirect
       if (!isLoggedIn || !token) {
         logger.debug("Token validation: user not logged in");
-        router.replace("/");
         return;
       }
 

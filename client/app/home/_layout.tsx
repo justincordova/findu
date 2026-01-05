@@ -11,20 +11,15 @@ import { Compass, MessageCircle, User, Users } from "lucide-react-native";
 import CustomTabBar from "@/components/shared/CustomTabBar";
 import { PRIMARY } from "@/constants/theme";
 import { useAuthStore } from "@/store/authStore";
-import { useTokenValidation } from "@/hooks/useTokenValidation";
 
 /**
  * Home tab layout with bottom tab navigation
  * Manages navigation between: Discover, Matches, Messages, Profile
  * Prevents back navigation when logged in (sticky navigation)
- * Validates token on mount to ensure user session is still valid
  */
 
 export default function TabLayout() {
   const navigation = useNavigation();
-
-  // Validate token on mount - redirects to auth if invalid or expired
-  useTokenValidation();
 
   // Prevent back navigation from home screens, but allow it if user is logged out
   useEffect(() => {
