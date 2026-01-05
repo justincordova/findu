@@ -51,18 +51,21 @@ export default function SkeletonLoader({
     outputRange: [0.3, 0.7],
   });
 
+  const animatedStyle: any = {
+    height,
+    borderRadius,
+    opacity: animated ? opacity : 0.5,
+  };
+
+  if (typeof width === "string" && width.includes("%")) {
+    animatedStyle.width = width;
+  } else if (typeof width === "number") {
+    animatedStyle.width = width;
+  }
+
   return (
     <Animated.View
-      style={[
-        styles.skeleton,
-        {
-          width,
-          height,
-          borderRadius,
-          opacity: animated ? opacity : 0.5,
-        },
-        style,
-      ]}
+      style={[styles.skeleton, animatedStyle, style]}
     />
   );
 }
