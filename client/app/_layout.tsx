@@ -61,27 +61,30 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  const { isLoading, isLoggedIn, restoreSession } = useAuth();
+  const { isLoggedIn, restoreSession } = useAuth();
 
-  // Initialize session and app state on first render
+  // Initialize session and app state on first render (non-blocking)
   useEffect(() => {
-    (async () => {
-      logger.debug("Restoring session and loading constants");
-      try {
-        await restoreSession();
-        // Load cached constants immediately for instant availability
-        await loadCachedConstantsFromStore();
-      } catch (error) {
-        logger.error("Failed to restore session or load cached constants", { error });
-      }
-      // Fetch fresh constants in background (don't await to avoid blocking startup)
-      fetchConstantsFromStore().catch((error) =>
-        logger.error("Failed to fetch fresh constants", { error })
-      );
-    })();
+    logger.debug("Starting app initialization");
+
+    // Load cached constants immediately for instant availability
+    loadCachedConstantsFromStore().catch((error) =>
+      logger.error("Failed to load cached constants", { error })
+    );
+
+    // Restore session in background (non-blocking)
+    // App navigation routing handles unauthenticated users automatically
+    restoreSession().catch((error) =>
+      logger.error("Failed to restore session", { error })
+    );
+
+    // Fetch fresh constants in background (non-blocking)
+    fetchConstantsFromStore().catch((error) =>
+      logger.error("Failed to fetch fresh constants", { error })
+    );
   }, [restoreSession]);
 
-  // Hide splash screen once fonts are loaded and app is ready
+  // Hide splash screen once fonts are loaded
   useEffect(() => {
     if (fontsLoaded) {
       logger.debug("Fonts loaded, hiding splash screen");
@@ -89,8 +92,8 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  // Show loading until session is restored and fonts are loaded
-  if (isLoading || !fontsLoaded) {
+  // Show loading only until fonts are loaded
+  if (!fontsLoaded) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
         <View style={styles.loadingOverlay}>
