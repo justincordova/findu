@@ -61,7 +61,7 @@ export function initializeSocket(httpServer: HTTPServer) {
       matchIds: [],
     });
 
-    // Handle joining a match room
+    // Handle joining a conversation room
     socket.on("join_match", (matchId: string) => {
       try {
         socket.join(`match_${matchId}`);
@@ -71,16 +71,16 @@ export function initializeSocket(httpServer: HTTPServer) {
           user.matchIds.push(matchId);
         }
 
-        logger.info("USER_JOINED_MATCH", { userId, matchId, socketId: socket.id });
+        logger.info("USER_JOINED_CONVERSATION", { userId, matchId, socketId: socket.id });
 
-        // Notify other user in match that this user is online
+        // Notify other user in conversation that this user is online
         socket.to(`match_${matchId}`).emit("user_online", { userId });
       } catch (err) {
-        logger.error("Error in join_match handler", err);
+        logger.error("Error joining conversation", err);
       }
     });
 
-    // Handle leaving a match room
+    // Handle leaving a conversation room
     socket.on("leave_match", (matchId: string) => {
       try {
         socket.leave(`match_${matchId}`);
@@ -90,12 +90,12 @@ export function initializeSocket(httpServer: HTTPServer) {
           user.matchIds = user.matchIds.filter((id) => id !== matchId);
         }
 
-        logger.info("USER_LEFT_MATCH", { userId, matchId, socketId: socket.id });
+        logger.info("USER_LEFT_CONVERSATION", { userId, matchId, socketId: socket.id });
 
         // Notify other user that this user is offline
         socket.to(`match_${matchId}`).emit("user_offline", { userId });
       } catch (err) {
-        logger.error("Error in leave_match handler", err);
+        logger.error("Error leaving conversation", err);
       }
     });
 

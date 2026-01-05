@@ -6,10 +6,7 @@ import {
   Image,
   Pressable,
   Animated,
-  Menu,
-  MenuOptions,
-  MenuOption,
-  MenuTrigger,
+  Alert,
 } from "react-native";
 import { theme } from "@/constants/theme";
 import { ChatMessage } from "@/types/chat";
@@ -52,6 +49,29 @@ export function MessageBubble({
     });
   };
 
+  const handleLongPress = () => {
+    if (isOwnMessage) {
+      Alert.alert("Message Options", "", [
+        {
+          text: "Delete",
+          onPress: () => onDelete?.(message.id),
+          style: "destructive",
+        },
+        {
+          text: "Copy",
+          onPress: () => {
+            // Copy to clipboard functionality can be added here
+          },
+        },
+        {
+          text: "Cancel",
+          onPress: () => {},
+          style: "cancel",
+        },
+      ]);
+    }
+  };
+
   return (
     <View
       style={[
@@ -61,80 +81,52 @@ export function MessageBubble({
     >
       {!isOwnMessage && showAvatar && <View style={styles.avatarPlaceholder} />}
 
-      <Menu>
-        <MenuTrigger>
-          <Animated.View
+      <Animated.View
+        style={[
+          {
+            transform: [{ scale: pressAnim }],
+          },
+        ]}
+      >
+        <Pressable
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          onLongPress={handleLongPress}
+          style={[
+            styles.bubble,
+            isOwnMessage ? styles.ownBubble : styles.otherBubble,
+          ]}
+        >
+          {message.media_url && (
+            <Image
+              source={{ uri: message.media_url }}
+              style={styles.media}
+            />
+          )}
+
+          <Text
             style={[
-              {
-                transform: [{ scale: pressAnim }],
-              },
+              styles.messageText,
+              isOwnMessage ? styles.ownText : styles.otherText,
             ]}
           >
-            <Pressable
-              onPressIn={handlePressIn}
-              onPressOut={handlePressOut}
-              style={[
-                styles.bubble,
-                isOwnMessage ? styles.ownBubble : styles.otherBubble,
-              ]}
-            >
-              {message.media_url && (
-                <Image
-                  source={{ uri: message.media_url }}
-                  style={styles.media}
-                />
-              )}
+            {message.message}
+          </Text>
 
-              <Text
-                style={[
-                  styles.messageText,
-                  isOwnMessage ? styles.ownText : styles.otherText,
-                ]}
-              >
-                {message.message}
-              </Text>
+          {message.edited_at && (
+            <Text style={styles.editedLabel}>(edited)</Text>
+          )}
 
-              {message.edited_at && (
-                <Text style={styles.editedLabel}>(edited)</Text>
-              )}
-
-              <Text
-                style={[
-                  styles.timestamp,
-                  isOwnMessage ? styles.ownTimestamp : styles.otherTimestamp,
-                ]}
-              >
-                {formatTime(message.sent_at)}
-              </Text>
-            </Pressable>
-          </Animated.View>
-        </MenuTrigger>
-
-        {isOwnMessage && (
-          <MenuOptions
-            customStyles={{
-              optionsContainer: styles.menuContainer,
-            }}
+          <Text
+            style={[
+              styles.timestamp,
+              isOwnMessage ? styles.ownTimestamp : styles.otherTimestamp,
+            ]}
           >
-            <MenuOption
-              onSelect={() => onDelete?.(message.id)}
-              text="Delete"
-              customStyles={{
-                optionText: styles.menuDelete,
-              }}
-            />
-            <MenuOption
-              onSelect={() => {
-                /* Copy functionality */
-              }}
-              text="Copy"
-              customStyles={{
-                optionText: styles.menuOption,
-              }}
-            />
-          </MenuOptions>
-        )}
-      </Menu>
+            {formatTime(message.sent_at)}
+          </Text>
+        </Pressable>
+      </Animated.View>
 
       {isOwnMessage && (
         <View style={styles.receiptContainer}>
@@ -225,22 +217,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.colors.primary,
     fontWeight: "600",
-  },
-  menuContainer: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    paddingVertical: 4,
-  },
-  menuOption: {
-    color: theme.colors.text,
-    fontSize: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  menuDelete: {
-    color: theme.colors.error,
-    fontSize: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
   },
 });
