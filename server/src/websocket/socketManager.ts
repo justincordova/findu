@@ -74,7 +74,7 @@ export function initializeSocket(httpServer: HTTPServer) {
         logger.info("USER_JOINED_CONVERSATION", { userId, matchId, socketId: socket.id });
 
         // Notify other user in conversation that this user is online
-        socket.to(`match_${matchId}`).emit("user_online", { userId });
+        socket.to(`match_${matchId}`).emit("user_online", { matchId, userId });
       } catch (err) {
         logger.error("Error joining conversation", err);
       }
@@ -93,7 +93,7 @@ export function initializeSocket(httpServer: HTTPServer) {
         logger.info("USER_LEFT_CONVERSATION", { userId, matchId, socketId: socket.id });
 
         // Notify other user that this user is offline
-        socket.to(`match_${matchId}`).emit("user_offline", { userId });
+        socket.to(`match_${matchId}`).emit("user_offline", { matchId, userId });
       } catch (err) {
         logger.error("Error leaving conversation", err);
       }
@@ -106,15 +106,21 @@ export function initializeSocket(httpServer: HTTPServer) {
 
         logger.info("MESSAGE_SEND", { userId, matchId, messageType: message_type });
 
+        // Generate unique message ID (timestamp + random)
+        const messageId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
         // Broadcast to match room
         io.to(`match_${matchId}`).emit("message_received", {
-          id: Date.now().toString(), // Placeholder, will be replaced by DB id
-          matchId,
-          userId,
+          id: messageId,
+          match_id: matchId,
+          sender_id: userId,
           message,
+          is_read: false,
+          read_at: null,
           media_url,
           message_type: message_type || "TEXT",
           sent_at: new Date().toISOString(),
+          edited_at: null,
         });
       } catch (err) {
         logger.error("Error in message_send handler", err);
@@ -126,7 +132,7 @@ export function initializeSocket(httpServer: HTTPServer) {
       try {
         const { matchId } = data;
         logger.info("USER_TYPING", { userId, matchId });
-        socket.to(`match_${matchId}`).emit("user_typing", { userId });
+        socket.to(`match_${matchId}`).emit("user_typing", { matchId, userId });
       } catch (err) {
         logger.error("Error in typing handler", err);
       }
@@ -137,7 +143,7 @@ export function initializeSocket(httpServer: HTTPServer) {
       try {
         const { matchId } = data;
         logger.info("USER_STOP_TYPING", { userId, matchId });
-        socket.to(`match_${matchId}`).emit("user_stop_typing", { userId });
+        socket.to(`match_${matchId}`).emit("user_stop_typing", { matchId, userId });
       } catch (err) {
         logger.error("Error in stop_typing handler", err);
       }
@@ -150,7 +156,7 @@ export function initializeSocket(httpServer: HTTPServer) {
         logger.info("MARK_READ_REQUEST", { userId, matchId });
 
         await markMessagesAsRead(matchId, userId);
-        socket.to(`match_${matchId}`).emit("messages_read", { userId });
+        socket.to(`match_${matchId}`).emit("messages_read", { matchId, userId });
       } catch (err) {
         logger.error("Error marking messages as read", err);
       }
@@ -162,7 +168,7 @@ export function initializeSocket(httpServer: HTTPServer) {
         const user = userSockets.get(socket.id);
         if (user) {
           user.matchIds.forEach((matchId) => {
-            socket.to(`match_${matchId}`).emit("user_offline", { userId });
+            socket.to(`match_${matchId}`).emit("user_offline", { matchId, userId });
           });
         }
         userSockets.delete(socket.id);

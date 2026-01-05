@@ -44,20 +44,20 @@ export function initializeSocket(): Socket | null {
     // Receive message
     socket.on("message_received", (data: any) => {
       try {
-        const { matchId, userId, message, media_url, message_type, sent_at, id } = data;
+        const { match_id, sender_id, message, media_url, message_type, sent_at, id, is_read, read_at, edited_at } = data;
         const chatMessage: ChatMessage = {
           id,
-          match_id: matchId,
-          sender_id: userId,
+          match_id,
+          sender_id,
           message,
-          is_read: false,
-          read_at: null,
+          is_read,
+          read_at,
           sent_at,
-          edited_at: null,
+          edited_at,
           media_url,
           message_type: message_type || "TEXT",
         };
-        useChatStore.getState().addMessage(matchId, chatMessage);
+        useChatStore.getState().addMessage(match_id, chatMessage);
       } catch (error) {
         console.error("Error handling message_received event:", error);
       }
