@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { MessageCircle } from "lucide-react-native";
 
 // Project imports
@@ -50,6 +51,7 @@ const AVATAR_MARGIN_RIGHT = 16;
  * Auto-polls server every 30s for new matches when tab is visible
  */
 export default function MatchesScreen() {
+  const router = useRouter();
   const { token } = useAuthStore();
   const { matches, isLoading, startPolling, stopPolling, removeMatch } = useMatchesStore();
 
@@ -187,8 +189,14 @@ export default function MatchesScreen() {
       <TouchableOpacity
         style={styles.chatButton}
         onPress={() => {
-          logger.info("Chat with match", { userId: item.otherUser.id });
-          // TODO: Navigate to chat with this user
+          logger.info("Chat with match", { matchId: item.id, userId: item.otherUser.id });
+          router.push({
+            pathname: "/(app)/chat-detail",
+            params: {
+              matchId: item.id,
+              userName: item.otherUser.name,
+            },
+          });
         }}
         disabled={isActionInProgress}
         accessible={true}
