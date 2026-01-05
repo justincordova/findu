@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, StyleSheet, Text, View, Pressable, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { DANGER, DARK, MUTED } from '@/constants/theme';
+import { DANGER, DARK } from '@/constants/theme';
 
 interface ActionOption {
   label: string;

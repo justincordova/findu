@@ -51,7 +51,7 @@ const AVATAR_MARGIN_RIGHT = 16;
  */
 export default function MatchesScreen() {
   const { token } = useAuthStore();
-  const { matches, isLoading, error, startPolling, stopPolling, removeMatch } = useMatchesStore();
+  const { matches, isLoading, startPolling, stopPolling, removeMatch } = useMatchesStore();
 
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);

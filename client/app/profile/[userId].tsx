@@ -1,5 +1,5 @@
 // React core
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 
 // React Native
 import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
@@ -21,7 +21,6 @@ import { BACKGROUND, PRIMARY } from "@/constants/theme";
 export default function ProfileViewScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!userId) {
@@ -32,7 +31,6 @@ export default function ProfileViewScreen() {
     }
 
     logger.info("[profile] Loading profile", { userId });
-    setLoading(false);
   }, [userId, router]);
 
   if (!userId) {

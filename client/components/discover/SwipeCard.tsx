@@ -4,9 +4,7 @@ import { useMemo, useState } from "react";
 // React Native
 import {
   Dimensions,
-  Pressable,
   StyleSheet,
-  View,
 } from "react-native";
 
 // Third-party
@@ -32,9 +30,7 @@ import PhotoGalleryCard from "@/components/discover/PhotoGalleryCard";
 import { blockUser } from "@/services/blocksService";
 import logger from "@/config/logger";
 
-const { width, height } = Dimensions.get("window");
-const CARD_WIDTH = width * 0.9;
-const CARD_HEIGHT = height * 0.7;
+const { width } = Dimensions.get("window");
 const SWIPE_THRESHOLD = width * 0.3;
 
 interface GradientIconProps {

@@ -1,4 +1,4 @@
-import { Image, Modal, Pressable, StyleSheet, View, Dimensions } from "react-native";
+import { Image, Modal, Pressable, StyleSheet, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useAnimatedStyle,

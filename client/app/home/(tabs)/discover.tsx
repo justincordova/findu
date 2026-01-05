@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
 // React Native
-import { ActivityIndicator, Alert, Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
