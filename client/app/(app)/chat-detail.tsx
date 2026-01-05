@@ -12,11 +12,10 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
 import { useChatStore } from "@/store/chatStore";
-import { useAuthStore } from "@/store/authStore";
 import { MessageBubble } from "@/components/MessageBubble";
 import { MessageInput } from "@/components/MessageInput";
 import { SkeletonLoader } from "@/components/shared/SkeletonLoader";
-import * as chatAPI from "@/api/chats";
+import { ChatsAPI } from "@/api/chats";
 import {
   initializeSocket,
   joinMatch,
@@ -34,8 +33,6 @@ export default function ChatDetailScreen() {
     matchId: string;
     userName: string;
   };
-  const userId = useAuthStore((state) => state.user?.id);
-
   const {
     conversations,
     setCurrentMatch,
@@ -43,7 +40,6 @@ export default function ChatDetailScreen() {
     setLoading,
     addMessage,
     deleteMessage: deleteMessageStore,
-    setUserTyping,
   } = useChatStore();
 
   const conversation = conversations[matchId];
@@ -65,11 +61,11 @@ export default function ChatDetailScreen() {
     const fetchMessages = async () => {
       setLoading(matchId, true);
       try {
-        const messages = await chatAPI.getChatHistory(matchId, 50);
+        const messages = await ChatsAPI.getChatHistory(matchId, 50);
         setMessages(matchId, messages);
 
         // Mark as read
-        await chatAPI.markMessagesAsRead(matchId);
+        await ChatsAPI.markMessagesAsRead(matchId);
         markReadSocket(matchId);
       } catch (error) {
         console.error("Error fetching messages:", error);
@@ -87,12 +83,13 @@ export default function ChatDetailScreen() {
     return () => {
       leaveMatch(matchId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId]);
 
   const handleSendMessage = async (text: string, mediaUrl?: string) => {
     try {
       // Send via API (for persistence)
-      const message = await chatAPI.sendMessage(matchId, text, mediaUrl);
+      const message = await ChatsAPI.sendMessage(matchId, text, mediaUrl);
 
       // Emit via Socket.IO (for real-time delivery)
       sendMessageSocket(matchId, text, mediaUrl);
@@ -106,7 +103,7 @@ export default function ChatDetailScreen() {
 
   const handleDeleteMessage = async (messageId: string) => {
     try {
-      await chatAPI.deleteMessage(messageId);
+      await ChatsAPI.deleteMessage(messageId);
       deleteMessageStore(matchId, messageId);
     } catch (error) {
       console.error("Error deleting message:", error);
@@ -118,7 +115,7 @@ export default function ChatDetailScreen() {
 
     setLoadingMore(true);
     try {
-      const olderMessages = await chatAPI.getChatHistory(
+      const olderMessages = await ChatsAPI.getChatHistory(
         matchId,
         50,
         conversation.cursor
@@ -137,7 +134,7 @@ export default function ChatDetailScreen() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      const messages = await chatAPI.getChatHistory(matchId, 50);
+      const messages = await ChatsAPI.getChatHistory(matchId, 50);
       setMessages(matchId, messages);
     } catch (error) {
       console.error("Error refreshing messages:", error);
