@@ -77,75 +77,89 @@ export function MessageBubble({
   return (
     <View
       style={[
-        styles.container,
-        isOwnMessage ? styles.ownContainer : styles.otherContainer,
+        styles.messageWrapper,
+        isOwnMessage ? styles.ownWrapper : styles.otherWrapper,
       ]}
     >
-      {!isOwnMessage && showAvatar && <View style={styles.avatarPlaceholder} />}
-
-      <Animated.View
+      <View
         style={[
-          {
-            transform: [{ scale: pressAnim }],
-          },
+          styles.container,
+          isOwnMessage ? styles.ownContainer : styles.otherContainer,
         ]}
       >
-        <Pressable
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          onLongPress={handleLongPress}
+        {!isOwnMessage && showAvatar && <View style={styles.avatarPlaceholder} />}
+
+        <Animated.View
           style={[
-            styles.bubble,
-            isOwnMessage ? styles.ownBubble : styles.otherBubble,
+            {
+              transform: [{ scale: pressAnim }],
+            },
           ]}
         >
-          {message.media_url && (
-            <Image
-              source={{ uri: message.media_url }}
-              style={styles.media}
-            />
-          )}
-
-          <Text
+          <Pressable
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            onLongPress={handleLongPress}
             style={[
-              styles.messageText,
-              isOwnMessage ? styles.ownText : styles.otherText,
+              styles.bubble,
+              isOwnMessage ? styles.ownBubble : styles.otherBubble,
             ]}
           >
-            {message.message}
-          </Text>
+            {message.media_url && (
+              <Image
+                source={{ uri: message.media_url }}
+                style={styles.media}
+              />
+            )}
 
-          {message.edited_at && (
-            <Text style={styles.editedLabel}>(edited)</Text>
-          )}
+            <Text
+              style={[
+                styles.messageText,
+                isOwnMessage ? styles.ownText : styles.otherText,
+              ]}
+            >
+              {message.message}
+            </Text>
 
-          <Text
-            style={[
-              styles.timestamp,
-              isOwnMessage ? styles.ownTimestamp : styles.otherTimestamp,
-            ]}
-          >
-            {formatTime(message.sent_at)}
-          </Text>
-        </Pressable>
-      </Animated.View>
+            {message.edited_at && (
+              <Text style={styles.editedLabel}>(edited)</Text>
+            )}
+
+            <Text
+              style={[
+                styles.timestamp,
+                isOwnMessage ? styles.ownTimestamp : styles.otherTimestamp,
+              ]}
+            >
+              {formatTime(message.sent_at)}
+            </Text>
+          </Pressable>
+        </Animated.View>
+      </View>
 
       {isOwnMessage && isLatestOwnMessage && (
-        <View style={styles.receiptContainer}>
-          <Text style={styles.readReceipt}>
-            {message.is_read ? "Read" : "Sent"}
-          </Text>
-        </View>
+        <Text style={styles.readReceipt}>
+          {message.is_read ? "Read" : "Sent"}
+        </Text>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
+  messageWrapper: {
+    flexDirection: "column",
     marginVertical: 4,
     marginHorizontal: 12,
+  },
+  ownWrapper: {
+    alignItems: "flex-end",
+  },
+  otherWrapper: {
+    alignItems: "flex-start",
+  },
+  container: {
+    flexDirection: "row",
     alignItems: "flex-end",
   },
   ownContainer: {
@@ -209,15 +223,10 @@ const styles = StyleSheet.create({
   otherTimestamp: {
     color: theme.colors.textSecondary,
   },
-  receiptContainer: {
-    marginLeft: 6,
-    justifyContent: "center",
-    alignItems: "center",
-    minWidth: 20,
-  },
   readReceipt: {
     fontSize: 11,
     color: theme.colors.textSecondary,
     fontWeight: "500",
+    marginTop: 2,
   },
 });

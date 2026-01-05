@@ -47,7 +47,7 @@ export const useChatStore = create<ChatState>((set) => ({
 
   /**
    * Add a message to a conversation
-   * Appends message to the end of the messages array
+   * Appends message to the end of the messages array (prevents duplicates)
    * @param {string} matchId - The match ID for the conversation
    * @param {ChatMessage} message - The message to add
    */
@@ -55,6 +55,13 @@ export const useChatStore = create<ChatState>((set) => ({
     set((state) => {
       const conversation = state.conversations[matchId];
       if (!conversation) return state;
+
+      // Prevent duplicates - check if message with this ID already exists
+      const messageExists = conversation.messages.some((msg) => msg.id === message.id);
+      if (messageExists) {
+        logger.debug(`Chat: message ${message.id} already exists, skipping duplicate`);
+        return state;
+      }
 
       return {
         conversations: {
