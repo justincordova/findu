@@ -69,6 +69,19 @@ export const createMatchController = async (req: Request, res: Response) => {
 export const deleteMatchController = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const userId = (req as any).user.id;
+
+    const match = await matchesService.getMatchById(id);
+
+    if (!match) {
+      return res.status(404).json({ error: "Match not found" });
+    }
+
+    // Authorization check: User must be part of the match
+    if (match.user1 !== userId && match.user2 !== userId) {
+      return res.status(403).json({ error: "Not authorized to delete this match" });
+    }
+
     await matchesService.deleteMatch(id);
     res.json({ message: "Match deleted successfully" });
   } catch (error: any) {
@@ -83,9 +96,15 @@ export const deleteMatchController = async (req: Request, res: Response) => {
 export const areUsersMatchedController = async (req: Request, res: Response) => {
   try {
     const { user1Id, user2Id } = req.params;
+    const userId = (req as any).user.id;
 
     if (!user1Id || !user2Id) {
       return res.status(400).json({ error: "user1Id and user2Id are required" });
+    }
+
+    // Authorization check: User can only check if they are one of the users
+    if (userId !== user1Id && userId !== user2Id) {
+      return res.status(403).json({ error: "Not authorized to check this match" });
     }
 
     const matched = await matchesService.areUsersMatched(user1Id, user2Id);
