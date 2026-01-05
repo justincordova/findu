@@ -20,6 +20,7 @@ import Step9 from "@/components/profile-setup/Step9";
 import Step10 from "@/components/profile-setup/Step10";
 import { BACKGROUND, DARK, PRIMARY } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
+import { useTokenValidation } from "@/hooks/useTokenValidation";
 
 // Constants
 const STEPS = [
@@ -94,6 +95,9 @@ function isProfileComplete(data: any): boolean {
 export default function ProfileSetupStep() {
   const [currentStep, setCurrentStep] = useState<Step>("step1");
   const [isCurrentStepValid, setIsCurrentStepValid] = useState(false);
+
+  // Validate token on mount - redirects to auth if invalid or expired
+  useTokenValidation();
 
   // Access profile setup store
   const profileData = useProfileSetupStore((state) => state.data);
