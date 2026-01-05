@@ -47,31 +47,34 @@ export const updateProfile = async (
   profileData: Partial<Profile> = {}
 ): Promise<Profile | null> => {
   try {
-    const sanitized = sanitizeData(profileData);
+    return await prisma.$transaction(async (tx) => {
+      const existingProfile = await tx.profiles.findUnique({
+        where: { user_id: userId },
+      });
 
-    if (sanitized.birthdate)
-      sanitized.birthdate = new Date(sanitized.birthdate);
+      if (!existingProfile) {
+        logger.warn("PROFILE_NOT_FOUND_FOR_UPDATE", { userId });
+        return null;
+      }
 
-    const existingProfile = await prisma.profiles.findUnique({
-      where: { user_id: userId },
+      const sanitized = sanitizeData(profileData);
+
+      if (sanitized.birthdate)
+        sanitized.birthdate = new Date(sanitized.birthdate);
+
+      const updateData: any = { ...sanitized, updated_at: new Date() };
+      if ('lifestyle' in updateData && updateData.lifestyle === undefined) {
+        updateData.lifestyle = null;
+      }
+
+      const updatedProfile = await tx.profiles.update({
+        where: { user_id: userId },
+        data: updateData,
+      });
+
+      logger.info("PROFILE_UPDATED", { userId, data: sanitized });
+      return updatedProfile;
     });
-
-    if (!existingProfile) {
-      logger.warn("PROFILE_NOT_FOUND_FOR_UPDATE", { userId });
-      return null;
-    }
-
-    const updateData: any = { ...sanitized, updated_at: new Date() };
-    if ('lifestyle' in updateData && updateData.lifestyle === undefined) {
-      updateData.lifestyle = null;
-    }
-    const updatedProfile = await prisma.profiles.update({
-      where: { user_id: userId },
-      data: updateData,
-    });
-
-    logger.info("PROFILE_UPDATED", { userId, data: sanitized });
-    return updatedProfile;
   } catch (error) {
     logger.error("UPDATE_PROFILE_ERROR", { error, userId, profileData });
     throw error;
@@ -181,7 +184,7 @@ export const resolveUniversityAndCampuses = async (email: string) => {
 
     return { university, campuses };
   } catch (error) {
-    console.error("Error resolving university:", error);
+    logger.error("RESOLVE_UNIVERSITY_ERROR", { error });
     throw error;
   }
 };
