@@ -192,3 +192,95 @@ export function withTimeout<T>(
     ),
   ]);
 }
+
+/**
+ * Type guard to validate auth response structure
+ */
+export function isAuthResponse(data: unknown): data is { token: string; user: { id: string; email: string } } {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    typeof (data as any).token === "string" &&
+    typeof (data as any).user === "object" &&
+    typeof (data as any).user?.id === "string" &&
+    typeof (data as any).user?.email === "string"
+  );
+}
+
+/**
+ * Type guard to validate profile response structure
+ */
+export function isProfileResponse(data: unknown): data is {
+  user_id: string;
+  name: string;
+  photos?: any[];
+  bio?: string;
+} {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    typeof (data as any).user_id === "string" &&
+    typeof (data as any).name === "string"
+  );
+}
+
+/**
+ * Type guard to validate match response structure
+ */
+export function isMatchResponse(data: unknown): data is {
+  id: string;
+  user1: string;
+  user2: string;
+  created_at?: string;
+} {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    typeof (data as any).id === "string" &&
+    typeof (data as any).user1 === "string" &&
+    typeof (data as any).user2 === "string"
+  );
+}
+
+/**
+ * Type guard to validate discover feed response
+ */
+export function isDiscoverFeedResponse(data: unknown): data is {
+  profiles: any[];
+  total: number;
+} {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    Array.isArray((data as any).profiles) &&
+    typeof (data as any).total === "number"
+  );
+}
+
+/**
+ * Type guard to validate array response with items
+ */
+export function isArrayResponse<T>(data: unknown): data is T[] {
+  return Array.isArray(data);
+}
+
+/**
+ * Validate response data against type guard
+ * Throws APIError if validation fails
+ *
+ * @param data - Data to validate
+ * @param validator - Type guard function to validate data
+ * @param context - Context for error message
+ * @returns Validated data
+ * @throws APIError if validation fails
+ */
+export function validateResponse<T>(
+  data: unknown,
+  validator: (data: unknown) => data is T,
+  context: string = "response"
+): T {
+  if (!validator(data)) {
+    throw new APIError(400, `Invalid ${context} structure`);
+  }
+  return data;
+}
