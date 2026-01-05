@@ -92,9 +92,7 @@ export function isNetworkError(error: unknown): boolean {
   if (error instanceof TypeError) {
     return error.message.includes("network") ||
       error.message.includes("Failed to fetch") ||
-      error.message.includes("fetch failed")
-      ? true
-      : false;
+      error.message.includes("fetch failed");
   }
 
   return false;
@@ -280,4 +278,50 @@ export function validateResponse<T>(
     throw new APIError(400, `Invalid ${context} structure`);
   }
   return data;
+}
+
+/**
+ * Refresh token callback - can be set by auth service
+ * Called when a 401 response is detected and token needs refreshing
+ */
+let tokenRefreshCallback: (() => Promise<boolean>) | null = null;
+
+/**
+ * Set the token refresh callback (called by auth service during initialization)
+ * @param callback - Async function that refreshes the token and returns success status
+ */
+export function setTokenRefreshCallback(callback: () => Promise<boolean>): void {
+  tokenRefreshCallback = callback;
+}
+
+/**
+ * Wrapper for API calls that handles 401 responses with automatic token refresh
+ * If a 401 is received and a refresh callback is set, attempts to refresh the token
+ * and retry the request once. Falls back to throwing the error if refresh fails.
+ *
+ * @param apiFn - Async function that makes the API call
+ * @returns Result of successful API call
+ * @throws APIError if call fails or refresh fails
+ */
+export async function withTokenRefresh<T>(
+  apiFn: () => Promise<T>
+): Promise<T> {
+  try {
+    return await apiFn();
+  } catch (error) {
+    // If 401 and we have a refresh callback, try to refresh and retry
+    if (error instanceof APIError && error.statusCode === 401 && tokenRefreshCallback) {
+      try {
+        const refreshed = await tokenRefreshCallback();
+        if (refreshed) {
+          // Token was refreshed, retry the original call
+          return await apiFn();
+        }
+      } catch (refreshError) {
+        // Refresh failed, throw original error
+        throw error;
+      }
+    }
+    throw error;
+  }
 }

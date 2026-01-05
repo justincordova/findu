@@ -37,6 +37,13 @@ interface SignoutResponse {
   error?: string;
 }
 
+interface RefreshSessionResponse {
+  success: boolean;
+  token: string;
+  user: AuthUser;
+  error?: string;
+}
+
 export const AuthAPI = {
   sendOtp: async (email: string): Promise<SendOtpResponse> => {
     const res = await fetch(`${API_BASE}/send-otp`, {
@@ -82,5 +89,13 @@ export const AuthAPI = {
       headers: { Authorization: `Bearer ${token}` },
     });
     return handleResponse<SignoutResponse>(res);
+  },
+
+  refreshSession: async (token: string): Promise<RefreshSessionResponse> => {
+    const res = await fetch(`${API_BASE}/refresh-session`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return handleResponse<RefreshSessionResponse>(res);
   },
 };

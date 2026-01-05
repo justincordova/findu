@@ -1,4 +1,5 @@
 import { AuthAPI } from "@/api/auth";
+import { setTokenRefreshCallback, getErrorMessage } from "@/api/utils";
 import { useAuthStore } from "@/store/authStore";
 import { useMatchesStore } from "@/store/matchesStore";
 import { useDiscoverPreferencesStore } from "@/store/discoverPreferencesStore";
@@ -173,8 +174,44 @@ export async function signOut() {
 }
 
 /**
+ * Refresh the current access token using the refresh endpoint
+ * Called when a 401 response is detected on an API call
+ * Updates secure storage and auth store with the new token
+ * @returns {Promise<boolean>} True if refresh succeeded, false otherwise
+ */
+export async function refreshToken(): Promise<boolean> {
+  try {
+    const currentToken = await getSecureItem(ACCESS_TOKEN_KEY);
+    if (!currentToken) {
+      logger.warn("No token available to refresh");
+      return false;
+    }
+
+    const res = await AuthAPI.refreshSession(currentToken);
+
+    if (res?.success && res.token && res.user?.id) {
+      const { token, user } = res;
+      await saveSecureItem(ACCESS_TOKEN_KEY, token);
+
+      const { setToken } = useAuthStore.getState();
+      setToken(token);
+
+      logger.info("Token refreshed successfully", { userId: user.id });
+      return true;
+    }
+
+    logger.warn("Token refresh failed", { error: res?.error });
+    return false;
+  } catch (err) {
+    logger.error("AuthService: token refresh error", { error: getErrorMessage(err) });
+    return false;
+  }
+}
+
+/**
  * Restore user session from secure storage and validate token
  * Called on app startup to check if user is still authenticated
+ * Also initializes the token refresh callback for automatic 401 handling
  * @returns {Promise<void>}
  */
 export async function restoreSession() {
@@ -183,6 +220,9 @@ export async function restoreSession() {
   setLoading(true);
 
   try {
+    // Set up the token refresh callback for 401 interceptor
+    setTokenRefreshCallback(refreshToken);
+
     const token = await getSecureItem(ACCESS_TOKEN_KEY);
     if (!token) {
       logger.debug("No token found");
