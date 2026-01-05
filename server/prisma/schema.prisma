@@ -96,19 +96,18 @@ model blocks {
 }
 
 model chats {
-  id           String    @id @default(cuid())
-  match_id     String
-  sender_id    String
-  message      String
-  is_read      Boolean   @default(false)
-  sent_at      DateTime  @default(now())
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-  media_url    String?
-  message_type String    @default("TEXT") @db.VarChar(20)
-  read_at      DateTime?
-  matches      matches   @relation(fields: [match_id], references: [id], onDelete: Cascade)
-  users        User      @relation(fields: [sender_id], references: [id], onDelete: Cascade)
+  id              String    @id @default(cuid())
+  match_id        String
+  sender_id       String
+  message         String
+  is_read         Boolean   @default(false)
+  read_at         DateTime?
+  sent_at         DateTime  @default(now())
+  edited_at       DateTime?
+  media_url       String?
+  message_type    String    @default("TEXT") @db.VarChar(20)
+  matches         matches   @relation(fields: [match_id], references: [id], onDelete: Cascade)
+  users           User      @relation(fields: [sender_id], references: [id], onDelete: Cascade)
 
   @@index([match_id], map: "idx_chats_match")
   @@index([sender_id], map: "idx_chats_sender")
