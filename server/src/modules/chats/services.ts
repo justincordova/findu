@@ -41,7 +41,6 @@ export async function createMessage(
       read_at: true,
       sent_at: true,
       edited_at: true,
-      deleted_at: true,
       media_url: true,
       message_type: true,
     },
@@ -51,7 +50,7 @@ export async function createMessage(
 }
 
 /**
- * Fetch chat history with pagination (excludes soft-deleted messages)
+ * Fetch chat history with pagination (hard deletes only - deleted messages are completely removed)
  */
 export async function getChatHistory(
   query: ChatHistoryQuery
@@ -61,7 +60,6 @@ export async function getChatHistory(
   const messages = await prisma.chats.findMany({
     where: {
       match_id,
-      deleted_at: null,
     },
     select: {
       id: true,
@@ -72,7 +70,6 @@ export async function getChatHistory(
       read_at: true,
       sent_at: true,
       edited_at: true,
-      deleted_at: true,
       media_url: true,
       message_type: true,
     },
@@ -96,7 +93,6 @@ export async function markMessagesAsRead(
       match_id,
       sender_id: { not: user_id },
       is_read: false,
-      deleted_at: null,
     },
     data: {
       is_read: true,
@@ -108,12 +104,12 @@ export async function markMessagesAsRead(
 }
 
 /**
- * Soft delete a message (only sender can delete)
+ * Hard delete a message (only sender can delete)
  */
 export async function deleteMessage(
   message_id: string,
   user_id: string
-): Promise<MessageResponse> {
+): Promise<{ id: string }> {
   const message = await prisma.chats.findUnique({
     where: { id: message_id },
   });
@@ -122,25 +118,11 @@ export async function deleteMessage(
     throw new Error("Unauthorized: can only delete own messages");
   }
 
-  const updated = await prisma.chats.update({
+  await prisma.chats.delete({
     where: { id: message_id },
-    data: { deleted_at: new Date() },
-    select: {
-      id: true,
-      match_id: true,
-      sender_id: true,
-      message: true,
-      is_read: true,
-      read_at: true,
-      sent_at: true,
-      edited_at: true,
-      deleted_at: true,
-      media_url: true,
-      message_type: true,
-    },
   });
 
-  return formatMessage(updated);
+  return { id: message_id };
 }
 
 /**
@@ -174,7 +156,6 @@ export async function editMessage(
       read_at: true,
       sent_at: true,
       edited_at: true,
-      deleted_at: true,
       media_url: true,
       message_type: true,
     },
@@ -192,7 +173,6 @@ export async function getLatestMessage(
   const message = await prisma.chats.findFirst({
     where: {
       match_id,
-      deleted_at: null,
     },
     select: {
       id: true,
@@ -203,7 +183,6 @@ export async function getLatestMessage(
       read_at: true,
       sent_at: true,
       edited_at: true,
-      deleted_at: true,
       media_url: true,
       message_type: true,
     },
@@ -222,6 +201,5 @@ function formatMessage(msg: any): MessageResponse {
     sent_at: msg.sent_at.toISOString(),
     read_at: msg.read_at?.toISOString() || null,
     edited_at: msg.edited_at?.toISOString() || null,
-    deleted_at: msg.deleted_at?.toISOString() || null,
   };
 }
