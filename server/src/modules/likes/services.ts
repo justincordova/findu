@@ -9,16 +9,29 @@ const DAILY_SUPERLIKE_LIMIT = 5; // Adjust based on your business logic
 /**
  * Invalidate discover feed cache for a user
  * Called when likes or matches are created/deleted to ensure fresh results
+ * Uses SCAN to iterate through all matching keys and delete them
  * @param userId - User ID whose cache should be invalidated
  */
 const invalidateDiscoverCache = async (userId: string): Promise<void> => {
   try {
-    // Delete all discover:userId:* keys using SCAN pattern
     const pattern = `discover:${userId}:*`;
-    const cursor = await redis.scan(0, 'MATCH', pattern);
-    if (cursor[1].length > 0) {
-      await redis.del(...cursor[1]);
-      logger.debug('CACHE_INVALIDATED', { userId, keysDeleted: cursor[1].length });
+    let cursor = '0';
+    let totalDeleted = 0;
+
+    // Iterate through all batches using SCAN cursor
+    do {
+      const result = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = result[0]; // Next cursor
+      const keys = result[1]; // Keys in this batch
+
+      if (keys.length > 0) {
+        await redis.del(...keys);
+        totalDeleted += keys.length;
+      }
+    } while (cursor !== '0');
+
+    if (totalDeleted > 0) {
+      logger.debug('CACHE_INVALIDATED', { userId, keysDeleted: totalDeleted });
     }
   } catch (error) {
     // Log but don't throw - cache invalidation failure shouldn't break the operation
@@ -82,7 +95,7 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
     throw new Error('Cannot like blocked user');
   }
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     // Check for existing like to prevent duplicates
     const existingLike = await tx.likes.findFirst({
       where: {
@@ -99,7 +112,7 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
     if (data.is_superlike) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       const superlikesToday = await tx.likes.count({
         where: {
           from_user: data.from_user,
@@ -154,14 +167,21 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
       matched: !!reciprocal,
       matchId,
     };
-  }).finally(async () => {
-    // Invalidate discover cache for both users after like is created
-    // This ensures they see updated results (the user they liked is removed from their feed)
-    await Promise.all([
-      invalidateDiscoverCache(data.from_user),
-      invalidateDiscoverCache(data.to_user)
-    ]);
   });
+
+  // Invalidate discover cache for both users after successful transaction
+  // This ensures they see updated results (the user they liked is removed from their feed)
+  await Promise.all([
+    invalidateDiscoverCache(data.from_user),
+    invalidateDiscoverCache(data.to_user)
+  ]).catch(error => {
+    // Log but don't throw - cache invalidation failure shouldn't break the operation
+    logger.error('CACHE_INVALIDATION_FAILED', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  });
+
+  return result;
 };
 
 /**

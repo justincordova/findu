@@ -9,16 +9,29 @@ type PrismaTx = Prisma.TransactionClient;
 /**
  * Invalidate discover feed cache for a user
  * Called when matches are created/deleted to ensure fresh results
+ * Uses SCAN to iterate through all matching keys and delete them
  * @param userId - User ID whose cache should be invalidated
  */
 const invalidateDiscoverCache = async (userId: string): Promise<void> => {
   try {
-    // Delete all discover:userId:* keys using SCAN pattern
     const pattern = `discover:${userId}:*`;
-    const cursor = await redis.scan(0, 'MATCH', pattern);
-    if (cursor[1].length > 0) {
-      await redis.del(...cursor[1]);
-      logger.debug('CACHE_INVALIDATED', { userId, keysDeleted: cursor[1].length });
+    let cursor = '0';
+    let totalDeleted = 0;
+
+    // Iterate through all batches using SCAN cursor
+    do {
+      const result = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = result[0]; // Next cursor
+      const keys = result[1]; // Keys in this batch
+
+      if (keys.length > 0) {
+        await redis.del(...keys);
+        totalDeleted += keys.length;
+      }
+    } while (cursor !== '0');
+
+    if (totalDeleted > 0) {
+      logger.debug('CACHE_INVALIDATED', { userId, keysDeleted: totalDeleted });
     }
   } catch (error) {
     // Log but don't throw - cache invalidation failure shouldn't break the operation

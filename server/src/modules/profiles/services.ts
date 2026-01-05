@@ -63,9 +63,6 @@ export const updateProfile = async (
         sanitized.birthdate = new Date(sanitized.birthdate);
 
       const updateData: any = { ...sanitized, updated_at: new Date() };
-      if ('lifestyle' in updateData && updateData.lifestyle === undefined) {
-        updateData.lifestyle = null;
-      }
 
       const updatedProfile = await tx.profiles.update({
         where: { user_id: userId },

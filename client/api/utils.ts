@@ -143,31 +143,28 @@ export async function withRetry<T>(
   maxRetries: number = 3,
   initialDelayMs: number = 1000
 ): Promise<T> {
-  let lastError: unknown;
-
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error) {
-      lastError = error;
-
       // Don't retry non-retryable errors
       if (!isRetryableError(error)) {
         throw error;
       }
 
-      // Don't delay after final attempt
+      // Don't delay after final attempt - throw immediately
       if (attempt === maxRetries - 1) {
         throw error;
       }
 
-      // Exponential backoff with jitter
+      // Exponential backoff with jitter before next attempt
       const delayMs = initialDelayMs * Math.pow(2, attempt) + Math.random() * 1000;
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
 
-  throw lastError;
+  // Should never reach here, but TypeScript requires a return
+  throw new Error('Retry loop failed unexpectedly');
 }
 
 /**
