@@ -1,7 +1,6 @@
 import express, {
   Request,
   Response,
-  NextFunction,
   RequestHandler,
 } from "express";
 import cors from "@/middleware/security/corsConfig";
@@ -93,17 +92,6 @@ app.get("/health", (_req: Request, res: Response) => {
     environment: process.env.NODE_ENV || "development",
   });
 });
-
-// Development-only Error Test
-// Allows testing the global error handler
-if (process.env.NODE_ENV !== "production") {
-  app.get(
-    "/error-test",
-    (_req: Request, _res: Response, next: NextFunction) => {
-      next(new Error("Test error"));
-    }
-  );
-}
 
 // Custom Error Handling Middleware
 app.use(notFoundHandler);

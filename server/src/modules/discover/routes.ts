@@ -21,14 +21,6 @@ router.get(
   DiscoverController.getDiscoverFeed
 );
 
-// TODO: Remove or add admin-only protection to debug endpoint
-// Get eligible candidates for user (admin/debug endpoint)
-router.get(
-  "/candidates",
-  handleValidationErrors,
-  DiscoverController.getEligibleCandidates
-);
-
 // Calculate compatibility between two users
 router.post(
   "/compatibility", 
