@@ -1,4 +1,5 @@
   import { Request, Response } from "express";
+  import logger from "@/config/logger";
   import * as profileService from "./services";
 
   /**
@@ -10,7 +11,7 @@
       const profile = await profileService.createProfile(profileData);
       res.status(201).json(profile);
     } catch (error) {
-      console.error("Error creating profile:", error);
+      logger.error("Error creating profile", { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({ error: "Failed to create profile" });
     }
   };
@@ -33,7 +34,7 @@
       if (!updatedProfile) return res.status(404).json({ error: "Profile not found" });
       res.json(updatedProfile);
     } catch (error) {
-      console.error("Error updating profile:", error);
+      logger.error("Error updating profile", { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({ error: "Failed to update profile" });
     }
   };
@@ -49,7 +50,7 @@
       if (!profile) return res.status(404).json({ error: "Profile not found" });
       res.json(profile);
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      logger.error("Error fetching profile", { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({ error: "Failed to fetch profile" });
     }
   };
@@ -70,7 +71,7 @@
       await profileService.deleteProfile(userId);
       res.status(204).send();
     } catch (error) {
-      console.error("Error deleting profile:", error);
+      logger.error("Error deleting profile", { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({ error: "Failed to delete profile" });
     }
   };
@@ -89,7 +90,7 @@
 
       res.json(profile);
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      logger.error("Error fetching profile", { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({ error: "Failed to fetch profile" });
     }
   };
@@ -109,7 +110,7 @@
 
       res.json(result);
     } catch (error) {
-      console.error("Error mapping domain:", error);
+      logger.error("Error mapping domain", { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({ error: "Failed to map domain" });
     }
   };

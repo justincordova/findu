@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import logger from "@/config/logger";
 import * as matchesService from "./services";
 
 /**
@@ -10,7 +11,7 @@ export const getMatchesController = async (req: Request, res: Response) => {
     const matches = await matchesService.getMatchesForUser(userId);
     res.json(matches);
   } catch (error: any) {
-    console.error("Error fetching matches:", error);
+    logger.error("Error fetching matches", { error: error.message });
     res.status(500).json({ error: "Failed to fetch matches" });
   }
 };
@@ -36,7 +37,7 @@ export const getMatchByIdController = async (req: Request, res: Response) => {
 
     res.json(match);
   } catch (error: any) {
-    console.error("Error fetching match:", error);
+    logger.error("Error fetching match", { error: error.message });
     res.status(500).json({ error: "Failed to fetch match" });
   }
 };
@@ -55,7 +56,7 @@ export const createMatchController = async (req: Request, res: Response) => {
     const match = await matchesService.createMatch(user1, user2);
     res.status(201).json(match);
   } catch (error: any) {
-    console.error("Error creating match:", error);
+    logger.error("Error creating match", { error: error.message });
     if (error.message.includes("already exists")) {
       return res.status(400).json({ error: error.message });
     }
@@ -85,7 +86,7 @@ export const deleteMatchController = async (req: Request, res: Response) => {
     await matchesService.deleteMatch(id);
     res.json({ message: "Match deleted successfully" });
   } catch (error: any) {
-    console.error("Error deleting match:", error);
+    logger.error("Error deleting match", { error: error.message });
     res.status(500).json({ error: "Failed to delete match" });
   }
 };
@@ -110,7 +111,7 @@ export const areUsersMatchedController = async (req: Request, res: Response) => 
     const matched = await matchesService.areUsersMatched(user1Id, user2Id);
     res.json({ matched });
   } catch (error: any) {
-    console.error("Error checking match:", error);
+    logger.error("Error checking match", { error: error.message });
     res.status(500).json({ error: "Failed to check match" });
   }
 };

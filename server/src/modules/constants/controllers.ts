@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import logger from "@/config/logger";
 import * as constantsService from "./services";
 
 /**
@@ -10,7 +11,7 @@ export const getConstantsController = async (req: Request, res: Response) => {
     const constants = constantsService.getAllConstants();
     res.json(constants);
   } catch (error: any) {
-    console.error("Error fetching constants:", error);
+    logger.error("Error fetching constants", { error: error.message });
     res.status(500).json({ error: "Failed to fetch constants" });
   }
 };

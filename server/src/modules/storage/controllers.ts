@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import logger from "@/config/logger";
 import * as uploadsService from "./services";
 
 /**
@@ -35,7 +36,7 @@ export const generateUploadUrlController = async (req: Request, res: Response) =
       path: result.path,
     });
   } catch (error) {
-    console.error("Error generating signed upload URL:", error);
+    logger.error("Error generating signed upload URL", { error: error instanceof Error ? error.message : String(error) });
     return res.status(500).json({ error: "Failed to generate upload URL" });
   }
 };
