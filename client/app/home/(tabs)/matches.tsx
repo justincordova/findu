@@ -60,17 +60,21 @@ export default function MatchesScreen() {
   const [isActionInProgress, setIsActionInProgress] = useState(false);
 
   const appStateRef = useRef(AppState.currentState);
+  const subscriptionRef = useRef<AppState.Subscription | null>(null);
 
-  const handleAppStateChange = useCallback((state: AppState.AppStateStatus) => {
-    appStateRef.current = state;
-    if (state === "active") {
-      logger.debug("MatchesScreen: app active, resuming polling");
-      startPolling();
-    } else {
-      logger.debug("MatchesScreen: app inactive, pausing polling");
-      stopPolling();
-    }
-  }, [startPolling, stopPolling]);
+  const handleAppStateChange = useCallback(
+    (state: AppState.AppStateStatus) => {
+      appStateRef.current = state;
+      if (state === "active") {
+        logger.debug("MatchesScreen: app active, resuming polling");
+        startPolling();
+      } else {
+        logger.debug("MatchesScreen: app inactive, pausing polling");
+        stopPolling();
+      }
+    },
+    [startPolling, stopPolling]
+  );
 
   // Start polling when tab becomes visible
   useFocusEffect(
@@ -79,15 +83,34 @@ export default function MatchesScreen() {
       startPolling();
 
       // Subscribe to app state changes to stop polling when app is backgrounded
-      const subscription = AppState.addEventListener("change", handleAppStateChange);
+      // Reuse subscription ref to avoid duplicate listeners
+      if (subscriptionRef.current) {
+        subscriptionRef.current.remove();
+      }
+      subscriptionRef.current = AppState.addEventListener("change", handleAppStateChange);
 
       return () => {
         logger.debug("MatchesScreen: unfocused, stopping polling");
         stopPolling();
-        subscription.remove();
+        if (subscriptionRef.current) {
+          subscriptionRef.current.remove();
+          subscriptionRef.current = null;
+        }
       };
     }, [startPolling, stopPolling, handleAppStateChange])
   );
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      logger.debug("MatchesScreen: unmounting, cleaning up polling");
+      stopPolling();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.remove();
+        subscriptionRef.current = null;
+      }
+    };
+  }, [stopPolling]);
 
   const handleViewProfile = (userId: string) => {
     setSelectedUserId(userId);
