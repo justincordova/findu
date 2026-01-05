@@ -1201,7 +1201,6 @@ export interface ChatMessage {
   read_at: string | null;
   sent_at: string;
   edited_at: string | null;
-  deleted_at: string | null;
   media_url: string | null;
   message_type: "TEXT" | "IMAGE" | "VIDEO";
 }
@@ -1300,11 +1299,7 @@ export const useChatStore = create<ChatState>((set) => ({
           ...state.conversations,
           [matchId]: {
             ...conversation,
-            messages: conversation.messages.map((msg) =>
-              msg.id === messageId
-                ? { ...msg, deleted_at: new Date().toISOString() }
-                : msg
-            ),
+            messages: conversation.messages.filter((msg) => msg.id !== messageId),
           },
         },
       };
@@ -2132,15 +2127,6 @@ interface MessageBubbleProps {
 export function MessageBubble({ message, onDelete, onEdit }: MessageBubbleProps) {
   const userId = useAuthStore((state) => state.user?.id);
   const isOwnMessage = message.sender_id === userId;
-
-  if (message.deleted_at) {
-    return (
-      <View style={[styles.container, isOwnMessage ? styles.ownContainer : styles.otherContainer]}>
-        <Text style={styles.deletedText}>Message deleted</Text>
-      </View>
-    );
-  }
-
   const [showMenu, setShowMenu] = React.useState(false);
 
   return (
@@ -2220,11 +2206,6 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 8,
     marginBottom: 8,
-  },
-  deletedText: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    fontStyle: "italic",
   },
   editedText: {
     fontSize: 12,
