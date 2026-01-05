@@ -1,16 +1,6 @@
-const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/matches`;
+import { handleResponse } from "./utils";
 
-/**
- * Helper to extract JSON response and handle errors
- * @param {Response} res - Fetch response object
- * @returns {Promise<any>} Parsed JSON response or empty object
- * @throws {any} Throws response data if response is not ok
- */
-async function handleResponse(res: Response) {
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw data;
-  return data;
-}
+const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/matches`;
 
 export const MatchesAPI = {
   /**

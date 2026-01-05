@@ -1,3 +1,5 @@
+import { handleResponse } from "./utils";
+
 const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/auth`;
 
 // Type definitions for auth API responses
@@ -33,19 +35,6 @@ interface GetMeResponse {
 interface SignoutResponse {
   success: boolean;
   error?: string;
-}
-
-/**
- * Helper to extract JSON response and handle errors
- * @template T
- * @param {Response} res - Fetch response object
- * @returns {Promise<T>} Parsed JSON response or empty object
- * @throws {unknown} Throws response data if response is not ok
- */
-async function handleResponse<T = unknown>(res: Response): Promise<T> {
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw data;
-  return data as T;
 }
 
 export const AuthAPI = {

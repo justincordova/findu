@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Profile } from "@/types/Profile";
 import { useAuthStore } from "@/store/authStore";
+import { getErrorMessage } from "./utils";
 
 const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/profiles`;
 

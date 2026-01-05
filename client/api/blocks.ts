@@ -1,28 +1,10 @@
+import { handleResponse } from "./utils";
+
 if (!process.env.EXPO_PUBLIC_API_URL) {
   throw new Error('EXPO_PUBLIC_API_URL environment variable is required');
 }
 
 const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/blocks`;
-
-/**
- * Helper to extract JSON response and handle errors
- * @param {Response} res - Fetch response object
- * @returns {Promise<any>} Parsed JSON response or empty object
- * @throws {Error} Throws error with context preserved if response is not ok
- */
-async function handleResponse(res: Response) {
-  let data: any;
-  try {
-    data = await res.json();
-  } catch (parseError) {
-    throw new Error(`Failed to parse response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
-  }
-  if (!res.ok) {
-    const errorMessage = data?.message || data?.error || `HTTP ${res.status}`;
-    throw new Error(errorMessage);
-  }
-  return data;
-}
 
 export const BlocksAPI = {
   /**

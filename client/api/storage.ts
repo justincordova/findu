@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 import logger from "@/config/logger";
+import { getErrorMessage } from "./utils";
 
 const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/storage`;
 
