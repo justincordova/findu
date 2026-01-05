@@ -4,7 +4,7 @@
 
 **Goal:** Build a real-time messaging system for matched users with Socket.IO, message persistence, media uploads, and read receipts.
 
-**Architecture:** Prisma schema stores messages with soft deletes and edit tracking. Socket.IO broadcasts messages to match-specific rooms. Supabase Storage handles media in match folders. Client Zustand store syncs messages with pagination. UI shows chat list sorted by latest message, with read receipt indicators.
+**Architecture:** Prisma schema stores messages with hard deletes and edit tracking. Socket.IO broadcasts messages to match-specific rooms. Supabase Storage handles media in match folders. Client Zustand store syncs messages with pagination. UI shows chat list sorted by latest message, with read receipt indicators.
 
 **Tech Stack:** Socket.IO (Node.js), Prisma ORM, Supabase Storage, Zustand, React Native, TypeScript, Jest + supertest (backend tests)
 
@@ -12,6 +12,8 @@
 - Never include "Generated with Claude Code" or "Co-authored by Claude" footers in commit messages
 - Use the `frontend-design` skill for all frontend UI components
 - Add loading skeletons to chat list and messages screens (Task 10 and Task 11)
+- **Backend API patterns:** Follow the same architecture as existing modules (controllers → services → validators, all error handling via next(error))
+- **Client API patterns:** Follow the same patterns as existing API clients (axios interceptors for auth headers, consistent error handling, destructure response objects)
 
 ---
 
@@ -35,7 +37,6 @@ model chats {
   read_at         DateTime?
   sent_at         DateTime  @default(now())
   edited_at       DateTime?
-  deleted_at      DateTime?
   media_url       String?
   message_type    String    @default("TEXT") @db.VarChar(20)
   matches         matches   @relation(fields: [match_id], references: [id], onDelete: Cascade)
@@ -44,16 +45,15 @@ model chats {
   @@index([match_id], map: "idx_chats_match")
   @@index([sender_id], map: "idx_chats_sender")
   @@index([match_id, sent_at], map: "idx_chats_match_sent")
-  @@index([deleted_at], map: "idx_chats_deleted")
 }
 ```
 
 **Changes made:**
 - Remove `created_at` (use `sent_at` as source of truth)
 - Add `edited_at` to track message edits
-- Add `deleted_at` for soft deletes
+- Hard delete only (no `deleted_at` field - messages are completely removed when deleted)
 - Change `read_at` to nullable (only set when message is read)
-- Remove redundant `created_at` index, add `deleted_at` for filtering
+- Remove redundant `created_at` index
 
 **Step 2: Create migration**
 
@@ -130,7 +130,6 @@ export interface MessageResponse {
   read_at: string | null;
   sent_at: string;
   edited_at: string | null;
-  deleted_at: string | null;
   media_url: string | null;
   message_type: string;
 }
@@ -186,7 +185,7 @@ export async function createMessage(input: CreateMessageInput): Promise<MessageR
 }
 
 /**
- * Fetch chat history with pagination (excludes soft-deleted messages)
+ * Fetch chat history with pagination
  */
 export async function getChatHistory(query: ChatHistoryQuery): Promise<MessageResponse[]> {
   const { match_id, limit = 50, cursor } = query;
@@ -194,7 +193,6 @@ export async function getChatHistory(query: ChatHistoryQuery): Promise<MessageRe
   const messages = await prisma.chats.findMany({
     where: {
       match_id,
-      deleted_at: null,
     },
     select: {
       id: true,
@@ -205,7 +203,6 @@ export async function getChatHistory(query: ChatHistoryQuery): Promise<MessageRe
       read_at: true,
       sent_at: true,
       edited_at: true,
-      deleted_at: true,
       media_url: true,
       message_type: true,
     },
@@ -238,9 +235,9 @@ export async function markMessagesAsRead(match_id: string, user_id: string): Pro
 }
 
 /**
- * Soft delete a message (only sender can delete)
+ * Hard delete a message (only sender can delete)
  */
-export async function deleteMessage(message_id: string, user_id: string): Promise<MessageResponse> {
+export async function deleteMessage(message_id: string, user_id: string): Promise<{ id: string }> {
   const message = await prisma.chats.findUnique({
     where: { id: message_id },
   });
@@ -249,25 +246,11 @@ export async function deleteMessage(message_id: string, user_id: string): Promis
     throw new Error("Unauthorized: can only delete own messages");
   }
 
-  const updated = await prisma.chats.update({
+  await prisma.chats.delete({
     where: { id: message_id },
-    data: { deleted_at: new Date() },
-    select: {
-      id: true,
-      match_id: true,
-      sender_id: true,
-      message: true,
-      is_read: true,
-      read_at: true,
-      sent_at: true,
-      edited_at: true,
-      deleted_at: true,
-      media_url: true,
-      message_type: true,
-    },
   });
 
-  return formatMessage(updated);
+  return { id: message_id };
 }
 
 /**
@@ -317,7 +300,6 @@ export async function getLatestMessage(match_id: string): Promise<MessageRespons
   const message = await prisma.chats.findFirst({
     where: {
       match_id,
-      deleted_at: null,
     },
     select: {
       id: true,
@@ -328,7 +310,6 @@ export async function getLatestMessage(match_id: string): Promise<MessageRespons
       read_at: true,
       sent_at: true,
       edited_at: true,
-      deleted_at: true,
       media_url: true,
       message_type: true,
     },
@@ -347,7 +328,6 @@ function formatMessage(msg: any): MessageResponse {
     sent_at: msg.sent_at.toISOString(),
     read_at: msg.read_at?.toISOString() || null,
     edited_at: msg.edited_at?.toISOString() || null,
-    deleted_at: msg.deleted_at?.toISOString() || null,
   };
 }
 ```
