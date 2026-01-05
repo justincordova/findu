@@ -127,3 +127,68 @@ export function isRetryableError(error: unknown): boolean {
   const status = getErrorStatus(error);
   return status === 429 || status >= 500;
 }
+
+/**
+ * Retry a request with exponential backoff
+ * Automatically retries on network errors, 5xx, and 429 (rate limit)
+ *
+ * @param fn - Async function to retry
+ * @param maxRetries - Maximum number of retries (default: 3)
+ * @param initialDelayMs - Initial delay between retries in ms (default: 1000)
+ * @returns Result of successful function call
+ * @throws Error from last retry attempt if all fail
+ */
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  initialDelayMs: number = 1000
+): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      // Don't retry non-retryable errors
+      if (!isRetryableError(error)) {
+        throw error;
+      }
+
+      // Don't delay after final attempt
+      if (attempt === maxRetries - 1) {
+        throw error;
+      }
+
+      // Exponential backoff with jitter
+      const delayMs = initialDelayMs * Math.pow(2, attempt) + Math.random() * 1000;
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+
+  throw lastError;
+}
+
+/**
+ * Add timeout to any promise
+ * Rejects if promise doesn't resolve within specified time
+ *
+ * @param promise - Promise to wrap with timeout
+ * @param timeoutMs - Timeout in milliseconds (default: 30000)
+ * @returns Promise that resolves/rejects with original result or timeout error
+ */
+export function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number = 30000
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Request timeout after ${timeoutMs}ms`)),
+        timeoutMs
+      )
+    ),
+  ]);
+}
