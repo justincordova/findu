@@ -27,7 +27,7 @@ export function ChatListItem({ match, onDelete }: ChatListItemProps) {
 
   const handlePress = () => {
     router.push({
-      pathname: "/chat-detail",
+      pathname: "/(app)/chat-detail",
       params: { matchId: match.id, userName: otherUserName || "User" },
     });
   };

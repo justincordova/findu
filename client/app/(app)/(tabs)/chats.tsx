@@ -10,30 +10,35 @@ import { theme } from "@/constants/theme";
 import { useAuthStore } from "@/store/authStore";
 import { useMatchStore, MatchWithLastMessage } from "@/store/matchStore";
 import { ChatListItem } from "@/components/ChatListItem";
-import { SkeletonLoader } from "@/components/shared/SkeletonLoader";
+import { SkeletonGroup } from "@/components/shared/SkeletonLoader";
 import { ChatsAPI } from "@/api/chats";
+import { MatchesAPI } from "@/api/matches";
 
 export default function ChatsScreen() {
   const userId = useAuthStore((state) => state.user?.id);
+  const token = useAuthStore((state) => state.token);
   const { matches, setMatches } = useMatchStore();
-  const [loading, setLoading] = useState(false);
   const [isLoadingMatches, setIsLoadingMatches] = useState(false);
 
   // Load matches and fetch last message for each
   useEffect(() => {
     const loadMatches = async () => {
-      if (!userId) return;
+      if (!userId || !token) return;
 
       setIsLoadingMatches(true);
       try {
-        // TODO: Fetch matches from API
-        // For now, use empty array as placeholder
-        const matchesData: any[] = [];
+        // Fetch matches from API
+        const response = await MatchesAPI.getMatches(token);
+        if (!response.matches) {
+          setMatches([]);
+          return;
+        }
 
         const matchesWithMessages = await Promise.all(
-          matchesData.map(async (match) => {
+          response.matches.map(async (match: any) => {
             const lastMessage = await ChatsAPI.getLatestMessage(match.id);
             const otherUserId = match.user1 === userId ? match.user2 : match.user1;
+            const otherUser = match.otherUser || {};
 
             return {
               ...match,
@@ -46,6 +51,8 @@ export default function ChatsScreen() {
                   }
                 : undefined,
               otherUserId,
+              otherUserName: otherUser.name,
+              otherUserImage: otherUser.avatar_url,
             };
           })
         );
@@ -66,12 +73,11 @@ export default function ChatsScreen() {
         console.error("Error loading matches:", error);
       } finally {
         setIsLoadingMatches(false);
-        setLoading(false);
       }
     };
 
     loadMatches();
-  }, [userId, setMatches]);
+  }, [userId, token, setMatches]);
 
   const handleDeleteChat = async (matchId: string) => {
     try {
@@ -83,17 +89,15 @@ export default function ChatsScreen() {
   };
 
   // Loading state with skeleton
-  if (isLoadingMatches || loading) {
+  if (isLoadingMatches) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.headerContainer}>
           <Text style={styles.title}>Messages</Text>
         </View>
-        <SkeletonLoader
-          rows={6}
-          height={68}
-          containerStyle={styles.skeletonContainer}
-        />
+        <View style={styles.skeletonContainer}>
+          <SkeletonGroup count={6} spacing={0} />
+        </View>
       </SafeAreaView>
     );
   }

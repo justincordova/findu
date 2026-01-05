@@ -150,8 +150,9 @@ export default function ChatDetailScreen() {
           <Pressable onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={28} color={theme.colors.text} />
           </Pressable>
-          <Text style={styles.headerTitle}>{userName}</Text>
-          <View style={styles.headerPlaceholder} />
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>{userName}</Text>
+          </View>
         </View>
         <View style={styles.skeletonContainer}>
           <SkeletonGroup count={8} spacing={12} />
@@ -174,9 +175,6 @@ export default function ChatDetailScreen() {
             <Text style={styles.onlineStatus}>Active now</Text>
           )}
         </View>
-        <Pressable style={styles.headerIcon}>
-          <Ionicons name="call" size={24} color={theme.colors.primary} />
-        </Pressable>
       </View>
 
       {/* Messages List */}
@@ -259,12 +257,6 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     marginTop: 2,
     fontWeight: "500",
-  },
-  headerIcon: {
-    padding: 8,
-  },
-  headerPlaceholder: {
-    width: 40,
   },
   skeletonContainer: {
     paddingHorizontal: 12,
