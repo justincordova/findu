@@ -1,4 +1,5 @@
 import { Router } from "express";
+import multer from "multer";
 import { requireAuth } from "@/middleware/auth/requireAuth";
 import {
   sendMessage,
@@ -7,6 +8,7 @@ import {
   deleteMessageHandler,
   editMessageHandler,
   getLatestMessageHandler,
+  uploadMedia,
 } from "./controllers";
 import {
   validateCreateMessage,
@@ -16,6 +18,8 @@ import {
   validateMarkRead,
 } from "./validators";
 import { handleValidationErrors } from "@/middleware/error/handleValidationErrors";
+
+const upload = multer({ dest: "/tmp" });
 
 const router = Router();
 
@@ -40,7 +44,7 @@ router.patch("/:message_id", validateEditMessage, handleValidationErrors, editMe
 // Delete a message
 router.delete("/:message_id", validateDeleteMessage, handleValidationErrors, deleteMessageHandler);
 
-// Upload media (placeholder - will be fully implemented in Task 5)
-// router.post("/:match_id/upload", upload.single("file"), uploadMedia);
+// Upload media
+router.post("/:match_id/upload", upload.single("file"), uploadMedia);
 
 export default router;

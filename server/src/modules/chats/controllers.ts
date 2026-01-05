@@ -7,6 +7,8 @@ import {
   editMessage,
   getLatestMessage,
 } from "./services";
+import { uploadChatMedia } from "./storage";
+import prisma from "@/lib/prismaClient";
 
 /**
  * POST /api/chats/send
@@ -131,17 +133,26 @@ export async function deleteMessageHandler(req: Request, res: Response, next: Ne
  */
 export async function uploadMedia(req: Request, res: Response, next: NextFunction) {
   try {
+    const userId = (req as any).user?.id;
+    const { match_id } = req.params;
     const file = (req as any).file;
 
     if (!file) {
       return res.status(400).json({ error: "No file provided" });
     }
 
-    // Placeholder: will be implemented in Task 5
-    // For now, return a mock URL
-    const mockMediaUrl = `https://storage.example.com/${file.originalname}`;
+    // Verify user is in match
+    const match = await prisma.matches.findUnique({
+      where: { id: match_id },
+    });
 
-    res.json({ media_url: mockMediaUrl });
+    if (!match || (match.user1 !== userId && match.user2 !== userId)) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    const publicUrl = await uploadChatMedia(match_id, file.path, file.originalname);
+
+    res.json({ media_url: publicUrl });
   } catch (error) {
     next(error);
   }
