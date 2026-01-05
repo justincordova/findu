@@ -1,8 +1,33 @@
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prismaClient";
+import { redis } from "@/lib/redis";
+import logger from "@/config/logger";
 import { Match, MatchWithProfile } from "@/types/Match";
 
 type PrismaTx = Prisma.TransactionClient;
+
+/**
+ * Invalidate discover feed cache for a user
+ * Called when matches are created/deleted to ensure fresh results
+ * @param userId - User ID whose cache should be invalidated
+ */
+const invalidateDiscoverCache = async (userId: string): Promise<void> => {
+  try {
+    // Delete all discover:userId:* keys using SCAN pattern
+    const pattern = `discover:${userId}:*`;
+    const cursor = await redis.scan(0, 'MATCH', pattern);
+    if (cursor[1].length > 0) {
+      await redis.del(...cursor[1]);
+      logger.debug('CACHE_INVALIDATED', { userId, keysDeleted: cursor[1].length });
+    }
+  } catch (error) {
+    // Log but don't throw - cache invalidation failure shouldn't break the operation
+    logger.error('CACHE_INVALIDATION_FAILED', {
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
 
 /**
  * Creates a new match between two users, or returns the existing one.
@@ -145,9 +170,25 @@ export const deleteMatch = async (matchId: string): Promise<void> => {
     throw new Error('Match ID is required');
   }
 
+  // Fetch the match to get both user IDs before deletion
+  const match = await prisma.matches.findUnique({
+    where: { id: matchId },
+    select: { user1: true, user2: true }
+  });
+
+  if (!match) {
+    throw new Error('Match not found');
+  }
+
   await prisma.matches.delete({
     where: { id: matchId },
   });
+
+  // Invalidate discover cache for both users
+  await Promise.all([
+    invalidateDiscoverCache(match.user1),
+    invalidateDiscoverCache(match.user2)
+  ]);
 };
 
 /**

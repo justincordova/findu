@@ -1,9 +1,33 @@
 import prisma from "@/lib/prismaClient";
+import { redis } from "@/lib/redis";
+import logger from "@/config/logger";
 import { Like, CreateLikeResult } from "@/types/Like";
-
 
 // Configuration constants
 const DAILY_SUPERLIKE_LIMIT = 5; // Adjust based on your business logic
+
+/**
+ * Invalidate discover feed cache for a user
+ * Called when likes or matches are created/deleted to ensure fresh results
+ * @param userId - User ID whose cache should be invalidated
+ */
+const invalidateDiscoverCache = async (userId: string): Promise<void> => {
+  try {
+    // Delete all discover:userId:* keys using SCAN pattern
+    const pattern = `discover:${userId}:*`;
+    const cursor = await redis.scan(0, 'MATCH', pattern);
+    if (cursor[1].length > 0) {
+      await redis.del(...cursor[1]);
+      logger.debug('CACHE_INVALIDATED', { userId, keysDeleted: cursor[1].length });
+    }
+  } catch (error) {
+    // Log but don't throw - cache invalidation failure shouldn't break the operation
+    logger.error('CACHE_INVALIDATION_FAILED', {
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
 
 /**
  * Creates a like or superlike from one user to another.
@@ -105,9 +129,9 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
     // If reciprocal exists, the DB trigger will create the match automatically.
     // We can check if it exists, but since it's async, we might not see it immediately in this transaction unless the trigger runs synchronously (which it usually does in Postgres).
     // However, to be safe and consistent with the "trigger" approach, we shouldn't manually create it.
-    
+
     // We can still check for reciprocal to return 'matched: true' to the UI.
-    
+
     if (reciprocal) {
        // We can try to fetch the match if the trigger ran, or just assume it will be created.
        // The UI might expect a matchId.
@@ -130,6 +154,13 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
       matched: !!reciprocal,
       matchId,
     };
+  }).finally(async () => {
+    // Invalidate discover cache for both users after like is created
+    // This ensures they see updated results (the user they liked is removed from their feed)
+    await Promise.all([
+      invalidateDiscoverCache(data.from_user),
+      invalidateDiscoverCache(data.to_user)
+    ]);
   });
 };
 
@@ -305,9 +336,17 @@ export const removeLike = async (likeId: string, userId: string) => {
     throw new Error('Like not found or unauthorized');
   }
 
-  return prisma.likes.delete({
+  const deletedLike = await prisma.likes.delete({
     where: { id: likeId },
   });
+
+  // Invalidate discover cache for both users
+  await Promise.all([
+    invalidateDiscoverCache(userId),
+    invalidateDiscoverCache(deletedLike.to_user)
+  ]);
+
+  return deletedLike;
 };
 
 /**
