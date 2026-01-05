@@ -1,4 +1,4 @@
-export const GRADIENT = [
+const GRADIENT = [
   "#C9A9FF", // soft lavender
   "#B28DFF", // pastel purple
   "#A678FF", // mid lavender
@@ -6,15 +6,47 @@ export const GRADIENT = [
   "#B56DFF", // pinkish violet for balance
 ] as const;
 
-export const PRIMARY = "#A855F7";      // Main Purple (matches your button color)
-export const SECONDARY = "#E9D5FF";    // Soft Lavender (for borders, secondary UI)
-export const ACCENT = "#9333EA";       // Deeper Violet (strong CTA / highlights)
-export const DARK = "#1E1E1E";         // Neutral dark for text
-export const MUTED = "#6B7280";        // Muted gray for secondary text
-export const BACKGROUND = "#F5F3FF";   // Very light lavender background
-export const SUCCESS = "#4ADE80";      // Fresh green
-export const WARNING = "#FACC15";      // Warm yellow
-export const DANGER = "#EF4444";       // Softer red
+const PRIMARY = "#A855F7";      // Main Purple (matches your button color)
+const SECONDARY = "#E9D5FF";    // Soft Lavender (for borders, secondary UI)
+const ACCENT = "#9333EA";       // Deeper Violet (strong CTA / highlights)
+const DARK = "#1E1E1E";         // Neutral dark for text
+const MUTED = "#6B7280";        // Muted gray for secondary text
+const BACKGROUND = "#F5F3FF";   // Very light lavender background
+const SUCCESS = "#4ADE80";      // Fresh green
+const WARNING = "#FACC15";      // Warm yellow
+const DANGER = "#EF4444";       // Softer red
+
+export const theme = {
+  colors: {
+    primary: PRIMARY,
+    secondary: SECONDARY,
+    accent: ACCENT,
+    text: DARK,
+    textSecondary: MUTED,
+    background: BACKGROUND,
+    surface: SECONDARY,
+    error: DANGER,
+    success: SUCCESS,
+    warning: WARNING,
+    skeleton: "#E5E5EA",
+    border: "#D4D4D4",
+    messageOtherBg: "#E5E5EA",
+  },
+  gradient: GRADIENT,
+};
+
+// Export individual colors for backward compatibility
+export const { PRIMARY: EXPORTED_PRIMARY, SECONDARY: EXPORTED_SECONDARY, ACCENT: EXPORTED_ACCENT, DARK: EXPORTED_DARK, MUTED: EXPORTED_MUTED, BACKGROUND: EXPORTED_BACKGROUND, SUCCESS: EXPORTED_SUCCESS, WARNING: EXPORTED_WARNING, DANGER: EXPORTED_DANGER } = {
+  PRIMARY,
+  SECONDARY,
+  ACCENT,
+  DARK,
+  MUTED,
+  BACKGROUND,
+  SUCCESS,
+  WARNING,
+  DANGER,
+};
 
 // export const GRADIENT = [
 //   "#FFD4D9", // very light peach
