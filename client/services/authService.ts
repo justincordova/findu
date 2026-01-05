@@ -13,6 +13,11 @@ import logger from "@/config/logger";
 
 const ACCESS_TOKEN_KEY = "accessToken";
 
+// Track session restoration state to prevent race conditions
+// When true, indicates that restoreSession is already in progress
+let isRestoringSession = false;
+let restorationPromise: Promise<void> | null = null;
+
 /**
  * Reset all user-specific stores atomically
  * Called when user logs out to clear all cached user data
@@ -212,42 +217,57 @@ export async function refreshToken(): Promise<boolean> {
  * Restore user session from secure storage and validate token
  * Called on app startup to check if user is still authenticated
  * Also initializes the token refresh callback for automatic 401 handling
+ * Prevents race conditions by deduplicating concurrent calls
  * @returns {Promise<void>}
  */
 export async function restoreSession() {
-  const { setUserId, setEmail, setToken, setLoggedIn, setLoading, reset } =
-    useAuthStore.getState();
-  setLoading(true);
-
-  try {
-    // Set up the token refresh callback for 401 interceptor
-    setTokenRefreshCallback(refreshToken);
-
-    const token = await getSecureItem(ACCESS_TOKEN_KEY);
-    if (!token) {
-      logger.debug("No token found");
-      reset();
-      return;
-    }
-
-    const res = await AuthAPI.getMe(token);
-    const user = res?.user;
-
-    if (user?.id) {
-      setUserId(user.id);
-      setEmail(user.email || null);
-      setToken(token);
-      setLoggedIn(true);
-      logger.info("Session restored", { userId: user.id });
-    } else {
-      await deleteSecureItem(ACCESS_TOKEN_KEY);
-      reset();
-      logger.warn("Invalid or expired token cleared");
-    }
-  } catch (err) {
-    logger.error("AuthService: restore session error", { err });
-    reset();
-  } finally {
-    setLoading(false);
+  // If restoration is already in progress, return the existing promise
+  if (isRestoringSession && restorationPromise) {
+    logger.debug("Session restoration already in progress, returning existing promise");
+    return restorationPromise;
   }
+
+  // Create the restoration promise
+  restorationPromise = (async () => {
+    isRestoringSession = true;
+    const { setUserId, setEmail, setToken, setLoggedIn, setLoading, reset } =
+      useAuthStore.getState();
+    setLoading(true);
+
+    try {
+      // Set up the token refresh callback for 401 interceptor
+      setTokenRefreshCallback(refreshToken);
+
+      const token = await getSecureItem(ACCESS_TOKEN_KEY);
+      if (!token) {
+        logger.debug("No token found");
+        reset();
+        return;
+      }
+
+      const res = await AuthAPI.getMe(token);
+      const user = res?.user;
+
+      if (user?.id) {
+        setUserId(user.id);
+        setEmail(user.email || null);
+        setToken(token);
+        setLoggedIn(true);
+        logger.info("Session restored", { userId: user.id });
+      } else {
+        await deleteSecureItem(ACCESS_TOKEN_KEY);
+        reset();
+        logger.warn("Invalid or expired token cleared");
+      }
+    } catch (err) {
+      logger.error("AuthService: restore session error", { err });
+      reset();
+    } finally {
+      setLoading(false);
+      isRestoringSession = false;
+      restorationPromise = null;
+    }
+  })();
+
+  return restorationPromise;
 }
