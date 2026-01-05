@@ -1,0 +1,298 @@
+import React, { useEffect, useState } from "react";
+import {
+  StyleSheet,
+  View,
+  FlatList,
+  ActivityIndicator,
+  SafeAreaView,
+  Text,
+  Pressable,
+} from "react-native";
+import { useRoute, useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import { theme } from "@/constants/theme";
+import { useChatStore } from "@/store/chatStore";
+import { useAuthStore } from "@/store/authStore";
+import { MessageBubble } from "@/components/MessageBubble";
+import { MessageInput } from "@/components/MessageInput";
+import { SkeletonLoader } from "@/components/shared/SkeletonLoader";
+import * as chatAPI from "@/api/chats";
+import {
+  initializeSocket,
+  joinMatch,
+  leaveMatch,
+  sendMessageSocket,
+  markReadSocket,
+  emitTyping,
+  emitStopTyping,
+} from "@/utils/socketClient";
+
+export default function ChatDetailScreen() {
+  const route = useRoute();
+  const navigation = useNavigation();
+  const { matchId, userName } = route.params as {
+    matchId: string;
+    userName: string;
+  };
+  const userId = useAuthStore((state) => state.user?.id);
+
+  const {
+    conversations,
+    setCurrentMatch,
+    setMessages,
+    setLoading,
+    addMessage,
+    deleteMessage: deleteMessageStore,
+    setUserTyping,
+  } = useChatStore();
+
+  const conversation = conversations[matchId];
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Initialize Socket.IO and fetch initial messages
+  useEffect(() => {
+    // Set as current match
+    setCurrentMatch(matchId);
+
+    // Initialize Socket.IO
+    initializeSocket();
+
+    // Join match room
+    joinMatch(matchId);
+
+    // Fetch initial messages
+    const fetchMessages = async () => {
+      setLoading(matchId, true);
+      try {
+        const messages = await chatAPI.getChatHistory(matchId, 50);
+        setMessages(matchId, messages);
+
+        // Mark as read
+        await chatAPI.markMessagesAsRead(matchId);
+        markReadSocket(matchId);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      } finally {
+        setLoading(matchId, false);
+      }
+    };
+
+    fetchMessages();
+
+    // Set navigation title
+    navigation.setOptions({ title: userName });
+
+    // Cleanup on unmount
+    return () => {
+      leaveMatch(matchId);
+    };
+  }, [matchId]);
+
+  const handleSendMessage = async (text: string, mediaUrl?: string) => {
+    try {
+      // Send via API (for persistence)
+      const message = await chatAPI.sendMessage(matchId, text, mediaUrl);
+
+      // Emit via Socket.IO (for real-time delivery)
+      sendMessageSocket(matchId, text, mediaUrl);
+
+      // Add to store
+      addMessage(matchId, message);
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      await chatAPI.deleteMessage(messageId);
+      deleteMessageStore(matchId, messageId);
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    if (!conversation || !conversation.hasMore || loadingMore) return;
+
+    setLoadingMore(true);
+    try {
+      const olderMessages = await chatAPI.getChatHistory(
+        matchId,
+        50,
+        conversation.cursor
+      );
+
+      if (olderMessages.length > 0) {
+        setMessages(matchId, [...olderMessages, ...conversation.messages]);
+      }
+    } catch (error) {
+      console.error("Error loading more messages:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const messages = await chatAPI.getChatHistory(matchId, 50);
+      setMessages(matchId, messages);
+    } catch (error) {
+      console.error("Error refreshing messages:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  if (!conversation) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.headerContainer}>
+          <Pressable onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={28} color={theme.colors.text} />
+          </Pressable>
+          <Text style={styles.headerTitle}>{userName}</Text>
+          <View style={styles.headerPlaceholder} />
+        </View>
+        <SkeletonLoader
+          rows={8}
+          height={60}
+          containerStyle={styles.skeletonContainer}
+        />
+        <MessageInput disabled onSend={async () => {}} />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.headerContainer}>
+        <Pressable onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={28} color={theme.colors.text} />
+        </Pressable>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>{userName}</Text>
+          {conversation.otherUserOnline && (
+            <Text style={styles.onlineStatus}>Active now</Text>
+          )}
+        </View>
+        <Pressable style={styles.headerIcon}>
+          <Ionicons name="call" size={24} color={theme.colors.primary} />
+        </Pressable>
+      </View>
+
+      {/* Messages List */}
+      <FlatList
+        data={conversation.messages}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item, index }) => (
+          <MessageBubble
+            message={item}
+            onDelete={handleDeleteMessage}
+            showAvatar={
+              index === conversation.messages.length - 1 ||
+              conversation.messages[index + 1]?.sender_id !== item.sender_id
+            }
+          />
+        )}
+        inverted
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator color={theme.colors.primary} />
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          conversation.isLoading ? (
+            <View style={styles.emptyLoading}>
+              <ActivityIndicator color={theme.colors.primary} />
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No messages yet. Say hello!</Text>
+            </View>
+          )
+        }
+        scrollIndicatorInsets={{ right: 1 }}
+        showsVerticalScrollIndicator={false}
+      />
+
+      {/* Message Input */}
+      <MessageInput
+        onSend={handleSendMessage}
+        onTyping={() => emitTyping(matchId)}
+        onStopTyping={() => emitStopTyping(matchId)}
+        disabled={conversation.isLoading}
+        otherUserTyping={conversation.userTyping}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: theme.colors.border,
+    gap: 12,
+  },
+  headerContent: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: theme.colors.text,
+  },
+  onlineStatus: {
+    fontSize: 12,
+    color: theme.colors.primary,
+    marginTop: 2,
+    fontWeight: "500",
+  },
+  headerIcon: {
+    padding: 8,
+  },
+  headerPlaceholder: {
+    width: 40,
+  },
+  skeletonContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  emptyLoading: {
+    paddingVertical: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    fontStyle: "italic",
+  },
+  loadingMore: {
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+});
