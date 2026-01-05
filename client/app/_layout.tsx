@@ -19,6 +19,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Project imports
 import DevButton from "@/components/shared/DevButton";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import logger from "@/config/logger";
 import { useAuth } from "@/hooks/useAuth";
 import { useConstantsStore } from "@/store/constantsStore";
@@ -89,49 +90,51 @@ export default function RootLayout() {
   }, [fontsLoaded]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { flex: 1 },
-        }}
-      >
-        <Stack.Screen
-          name="index"
-          options={{
-            gestureEnabled: false,
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { flex: 1 },
           }}
-        />
-        <Stack.Screen
-          name="auth/index"
-          options={{
-            gestureEnabled: false,
-          }}
-        />
-        <Stack.Screen
-          name="home"
-          options={{
-            gestureEnabled: false,
-            headerBackVisible: false,
-          }}
-        />
+        >
+          <Stack.Screen
+            name="index"
+            options={{
+              gestureEnabled: false,
+            }}
+          />
+          <Stack.Screen
+            name="auth/index"
+            options={{
+              gestureEnabled: false,
+            }}
+          />
+          <Stack.Screen
+            name="home"
+            options={{
+              gestureEnabled: false,
+              headerBackVisible: false,
+            }}
+          />
 
-      </Stack>
+        </Stack>
 
-      {/* Loading overlay shown during font/session initialization */}
-      {(isLoading || !fontsLoaded) && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={LOADING_INDICATOR_COLOR} />
-        </View>
-      )}
+        {/* Loading overlay shown during font/session initialization */}
+        {(isLoading || !fontsLoaded) && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color={LOADING_INDICATOR_COLOR} />
+          </View>
+        )}
 
-      {/* Development navigation shortcut (only in dev builds) */}
-      {__DEV__ && (
-        <View style={{ position: "absolute", top: DEV_BUTTON_TOP, right: DEV_BUTTON_RIGHT }}>
-          <DevButton route={DEV_BUTTON_ROUTE} />
-        </View>
-      )}
-    </GestureHandlerRootView>
+        {/* Development navigation shortcut (only in dev builds) */}
+        {__DEV__ && (
+          <View style={{ position: "absolute", top: DEV_BUTTON_TOP, right: DEV_BUTTON_RIGHT }}>
+            <DevButton route={DEV_BUTTON_ROUTE} />
+          </View>
+        )}
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
 
