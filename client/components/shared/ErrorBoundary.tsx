@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
-import { PRIMARY, BACKGROUND, DANGER, TEXT_PRIMARY, TEXT_SECONDARY } from '@/constants/theme';
+import { theme } from '@/constants/theme';
 
 interface Props {
   children: React.ReactNode;
@@ -82,7 +82,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BACKGROUND,
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -99,18 +99,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '600',
-    color: TEXT_PRIMARY,
+    color: theme.colors.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   message: {
     fontSize: 16,
-    color: TEXT_SECONDARY,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
   debugSection: {
-    backgroundColor: DANGER,
+    backgroundColor: theme.colors.error,
     borderRadius: 8,
     padding: 12,
     marginBottom: 20,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Courier New',
   },
   button: {
-    backgroundColor: PRIMARY,
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 24,
