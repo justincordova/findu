@@ -59,6 +59,7 @@ export default function DiscoverScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [isProcessingSwipe, setIsProcessingSwipe] = useState(false);
 
   // Store for tracking preference changes
   const { hardFiltersChanged, updateHardFilters, initializeHardFilters } = useDiscoverPreferencesStore();
@@ -234,29 +235,49 @@ export default function DiscoverScreen() {
   }, [fetchProfiles, refreshRotation]);
 
   const handleSwipeLeft = useCallback(() => {
+    // Prevent swiping while processing previous swipe
+    if (isProcessingSwipe) {
+      logger.debug("[discover] Swipe ignored: already processing swipe");
+      return;
+    }
+
     // Discard - just move to next
     const currentProfile = profiles[currentIndex];
     logger.debug("[discover] Swiped left", { discardedUserId: currentProfile?.user_id });
     setCurrentIndex((prev) => prev + 1);
-  }, [profiles, currentIndex]);
+  }, [profiles, currentIndex, isProcessingSwipe]);
 
   const handleSwipeRight = useCallback(async () => {
+    // Prevent duplicate swipes while processing
+    if (isProcessingSwipe) {
+      logger.debug("[discover] Swipe ignored: already processing swipe");
+      return;
+    }
+
     const currentProfile = profiles[currentIndex];
     if (!currentProfile) return;
 
-    // Optimistically move to next
-    setCurrentIndex((prev) => prev + 1);
+    // Mark as processing to prevent duplicate swipes
+    setIsProcessingSwipe(true);
 
-    // Send like API call
-    const res = await sendLike(currentProfile.user_id);
-    if (res.success) {
-      logger.info("[discover] Like sent", { likedUserId: currentProfile.user_id });
-      if (res.match) {
-        logger.info("[discover] Match found", { matchedUserId: currentProfile.user_id, matchedName: currentProfile.name });
-        Alert.alert("It's a Match!", `You matched with ${currentProfile.name}`);
+    try {
+      // Optimistically move to next
+      setCurrentIndex((prev) => prev + 1);
+
+      // Send like API call
+      const res = await sendLike(currentProfile.user_id);
+      if (res.success) {
+        logger.info("[discover] Like sent", { likedUserId: currentProfile.user_id });
+        if (res.match) {
+          logger.info("[discover] Match found", { matchedUserId: currentProfile.user_id, matchedName: currentProfile.name });
+          Alert.alert("It's a Match!", `You matched with ${currentProfile.name}`);
+        }
       }
+    } finally {
+      // Always clear processing flag
+      setIsProcessingSwipe(false);
     }
-  }, [profiles, currentIndex]);
+  }, [profiles, currentIndex, isProcessingSwipe]);
 
   const handleViewProfile = useCallback((userId: string) => {
     logger.debug("[discover] Opening profile modal", { userId });
