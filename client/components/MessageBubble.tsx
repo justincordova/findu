@@ -23,13 +23,8 @@ export function MessageBubble({
   onDelete,
   showAvatar = true,
 }: MessageBubbleProps) {
-  const userId = useAuthStore((state) => state.user?.id);
+  const userId = useAuthStore((state) => state.userId);
   const isOwnMessage = message.sender_id === userId;
-
-  // Debug logging
-  if (!userId) {
-    console.warn("MessageBubble: No userId in auth store");
-  }
   const [pressAnim] = useState(new Animated.Value(1));
 
   const handlePressIn = () => {

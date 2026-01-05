@@ -15,7 +15,7 @@ import { ChatsAPI } from "@/api/chats";
 import { MatchesAPI } from "@/api/matches";
 
 export default function ChatsScreen() {
-  const userId = useAuthStore((state) => state.user?.id);
+  const userId = useAuthStore((state) => state.userId);
   const token = useAuthStore((state) => state.token);
   const { matches, setMatches } = useMatchStore();
   const [isLoadingMatches, setIsLoadingMatches] = useState(false);
