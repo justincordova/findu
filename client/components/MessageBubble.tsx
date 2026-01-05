@@ -16,12 +16,14 @@ interface MessageBubbleProps {
   message: ChatMessage;
   onDelete?: (messageId: string) => void;
   showAvatar?: boolean;
+  isLatestOwnMessage?: boolean;
 }
 
 export function MessageBubble({
   message,
   onDelete,
   showAvatar = true,
+  isLatestOwnMessage = false,
 }: MessageBubbleProps) {
   const userId = useAuthStore((state) => state.userId);
   const isOwnMessage = message.sender_id === userId;
@@ -128,11 +130,11 @@ export function MessageBubble({
         </Pressable>
       </Animated.View>
 
-      {isOwnMessage && (
+      {isOwnMessage && isLatestOwnMessage && (
         <View style={styles.receiptContainer}>
-          {message.is_read && (
-            <Text style={styles.readReceipt}>✓✓</Text>
-          )}
+          <Text style={styles.readReceipt}>
+            {message.is_read ? "Read" : "Sent"}
+          </Text>
         </View>
       )}
     </View>
@@ -214,8 +216,8 @@ const styles = StyleSheet.create({
     minWidth: 20,
   },
   readReceipt: {
-    fontSize: 12,
-    color: theme.colors.primary,
-    fontWeight: "600",
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    fontWeight: "500",
   },
 });

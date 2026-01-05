@@ -11,6 +11,7 @@ import {
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
+import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
 import { MessageBubble } from "@/components/MessageBubble";
 import { MessageInput } from "@/components/MessageInput";
@@ -33,6 +34,7 @@ export default function ChatDetailScreen() {
     matchId: string;
     userName: string;
   };
+  const userId = useAuthStore((state) => state.userId);
   const {
     conversations,
     setCurrentMatch,
@@ -44,6 +46,12 @@ export default function ChatDetailScreen() {
   const conversation = conversations[matchId];
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Find the latest message from current user for read receipt display
+  const latestOwnMessageId = conversation?.messages
+    ?.slice()
+    .reverse()
+    .find((msg) => msg.sender_id === userId)?.id;
 
   // Initialize Socket.IO and fetch initial messages
   useEffect(() => {
@@ -185,6 +193,7 @@ export default function ChatDetailScreen() {
               index === conversation.messages.length - 1 ||
               conversation.messages[index + 1]?.sender_id !== item.sender_id
             }
+            isLatestOwnMessage={item.id === latestOwnMessageId}
           />
         )}
         inverted
