@@ -1,5 +1,5 @@
 // React core
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useRef, useEffect } from "react";
 
 // React Native
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,6 +21,9 @@ import Step10 from "@/components/profile-setup/Step10";
 import { BACKGROUND, DARK, PRIMARY } from "@/constants/theme";
 import { useProfileSetupStore } from "@/store/profileStore";
 import { useTokenValidation } from "@/hooks/useTokenValidation";
+import { profileApi } from "@/api/profile";
+import { useAuthStore } from "@/store/authStore";
+import logger from "@/config/logger";
 
 // Constants
 const STEPS = [
@@ -102,6 +105,52 @@ export default function ProfileSetupStep() {
   // Access profile setup store
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore((state) => state.setProfileField);
+
+  // Auth store for user ID
+  const userId = useAuthStore((state) => state.userId);
+
+  // Auto-save debouncing
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedDataRef = useRef<string>("");
+
+  /**
+   * Auto-save profile data with debouncing
+   * Saves every 3 seconds of inactivity to prevent excessive API calls
+   */
+  useEffect(() => {
+    if (!profileData || !userId) return;
+
+    // Skip if data hasn't changed (comparing stringified versions)
+    const currentDataStr = JSON.stringify(profileData);
+    if (currentDataStr === lastSavedDataRef.current) return;
+
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Set new timeout for debounced save
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        // Exclude display-only fields from save
+        const { university_name: _universityName, campus_name: _campusName, ...dataToSave } = profileData;
+
+        await profileApi.update(userId, dataToSave);
+        lastSavedDataRef.current = currentDataStr;
+        logger.debug("[profile-setup] Auto-saved profile data");
+      } catch (error) {
+        logger.error("[profile-setup] Auto-save failed", { error });
+        // Don't show error to user - auto-save is silent
+      }
+    }, 3000); // 3 second debounce
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [profileData, userId]);
 
   // Navigate to next step (validates current step is valid first)
   const goToNextStep = useCallback(() => {
