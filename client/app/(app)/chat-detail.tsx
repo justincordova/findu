@@ -14,7 +14,7 @@ import { theme } from "@/constants/theme";
 import { useChatStore } from "@/store/chatStore";
 import { MessageBubble } from "@/components/MessageBubble";
 import { MessageInput } from "@/components/MessageInput";
-import { SkeletonLoader } from "@/components/shared/SkeletonLoader";
+import { SkeletonGroup } from "@/components/shared/SkeletonLoader";
 import { ChatsAPI } from "@/api/chats";
 import {
   initializeSocket,
@@ -153,11 +153,9 @@ export default function ChatDetailScreen() {
           <Text style={styles.headerTitle}>{userName}</Text>
           <View style={styles.headerPlaceholder} />
         </View>
-        <SkeletonLoader
-          rows={8}
-          height={60}
-          containerStyle={styles.skeletonContainer}
-        />
+        <View style={styles.skeletonContainer}>
+          <SkeletonGroup count={8} spacing={12} />
+        </View>
         <MessageInput disabled onSend={async () => {}} />
       </SafeAreaView>
     );
