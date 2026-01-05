@@ -7,6 +7,18 @@ import {
 } from "./types";
 
 /**
+ * Format message for response (convert dates to ISO strings)
+ */
+function formatMessage(msg: any): MessageResponse {
+  return {
+    ...msg,
+    sent_at: msg.sent_at.toISOString(),
+    read_at: msg.read_at?.toISOString() || null,
+    edited_at: msg.edited_at?.toISOString() || null,
+  };
+}
+
+/**
  * Create a new message in a chat
  */
 export async function createMessage(
@@ -190,16 +202,4 @@ export async function getLatestMessage(
   });
 
   return message ? formatMessage(message) : null;
-}
-
-/**
- * Format message for response (convert dates to ISO strings)
- */
-function formatMessage(msg: any): MessageResponse {
-  return {
-    ...msg,
-    sent_at: msg.sent_at.toISOString(),
-    read_at: msg.read_at?.toISOString() || null,
-    edited_at: msg.edited_at?.toISOString() || null,
-  };
 }
