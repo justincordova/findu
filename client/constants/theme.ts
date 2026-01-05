@@ -31,6 +31,7 @@ export const theme = {
     skeleton: "#E5E5EA",
     border: "#D4D4D4",
     messageOtherBg: "#E5E5EA",
+    unreadBg: "rgba(168, 85, 247, 0.05)",
   },
   gradient: GRADIENT,
 };
