@@ -38,7 +38,6 @@ export default function ChatDetailScreen() {
     setCurrentMatch,
     setMessages,
     setLoading,
-    addMessage,
     deleteMessage: deleteMessageStore,
   } = useChatStore();
 
@@ -88,14 +87,11 @@ export default function ChatDetailScreen() {
 
   const handleSendMessage = async (text: string, mediaUrl?: string) => {
     try {
-      // Send via API (for persistence)
-      const message = await ChatsAPI.sendMessage(matchId, text, mediaUrl);
-
-      // Emit via Socket.IO (for real-time delivery)
+      // Send via both API and Socket.IO
+      // API for persistence, Socket for real-time delivery to both users
+      await ChatsAPI.sendMessage(matchId, text, mediaUrl);
       sendMessageSocket(matchId, text, mediaUrl);
-
-      // Add to store
-      addMessage(matchId, message);
+      // Message will be added via socket listener when received from server
     } catch (error) {
       console.error("Error sending message:", error);
     }

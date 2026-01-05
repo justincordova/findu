@@ -34,28 +34,32 @@ export default function ChatsScreen() {
           return;
         }
 
-        const matchesWithMessages = await Promise.all(
-          response.matches.map(async (match: any) => {
-            const lastMessage = await ChatsAPI.getLatestMessage(match.id);
-            const otherUserId = match.user1 === userId ? match.user2 : match.user1;
-            const otherUser = match.otherUser || {};
+        const matchesWithMessages = response.matches.map((match: any) => {
+          const otherUserId = match.user1 === userId ? match.user2 : match.user1;
+          const otherUser = match.otherUser || {};
 
-            return {
-              ...match,
-              lastMessage: lastMessage
-                ? {
-                    text: lastMessage.message,
-                    sentAt: lastMessage.sent_at,
-                    isRead: lastMessage.is_read,
-                    senderIsMe: lastMessage.sender_id === userId,
-                  }
-                : undefined,
-              otherUserId,
-              otherUserName: otherUser.name,
-              otherUserImage: otherUser.avatar_url,
-            };
-          })
-        );
+          return {
+            ...match,
+            lastMessage: undefined, // Will load asynchronously
+            otherUserId,
+            otherUserName: otherUser.name,
+            otherUserImage: otherUser.avatar_url,
+          };
+        });
+
+        // Load last messages in background (don't block UI)
+        matchesWithMessages.forEach((match: any) => {
+          ChatsAPI.getLatestMessage(match.id).then((lastMessage) => {
+            if (lastMessage) {
+              match.lastMessage = {
+                text: lastMessage.message,
+                sentAt: lastMessage.sent_at,
+                isRead: lastMessage.is_read,
+                senderIsMe: lastMessage.sender_id === userId,
+              };
+            }
+          });
+        });
 
         // Sort by latest message (newest first)
         matchesWithMessages.sort((a, b) => {

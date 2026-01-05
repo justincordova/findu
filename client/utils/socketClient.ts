@@ -8,8 +8,14 @@ let socket: Socket | null = null;
 /**
  * Initialize Socket.IO connection with Bearer token authentication
  * Handles all event listeners for real-time messaging
+ * Only initializes once - returns existing socket if already connected
  */
 export function initializeSocket(): Socket | null {
+  // Return existing socket if already initialized and connected
+  if (socket && socket.connected) {
+    return socket;
+  }
+
   const { token } = useAuthStore.getState();
 
   if (!token) {
