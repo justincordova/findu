@@ -62,15 +62,20 @@ export const useConstantsStore = create<ConstantsState>((set, get) => {
   const validateConstantsStructure = (data: unknown): data is Constants => {
     if (!data || typeof data !== "object") return false;
     const obj = data as Record<string, unknown>;
-    // Check for required top-level properties (all should be arrays)
-    return (
+    // Check for required top-level array properties
+    // lifestyleOptions is optional, so only check if present
+    const hasRequiredArrays =
       Array.isArray(obj.intents) &&
       Array.isArray(obj.majors) &&
       Array.isArray(obj.genderPreferences) &&
       Array.isArray(obj.sexualOrientations) &&
-      Array.isArray(obj.pronouns) &&
-      Array.isArray(obj.lifestyleOptions)
-    );
+      Array.isArray(obj.pronouns);
+
+    // If lifestyleOptions exists, it should be an object (not an array)
+    const lifestyleOptionsValid =
+      !obj.lifestyleOptions || typeof obj.lifestyleOptions === "object";
+
+    return hasRequiredArrays && lifestyleOptionsValid;
   };
 
   /**
