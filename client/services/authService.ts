@@ -1,5 +1,8 @@
 import { AuthAPI } from "@/api/auth";
 import { useAuthStore } from "@/store/authStore";
+import { useMatchesStore } from "@/store/matchesStore";
+import { useDiscoverPreferencesStore } from "@/store/discoverPreferencesStore";
+import { useProfileStore } from "@/store/profileStore";
 import {
   saveSecureItem,
   getSecureItem,
@@ -8,6 +11,18 @@ import {
 import logger from "@/config/logger";
 
 const ACCESS_TOKEN_KEY = "accessToken";
+
+/**
+ * Reset all user-specific stores atomically
+ * Called when user logs out to clear all cached user data
+ */
+function resetAllUserStores() {
+  useAuthStore.getState().reset();
+  useMatchesStore.getState().stopPolling();
+  useDiscoverPreferencesStore.getState().reset();
+  useProfileStore.getState().reset();
+  logger.debug("All user stores reset");
+}
 
 /**
  * Authenticate user with email and password
@@ -119,10 +134,11 @@ export async function verifyAndSignup(
 /**
  * Sign out current user and clear local auth state
  * Calls backend logout if token exists, but clears state regardless
+ * Resets all user-specific stores (matches, discover, profile)
  * @returns {Promise<{success: boolean; error?: string}>} Signout result
  */
 export async function signOut() {
-  const { token, reset, setLoading } = useAuthStore.getState();
+  const { token, setLoading } = useAuthStore.getState();
   setLoading(true);
 
   try {
@@ -140,8 +156,8 @@ export async function signOut() {
     // Clear secure storage
     await deleteSecureItem(ACCESS_TOKEN_KEY);
 
-    // Reset auth store state
-    reset();
+    // Reset all user-specific stores atomically
+    resetAllUserStores();
 
     logger.info("Logout successful");
     return { success: true };
@@ -149,7 +165,7 @@ export async function signOut() {
     logger.error("AuthService: signout error", { err });
     // Still clear local state even if API call fails
     await deleteSecureItem(ACCESS_TOKEN_KEY);
-    reset();
+    resetAllUserStores();
     return { success: false, error: "Signout failed" };
   } finally {
     setLoading(false);
