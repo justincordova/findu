@@ -61,7 +61,7 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  const { isLoading, restoreSession } = useAuth();
+  const { isLoading, isLoggedIn, restoreSession } = useAuth();
 
   // Initialize session and app state on first render
   useEffect(() => {
@@ -89,42 +89,69 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
+  // Show loading until session is restored and fonts are loaded
+  if (isLoading || !fontsLoaded) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={LOADING_INDICATOR_COLOR} />
+        </View>
+      </GestureHandlerRootView>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { flex: 1 },
-          }}
-        >
-          <Stack.Screen
-            name="index"
-            options={{
-              gestureEnabled: false,
+        {isLoggedIn ? (
+          // Authenticated routes
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { flex: 1 },
             }}
-          />
-          <Stack.Screen
-            name="auth/index"
-            options={{
-              gestureEnabled: false,
+          >
+            <Stack.Screen
+              name="home"
+              options={{
+                gestureEnabled: false,
+                headerBackVisible: false,
+              }}
+            />
+            <Stack.Screen
+              name="profile-setup"
+              options={{
+                gestureEnabled: false,
+              }}
+            />
+            <Stack.Screen
+              name="profile"
+              options={{
+                gestureEnabled: false,
+              }}
+            />
+          </Stack>
+        ) : (
+          // Unauthenticated routes
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { flex: 1 },
             }}
-          />
-          <Stack.Screen
-            name="home"
-            options={{
-              gestureEnabled: false,
-              headerBackVisible: false,
-            }}
-          />
-
-        </Stack>
-
-        {/* Loading overlay shown during font/session initialization */}
-        {(isLoading || !fontsLoaded) && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color={LOADING_INDICATOR_COLOR} />
-          </View>
+          >
+            <Stack.Screen
+              name="index"
+              options={{
+                gestureEnabled: false,
+              }}
+            />
+            <Stack.Screen
+              name="auth/index"
+              options={{
+                gestureEnabled: false,
+              }}
+            />
+          </Stack>
         )}
 
         {/* Development navigation shortcut (only in dev builds) */}
