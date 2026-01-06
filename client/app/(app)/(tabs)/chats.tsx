@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { theme } from "@/constants/theme";
 import { useAuthStore } from "@/store/authStore";
-import { useMatchStore, MatchWithLastMessage } from "@/store/matchStore";
+import { useMatchStore, type MatchWithLastMessage } from "@/store/matchStore";
 import { ChatListItem } from "@/components/ChatListItem";
 import { SkeletonGroup } from "@/components/shared/SkeletonLoader";
 import { ChatsAPI } from "@/api/chats";
@@ -34,45 +34,37 @@ export default function ChatsScreen() {
           return;
         }
 
-        const matchesWithMessages = response.matches.map((match: any) => {
+        const matchesWithMessages: MatchWithLastMessage[] = response.matches.map((match: any) => {
           const otherUserId = match.user1 === userId ? match.user2 : match.user1;
           const otherUser = match.otherUser || {};
 
           return {
             ...match,
-            lastMessage: undefined, // Will load asynchronously
+            lastMessage: undefined,
             otherUserId,
             otherUserName: otherUser.name,
             otherUserImage: otherUser.avatar_url,
           };
         });
 
-        // Load last messages in background (don't block UI)
-        matchesWithMessages.forEach((match: any) => {
+        // Set matches immediately so UI shows them
+        setMatches(matchesWithMessages);
+
+        // Load last messages in background and update store properly
+        matchesWithMessages.forEach((match) => {
           ChatsAPI.getLatestMessage(match.id).then((lastMessage) => {
             if (lastMessage) {
-              match.lastMessage = {
-                text: lastMessage.message,
-                sentAt: lastMessage.sent_at,
-                isRead: lastMessage.is_read,
-                senderIsMe: lastMessage.sender_id === userId,
-              };
+              // Use the store's updateLastMessage to trigger re-render
+              useMatchStore.getState().updateLastMessage(
+                match.id,
+                lastMessage.message,
+                lastMessage.sent_at,
+                lastMessage.is_read,
+                lastMessage.sender_id === userId
+              );
             }
           });
         });
-
-        // Sort by latest message (newest first)
-        matchesWithMessages.sort((a, b) => {
-          const aTime = a.lastMessage?.sentAt
-            ? new Date(a.lastMessage.sentAt).getTime()
-            : 0;
-          const bTime = b.lastMessage?.sentAt
-            ? new Date(b.lastMessage.sentAt).getTime()
-            : 0;
-          return bTime - aTime;
-        });
-
-        setMatches(matchesWithMessages as MatchWithLastMessage[]);
       } catch (error) {
         console.error("Error loading matches:", error);
       } finally {
