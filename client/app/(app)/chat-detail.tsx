@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   StyleSheet,
   View,
@@ -44,8 +44,8 @@ export default function ChatDetailScreen() {
   } = useChatStore();
 
   const conversation = conversations[matchId];
-  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const initializedRef = useRef(false);
 
   // Find the latest message from current user for read receipt display
   const latestOwnMessageId = conversation?.messages
@@ -55,6 +55,14 @@ export default function ChatDetailScreen() {
 
   // Initialize Socket.IO and fetch initial messages
   useEffect(() => {
+    // Prevent double initialization in React StrictMode
+    if (initializedRef.current) {
+      return;
+    }
+    initializedRef.current = true;
+
+    console.log("ChatDetail: Initializing for matchId:", matchId);
+
     // Set as current match
     setCurrentMatch(matchId);
 
@@ -88,7 +96,9 @@ export default function ChatDetailScreen() {
 
     // Cleanup on unmount
     return () => {
+      console.log("ChatDetail: Cleanup for matchId:", matchId);
       leaveMatch(matchId);
+      initializedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId]);
@@ -109,27 +119,6 @@ export default function ChatDetailScreen() {
       deleteMessageStore(matchId, messageId);
     } catch (error) {
       console.error("Error deleting message:", error);
-    }
-  };
-
-  const handleLoadMore = async () => {
-    if (!conversation || !conversation.hasMore || loadingMore) return;
-
-    setLoadingMore(true);
-    try {
-      const olderMessages = await ChatsAPI.getChatHistory(
-        matchId,
-        50,
-        conversation.cursor
-      );
-
-      if (olderMessages.length > 0) {
-        setMessages(matchId, [...olderMessages, ...conversation.messages]);
-      }
-    } catch (error) {
-      console.error("Error loading more messages:", error);
-    } finally {
-      setLoadingMore(false);
     }
   };
 
@@ -195,17 +184,8 @@ export default function ChatDetailScreen() {
           />
         )}
         inverted
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
         refreshing={refreshing}
         onRefresh={handleRefresh}
-        ListFooterComponent={
-          loadingMore ? (
-            <View style={styles.loadingMore}>
-              <ActivityIndicator color={theme.colors.primary} />
-            </View>
-          ) : null
-        }
         ListEmptyComponent={
           conversation.isLoading ? (
             <View style={styles.emptyLoading}>
@@ -280,9 +260,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textSecondary,
     fontStyle: "italic",
-  },
-  loadingMore: {
-    paddingVertical: 16,
-    alignItems: "center",
   },
 });

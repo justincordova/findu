@@ -1,6 +1,7 @@
 import { Server as HTTPServer } from "http";
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { markMessagesAsRead, createMessage } from "@/modules/chats/services";
+import { AuthService } from "@/modules/auth/services";
 import logger from "@/config/logger";
 
 interface SocketUser {
@@ -11,16 +12,24 @@ interface SocketUser {
 export const userSockets = new Map<string, SocketUser>();
 
 /**
- * Verify socket token (stub - extract userId from Bearer token)
+ * Verify socket token using the same auth service as the REST API
+ * @param token - Bearer token string (e.g., "Bearer <session_token>")
+ * @returns userId if valid, throws error otherwise
  */
-function verifySocketToken(token: string): string {
-  // TODO: Implement proper JWT verification
-  // For now, assume token format: "Bearer <userId>"
+async function verifySocketToken(token: string): Promise<string> {
   const parts = token.split(" ");
-  if (parts.length !== 2) {
+  if (parts.length !== 2 || parts[0] !== "Bearer") {
     throw new Error("Invalid token format");
   }
-  return parts[1];
+
+  const sessionToken = parts[1];
+  const user = await AuthService.verifySession(sessionToken);
+
+  if (!user) {
+    throw new Error("Invalid or expired session");
+  }
+
+  return user.id;
 }
 
 /**
@@ -35,7 +44,7 @@ export function initializeSocket(httpServer: HTTPServer) {
   });
 
   // Middleware: authenticate socket connection
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) {
       return next(new Error("Authentication error"));
@@ -43,10 +52,12 @@ export function initializeSocket(httpServer: HTTPServer) {
 
     // Verify token and attach userId to socket
     try {
-      const userId = verifySocketToken(token);
+      const userId = await verifySocketToken(token);
       socket.data.userId = userId;
+      logger.info("SOCKET_AUTH_SUCCESS", { userId, socketId: socket.id });
       next();
-    } catch {
+    } catch (error) {
+      logger.error("SOCKET_AUTH_FAILED", { error, socketId: socket.id });
       next(new Error("Invalid token"));
     }
   });

@@ -17,6 +17,9 @@ const defaultConversation: ChatConversation = {
   otherUserOnline: false,
 };
 
+// Track processed message IDs to prevent duplicates across all operations
+const processedMessageIds = new Set<string>();
+
 /**
  * Chat state management store
  * Manages conversations, messages, and real-time chat state
@@ -52,14 +55,23 @@ export const useChatStore = create<ChatState>((set) => ({
    * @param {ChatMessage} message - The message to add
    */
   addMessage: (matchId: string, message: ChatMessage) => {
+    // First check global Set - this catches duplicates even if state check fails
+    if (processedMessageIds.has(message.id)) {
+      return;
+    }
+
+    // Mark as processed BEFORE set() to prevent race conditions
+    processedMessageIds.add(message.id);
+
     set((state) => {
       const conversation = state.conversations[matchId];
-      if (!conversation) return state;
+      if (!conversation) {
+        return state;
+      }
 
-      // Prevent duplicates - check if message with this ID already exists
+      // Double-check in state (belt and suspenders)
       const messageExists = conversation.messages.some((msg) => msg.id === message.id);
       if (messageExists) {
-        logger.debug(`Chat: message ${message.id} already exists, skipping duplicate`);
         return state;
       }
 
@@ -137,20 +149,32 @@ export const useChatStore = create<ChatState>((set) => ({
   /**
    * Set all messages for a conversation
    * Replaces the entire messages array (used for loading chat history)
+   * Also deduplicates messages and populates processedMessageIds
    * @param {string} matchId - The match ID for the conversation
    * @param {ChatMessage[]} messages - The messages to set
    */
   setMessages: (matchId: string, messages: ChatMessage[]) => {
-    set((state) => {
-      logger.debug(`Chat: set ${messages.length} messages for ${matchId}`);
+    // Deduplicate messages by ID (in case of duplicates)
+    const seenIds = new Set<string>();
+    const uniqueMessages = messages.filter((msg) => {
+      if (seenIds.has(msg.id)) {
+        return false;
+      }
+      seenIds.add(msg.id);
+      return true;
+    });
 
+    // Add all message IDs to processed set to prevent socket duplicates
+    uniqueMessages.forEach((msg) => processedMessageIds.add(msg.id));
+
+    set((state) => {
       return {
         conversations: {
           ...state.conversations,
           [matchId]: {
             ...(state.conversations[matchId] || defaultConversation),
             match_id: matchId,
-            messages,
+            messages: uniqueMessages,
           },
         },
       };
@@ -304,6 +328,7 @@ export const useChatStore = create<ChatState>((set) => ({
    */
   reset: () => {
     logger.info("Chat store reset");
+    processedMessageIds.clear();
     set({ conversations: {}, currentMatchId: null });
   },
 }));
