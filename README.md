@@ -29,7 +29,7 @@
 
 ## **Demo**
 
-https://github.com/user-attachments/assets/YOUR_VIDEO_ID_HERE
+[📹 Watch Demo Video](./docs/demo/findu_demo.mp4)
 
 > *Demo video showcasing the app's core features including authentication, profile setup, discovery, matching, and real-time messaging.*
 
