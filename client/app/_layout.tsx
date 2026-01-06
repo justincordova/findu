@@ -165,7 +165,7 @@ export default function RootLayout() {
         )}
 
         {/* Development navigation shortcut (only in dev builds) */}
-        {__DEV__ && (
+        {false && __DEV__ && (
           <View style={{ position: "absolute", top: DEV_BUTTON_TOP, right: DEV_BUTTON_RIGHT }}>
             <DevButton route={DEV_BUTTON_ROUTE} />
           </View>
