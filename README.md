@@ -17,85 +17,88 @@
 | **Frontend**         | React Native + Expo   | Cross-platform mobile app        |
 | **State Management** | Zustand               | Lightweight state management     |
 | **Backend**          | Node.js + Express     | API server                       |
+| **Real-time**        | Socket.IO             | Live messaging & typing indicators |
 | **Authentication**   | Better Auth           | Email verification & magic links |
 | **Database**         | Supabase (PostgreSQL) | Primary data storage             |
 | **Cache / Queue**    | Redis                 | Caching, sessions, job queues    |
 | **Payments**         | Stripe                | Subscriptions, boosts, tips      |
-| **File Storage**     | Supabase Storage      | Profile pictures, chat images    |
+| **File Storage**     | Supabase Storage      | Profile pictures, chat media     |
 | **Hosting**          | Render                | Backend deployment               |
 
 ---
 
-## **Preview Images**
+## **Demo**
 
-### **App Screenshots**
+https://github.com/user-attachments/assets/YOUR_VIDEO_ID_HERE
 
-<table>
-  <tr>
-    <td align="center">
-      <img src="./docs/images/startup.png" alt="Startup Page" width="200"/><br/>
-      Startup Page
-    </td>
-    <td align="center">
-      <img src="./docs/images/login.png" alt="Login Page" width="200"/><br/>
-      Login Page
-    </td>
-    <td align="center">
-      <img src="./docs/images/signup.png" alt="Signup Page" width="200"/><br/>
-      Signup Page
-    </td>
-  </tr>
-</table>
-
-<!-- Add more images below as needed -->
-<!--
-<div style="flex: 0 0 auto; text-align: center;">
-  <img src="./docs/images/profile.png" alt="Profile Page" width="200" />
-  <div>Profile Page</div>
-</div>
--->
-
-</div>
+> *Demo video showcasing the app's core features including authentication, profile setup, discovery, matching, and real-time messaging.*
 
 ---
 
 ## **Features**
 
+### **✅ Completed Features**
+
 - **Authentication System**
   - Email/password and magic link login
   - `.edu` email verification
   - User registration and profile setup
+  - Secure session management
+
 - **Profile Management**
   - Multi-step onboarding (photos, bio, interests)
   - Campus and school selection
   - Intent-based filtering (dating, friendship, etc.)
+  - Profile editing and photo management
+
 - **Discovery System**
   - Swipe-based matching interface
   - Campus-based user filtering
   - Interest-based compatibility scoring
-- **Matching & Messaging**
-  - Mutual like detection
-  - In-app chat functionality
-  - Message history and read status
+  - Cached feed for performance
+
+- **Matching System**
+  - Mutual like detection with real-time notifications
+  - Match management (view, unmatch)
+  - Match history tracking
+
+- **Real-time Messaging**
+  - Socket.IO-powered live chat
+  - Message history with pagination
+  - Typing indicators
+  - Read receipts
+  - Message editing and deletion
+  - Media sharing (images)
+  - Conversation list with latest message preview
+  - Unread message indicators
+
 - **Safety Features**
   - User blocking system
-  - Report functionality
+  - Block cleanup (auto-remove likes/matches)
   - Privacy controls
+
+### **🚧 Planned Features**
+
+- **Enhanced Safety**
+  - Report functionality
+  - Photo verification
+  - Campus-only visibility periods
+  - Advanced moderation tools
+
 - **Premium Features**
   - Subscription tiers (Bachelors, Masters, PhD)
   - Boost functionality
   - SuperLikes and Icebreakers
+
 - **Payment Integration**
   - Stripe subscription management
   - One-time purchases (boosts, tips)
-- **Enhanced Safety**
-  - Photo verification
-  - Campus-only visibility periods
-  - Advanced moderation tools
+
 - **Social Features**
   - Instagram/Spotify integration
   - Group events and meetups
   - Campus-specific activities
+
 - **Analytics & Insights**
   - User behavior analytics
   - Match success tracking
@@ -108,26 +111,50 @@
 ### **1. Onboarding**
 
 ```
-Download App → Sign Up via OTP → Login → Profile Setup → Campus Selection → Discover Matches
+Download App → Sign Up via OTP → Email Verification → Profile Setup → Campus Selection → Discover Matches
 ```
 
 ### **2. Discovery**
 
 ```
-Browse Profiles → Swipe Right/Left → View Compatibility → Send Like → Wait for Match
+Browse Profiles → Swipe Right/Left → View Compatibility → Send Like → Mutual Like → Match!
 ```
 
-### **3. Matching**
+### **3. Matching & Messaging**
 
 ```
-Mutual Like → Match Notification → Open Chat → Start Conversation → Meet in Person
+Match Notification → View Match → Open Chat → Real-time Messaging → Typing Indicators → Read Receipts
 ```
 
 ### **4. Safety & Moderation**
 
 ```
-Report User → Admin Review → Action Taken → Community Guidelines Enforced
+Block User → Auto-remove Likes/Matches → Privacy Protected
 ```
+
+---
+
+## **Architecture Highlights**
+
+### **Real-time Messaging**
+- Socket.IO integration for instant message delivery
+- Automatic room management (users join match rooms on chat open)
+- Message deduplication to prevent duplicates
+- Offline user handling with graceful degradation
+- Optimistic UI updates for better UX
+
+### **Performance Optimizations**
+- Redis caching for discover feed
+- Message pagination (50 messages per fetch)
+- Efficient database queries with proper indexing
+- Zustand for lightweight state management
+
+### **Security**
+- Session-based authentication with Better Auth
+- `.edu` email verification requirement
+- Secure WebSocket connections
+- Input validation and sanitization
+- Block system with automatic cleanup
 
 ---
 
@@ -142,13 +169,31 @@ Report User → Admin Review → Action Taken → Community Guidelines Enforced
 
 ---
 
----
-
 ## **Getting Started**
 
 See [SETUP.md](./SETUP.md) for detailed setup instructions.
 
 ---
+
+## **Project Structure**
+
+```
+findu/
+├── client/              # React Native mobile app
+│   ├── app/            # Expo Router screens
+│   ├── components/     # Reusable UI components
+│   ├── store/          # Zustand state management
+│   ├── api/            # API client functions
+│   └── utils/          # Socket.IO and helpers
+├── server/             # Node.js backend
+│   ├── src/
+│   │   ├── modules/    # Feature modules (auth, matches, chats, etc.)
+│   │   ├── websocket/  # Socket.IO configuration
+│   │   ├── middleware/ # Express middleware
+│   │   └── lib/        # Shared utilities
+│   └── prisma/         # Database schema and migrations
+└── docs/               # Documentation and assets
+```
 
 ---
 
