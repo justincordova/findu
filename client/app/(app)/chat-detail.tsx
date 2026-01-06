@@ -95,11 +95,9 @@ export default function ChatDetailScreen() {
 
   const handleSendMessage = async (text: string, mediaUrl?: string) => {
     try {
-      // Send via both API and Socket.IO
-      // API for persistence, Socket for real-time delivery to both users
-      await ChatsAPI.sendMessage(matchId, text, mediaUrl);
+      // Send via Socket.IO only - server will persist and broadcast
+      // Message will be added to UI via socket listener when received back
       sendMessageSocket(matchId, text, mediaUrl);
-      // Message will be added via socket listener when received from server
     } catch (error) {
       console.error("Error sending message:", error);
     }

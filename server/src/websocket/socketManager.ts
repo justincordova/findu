@@ -1,6 +1,6 @@
 import { Server as HTTPServer } from "http";
 import { Server as SocketIOServer, Socket } from "socket.io";
-import { markMessagesAsRead } from "@/modules/chats/services";
+import { markMessagesAsRead, createMessage } from "@/modules/chats/services";
 import logger from "@/config/logger";
 
 interface SocketUser {
@@ -100,27 +100,33 @@ export function initializeSocket(httpServer: HTTPServer) {
     });
 
     // Handle incoming message
-    socket.on("message_send", (data) => {
+    socket.on("message_send", async (data) => {
       try {
         const { matchId, message, media_url, message_type } = data;
 
         logger.info("MESSAGE_SEND", { userId, matchId, messageType: message_type });
 
-        // Generate unique message ID (timestamp + random)
-        const messageId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-
-        // Broadcast to match room
-        io.to(`match_${matchId}`).emit("message_received", {
-          id: messageId,
+        // Persist message to database
+        const savedMessage = await createMessage({
           match_id: matchId,
           sender_id: userId,
           message,
-          is_read: false,
-          read_at: null,
           media_url,
           message_type: message_type || "TEXT",
-          sent_at: new Date().toISOString(),
-          edited_at: null,
+        });
+
+        // Broadcast to match room with the DB-generated ID
+        io.to(`match_${matchId}`).emit("message_received", {
+          id: savedMessage.id,
+          match_id: savedMessage.match_id,
+          sender_id: savedMessage.sender_id,
+          message: savedMessage.message,
+          is_read: savedMessage.is_read,
+          read_at: savedMessage.read_at,
+          media_url: savedMessage.media_url,
+          message_type: savedMessage.message_type,
+          sent_at: savedMessage.sent_at,
+          edited_at: savedMessage.edited_at,
         });
       } catch (err) {
         logger.error("Error in message_send handler", err);

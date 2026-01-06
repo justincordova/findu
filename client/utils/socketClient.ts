@@ -4,6 +4,7 @@ import { useChatStore } from "@/store/chatStore";
 import { ChatMessage } from "@/types/chat";
 
 let socket: Socket | null = null;
+let listenersAttached = false;
 
 /**
  * Initialize Socket.IO connection with Bearer token authentication
@@ -11,8 +12,8 @@ let socket: Socket | null = null;
  * Only initializes once - returns existing socket if already connected
  */
 export function initializeSocket(): Socket | null {
-  // Return existing socket if already initialized and connected
-  if (socket && socket.connected) {
+  // Return existing socket if already initialized (even if reconnecting)
+  if (socket) {
     return socket;
   }
 
@@ -36,87 +37,92 @@ export function initializeSocket(): Socket | null {
       reconnectionAttempts: 5,
     });
 
-    // Connection event
-    socket.on("connect", () => {
-      console.log("Socket connected:", socket?.id);
-    });
+    // Only attach listeners once
+    if (!listenersAttached) {
+      listenersAttached = true;
 
-    // Receive message
-    socket.on("message_received", (data: any) => {
-      try {
-        const { match_id, sender_id, message, media_url, message_type, sent_at, id, is_read, read_at, edited_at } = data;
-        const chatMessage: ChatMessage = {
-          id,
-          match_id,
-          sender_id,
-          message,
-          is_read,
-          read_at,
-          sent_at,
-          edited_at,
-          media_url,
-          message_type: message_type || "TEXT",
-        };
-        useChatStore.getState().addMessage(match_id, chatMessage);
-      } catch (error) {
-        console.error("Error handling message_received event:", error);
-      }
-    });
+      // Connection event
+      socket.on("connect", () => {
+        console.log("Socket connected:", socket?.id);
+      });
 
-    // User typing
-    socket.on("user_typing", (data: any) => {
-      try {
-        const { matchId } = data;
-        useChatStore.getState().setUserTyping(matchId, true);
-      } catch (error) {
-        console.error("Error handling user_typing event:", error);
-      }
-    });
+      // Receive message
+      socket.on("message_received", (data: any) => {
+        try {
+          const { match_id, sender_id, message, media_url, message_type, sent_at, id, is_read, read_at, edited_at } = data;
+          const chatMessage: ChatMessage = {
+            id,
+            match_id,
+            sender_id,
+            message,
+            is_read,
+            read_at,
+            sent_at,
+            edited_at,
+            media_url,
+            message_type: message_type || "TEXT",
+          };
+          useChatStore.getState().addMessage(match_id, chatMessage);
+        } catch (error) {
+          console.error("Error handling message_received event:", error);
+        }
+      });
 
-    // User stop typing
-    socket.on("user_stop_typing", (data: any) => {
-      try {
-        const { matchId } = data;
-        useChatStore.getState().setUserTyping(matchId, false);
-      } catch (error) {
-        console.error("Error handling user_stop_typing event:", error);
-      }
-    });
+      // User typing
+      socket.on("user_typing", (data: any) => {
+        try {
+          const { matchId } = data;
+          useChatStore.getState().setUserTyping(matchId, true);
+        } catch (error) {
+          console.error("Error handling user_typing event:", error);
+        }
+      });
 
-    // Messages read
-    socket.on("messages_read", (data: any) => {
-      try {
-        const { matchId } = data;
-        useChatStore.getState().markAsRead(matchId);
-      } catch (error) {
-        console.error("Error handling messages_read event:", error);
-      }
-    });
+      // User stop typing
+      socket.on("user_stop_typing", (data: any) => {
+        try {
+          const { matchId } = data;
+          useChatStore.getState().setUserTyping(matchId, false);
+        } catch (error) {
+          console.error("Error handling user_stop_typing event:", error);
+        }
+      });
 
-    // User online
-    socket.on("user_online", (data: any) => {
-      try {
-        const { matchId } = data;
-        useChatStore.getState().setOtherUserOnline(matchId, true);
-      } catch (error) {
-        console.error("Error handling user_online event:", error);
-      }
-    });
+      // Messages read
+      socket.on("messages_read", (data: any) => {
+        try {
+          const { matchId } = data;
+          useChatStore.getState().markAsRead(matchId);
+        } catch (error) {
+          console.error("Error handling messages_read event:", error);
+        }
+      });
 
-    // User offline
-    socket.on("user_offline", (data: any) => {
-      try {
-        const { matchId } = data;
-        useChatStore.getState().setOtherUserOnline(matchId, false);
-      } catch (error) {
-        console.error("Error handling user_offline event:", error);
-      }
-    });
+      // User online
+      socket.on("user_online", (data: any) => {
+        try {
+          const { matchId } = data;
+          useChatStore.getState().setOtherUserOnline(matchId, true);
+        } catch (error) {
+          console.error("Error handling user_online event:", error);
+        }
+      });
 
-    // Disconnect
-    socket.on("disconnect", () => {
-      console.log("Socket disconnected");
-    });
+      // User offline
+      socket.on("user_offline", (data: any) => {
+        try {
+          const { matchId } = data;
+          useChatStore.getState().setOtherUserOnline(matchId, false);
+        } catch (error) {
+          console.error("Error handling user_offline event:", error);
+        }
+      });
+
+      // Disconnect
+      socket.on("disconnect", () => {
+        console.log("Socket disconnected");
+      });
+    }
 
     return socket;
   } catch (error) {
@@ -239,6 +245,7 @@ export function disconnectSocket(): void {
     try {
       socket.disconnect();
       socket = null;
+      listenersAttached = false;
       console.log("Socket disconnected successfully");
     } catch (error) {
       console.error("Error disconnecting socket:", error);
