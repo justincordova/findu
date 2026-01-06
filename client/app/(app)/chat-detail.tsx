@@ -48,6 +48,7 @@ export default function ChatDetailScreen() {
   const conversation = conversations[matchId];
   const [refreshing, setRefreshing] = useState(false);
   const initializedRef = useRef(false);
+  const flatListRef = useRef<FlatList>(null);
 
   // Find the latest message from current user for read receipt display
   const latestOwnMessageId = conversation?.messages
@@ -95,6 +96,11 @@ export default function ChatDetailScreen() {
 
     // Set navigation title
     navigation.setOptions({ title: userName });
+
+    // Scroll to bottom when messages load
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: false });
+    }, 100);
 
     // Cleanup on unmount
     return () => {
@@ -178,7 +184,7 @@ export default function ChatDetailScreen() {
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 20}
+        keyboardVerticalOffset={0}
       >
         {/* Messages List */}
         <FlatList
