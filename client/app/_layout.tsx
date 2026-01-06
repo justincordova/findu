@@ -133,6 +133,13 @@ export default function RootLayout() {
                 gestureEnabled: false,
               }}
             />
+            <Stack.Screen
+              name="(app)/chat-detail"
+              options={{
+                presentation: "card",
+                gestureEnabled: true,
+              }}
+            />
           </Stack>
         ) : (
           // Unauthenticated routes

@@ -156,12 +156,8 @@ export default function ChatDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-      >
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
         {/* Header */}
         <View style={styles.headerContainer}>
           <Pressable onPress={() => navigation.goBack()}>
@@ -177,7 +173,13 @@ export default function ChatDetailScreen() {
             )}
           </View>
         </View>
+      </SafeAreaView>
 
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 20}
+      >
         {/* Messages List */}
         <FlatList
           data={conversation.messages}
@@ -193,7 +195,6 @@ export default function ChatDetailScreen() {
               isLatestOwnMessage={item.id === latestOwnMessageId}
             />
           )}
-          inverted
           refreshing={refreshing}
           onRefresh={handleRefresh}
           ListEmptyComponent={
@@ -221,7 +222,7 @@ export default function ChatDetailScreen() {
           otherUserTyping={conversation.userTyping}
         />
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -230,6 +231,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  safeArea: {
+    backgroundColor: "#FFFFFF",
+  },
   keyboardView: {
     flex: 1,
   },
@@ -237,22 +241,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingBottom: 14,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(168, 85, 247, 0.06)",
+    borderBottomColor: "rgba(168, 85, 247, 0.12)",
     gap: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   headerContent: {
     flex: 1,
