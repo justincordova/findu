@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   Image,
   Animated,
-  Text,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -62,7 +62,8 @@ export function MessageInput({
     });
 
     if (!result.canceled) {
-      setSelectedMedia(result.assets[0].uri);
+      const { uri } = result.assets[0];
+      setSelectedMedia(uri);
     }
   };
 
@@ -72,7 +73,7 @@ export function MessageInput({
     setLoading(true);
     Animated.sequence([
       Animated.spring(scaleAnim, {
-        toValue: 1.1,
+        toValue: 1.2,
         useNativeDriver: true,
       }),
       Animated.spring(scaleAnim, {
@@ -93,22 +94,18 @@ export function MessageInput({
     }
   };
 
+  const canSend = !disabled && !loading && (text.trim() || selectedMedia);
+
   return (
-    <View>
+    <View style={styles.wrapper}>
       {otherUserTyping && (
         <View style={styles.typingIndicator}>
-          <Text style={styles.typingText}>typing</Text>
-          <View style={styles.dots}>
-            <Animated.View
-              style={[
-                styles.dot,
-                {
-                  opacity: new Animated.Value(1),
-                },
-              ]}
-            />
-            <Animated.View style={[styles.dot, { marginLeft: 4 }]} />
-            <Animated.View style={[styles.dot, { marginLeft: 4 }]} />
+          <View style={styles.typingBubble}>
+            <View style={styles.dots}>
+              <Animated.View style={[styles.dot]} />
+              <Animated.View style={[styles.dot, { marginLeft: 3 }]} />
+              <Animated.View style={[styles.dot, { marginLeft: 3 }]} />
+            </View>
           </View>
         </View>
       )}
@@ -120,7 +117,7 @@ export function MessageInput({
             onPress={() => setSelectedMedia(null)}
             style={styles.removeButton}
           >
-            <Ionicons name="close" size={18} color="#fff" />
+            <Ionicons name="close-circle" size={24} color="rgba(0, 0, 0, 0.6)" />
           </Pressable>
         </View>
       )}
@@ -132,27 +129,28 @@ export function MessageInput({
           style={styles.iconButton}
         >
           <Ionicons
-            name="image"
-            size={20}
+            name="add-circle"
+            size={28}
             color={disabled || loading ? theme.colors.textSecondary : theme.colors.primary}
           />
         </Pressable>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Message..."
-          placeholderTextColor={theme.colors.textSecondary}
-          value={text}
-          onChangeText={handleTextChange}
-          multiline
-          maxLength={500}
-          disabled={disabled || loading}
-          editable={!disabled && !loading}
-        />
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={styles.input}
+            placeholder="Message"
+            placeholderTextColor={theme.colors.textSecondary}
+            value={text}
+            onChangeText={handleTextChange}
+            multiline
+            maxLength={500}
+            disabled={disabled || loading}
+            editable={!disabled && !loading}
+          />
+        </View>
 
         <Animated.View
           style={[
-            styles.sendButton,
             {
               transform: [{ scale: scaleAnim }],
             },
@@ -160,18 +158,20 @@ export function MessageInput({
         >
           <Pressable
             onPress={handleSend}
-            disabled={disabled || loading || (!text.trim() && !selectedMedia)}
+            disabled={!canSend}
             style={[
-              styles.sendButtonPress,
-              (disabled ||
-                loading ||
-                (!text.trim() && !selectedMedia)) && styles.sendButtonDisabled,
+              styles.sendButton,
+              canSend && styles.sendButtonActive,
             ]}
           >
             {loading ? (
-              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Ionicons name="send" size={18} color="#fff" />
+              <Ionicons
+                name="arrow-up"
+                size={22}
+                color={canSend ? "#fff" : theme.colors.textSecondary}
+              />
             )}
           </Pressable>
         </Animated.View>
@@ -181,83 +181,116 @@ export function MessageInput({
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(168, 85, 247, 0.06)",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
   inputContainer: {
     flexDirection: "row",
     alignItems: "flex-end",
     paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: theme.colors.background,
-    borderTopWidth: 0.5,
-    borderTopColor: theme.colors.border,
+    paddingVertical: 10,
     gap: 8,
   },
   iconButton: {
-    padding: 8,
+    padding: 4,
     justifyContent: "center",
     alignItems: "center",
   },
-  input: {
+  inputWrapper: {
     flex: 1,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.background,
     borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "rgba(168, 85, 247, 0.1)",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    minHeight: 38,
+    justifyContent: "center",
+  },
+  input: {
     fontSize: 15,
-    maxHeight: 100,
+    lineHeight: 20,
+    maxHeight: 80,
     color: theme.colors.text,
+    letterSpacing: 0.2,
   },
   sendButton: {
-    padding: 4,
-  },
-  sendButtonPress: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.border,
     justifyContent: "center",
     alignItems: "center",
   },
-  sendButtonDisabled: {
-    opacity: 0.5,
+  sendButtonActive: {
+    backgroundColor: theme.colors.primary,
   },
   previewContainer: {
     position: "relative",
-    marginHorizontal: 12,
-    marginBottom: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 6,
   },
   preview: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     borderRadius: 12,
+    backgroundColor: theme.colors.skeleton,
   },
   removeButton: {
     position: "absolute",
-    top: 4,
-    right: 4,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    top: -8,
+    right: -8,
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   typingIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 4,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
-  typingText: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    fontStyle: "italic",
+  typingBubble: {
+    alignSelf: "flex-start",
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "rgba(168, 85, 247, 0.1)",
   },
   dots: {
     flexDirection: "row",
     alignItems: "center",
   },
   dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: theme.colors.primary,
+    opacity: 0.6,
   },
 });

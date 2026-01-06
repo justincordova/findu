@@ -7,6 +7,8 @@ import {
   SafeAreaView,
   Text,
   Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -155,60 +157,70 @@ export default function ChatDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <Pressable onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={28} color={theme.colors.text} />
-        </Pressable>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>{userName}</Text>
-          {conversation.otherUserOnline && (
-            <Text style={styles.onlineStatus}>Active now</Text>
-          )}
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <Pressable onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={28} color={theme.colors.text} />
+          </Pressable>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>{userName}</Text>
+            {conversation.otherUserOnline && (
+              <View style={styles.onlineStatusContainer}>
+                <View style={styles.onlineDot} />
+                <Text style={styles.onlineStatus}>Active now</Text>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
 
-      {/* Messages List */}
-      <FlatList
-        data={conversation.messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item, index }) => (
-          <MessageBubble
-            message={item}
-            onDelete={handleDeleteMessage}
-            showAvatar={
-              index === conversation.messages.length - 1 ||
-              conversation.messages[index + 1]?.sender_id !== item.sender_id
-            }
-            isLatestOwnMessage={item.id === latestOwnMessageId}
-          />
-        )}
-        inverted
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        ListEmptyComponent={
-          conversation.isLoading ? (
-            <View style={styles.emptyLoading}>
-              <ActivityIndicator color={theme.colors.primary} />
-            </View>
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No messages yet. Say hello!</Text>
-            </View>
-          )
-        }
-        scrollIndicatorInsets={{ right: 1 }}
-        showsVerticalScrollIndicator={false}
-      />
+        {/* Messages List */}
+        <FlatList
+          data={conversation.messages}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item, index }) => (
+            <MessageBubble
+              message={item}
+              onDelete={handleDeleteMessage}
+              showAvatar={
+                index === conversation.messages.length - 1 ||
+                conversation.messages[index + 1]?.sender_id !== item.sender_id
+              }
+              isLatestOwnMessage={item.id === latestOwnMessageId}
+            />
+          )}
+          inverted
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={
+            conversation.isLoading ? (
+              <View style={styles.emptyLoading}>
+                <ActivityIndicator color={theme.colors.primary} />
+              </View>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No messages yet. Say hello!</Text>
+              </View>
+            )
+          }
+          contentContainerStyle={styles.messageListContent}
+          scrollIndicatorInsets={{ right: 1 }}
+          showsVerticalScrollIndicator={false}
+        />
 
-      {/* Message Input */}
-      <MessageInput
-        onSend={handleSendMessage}
-        onTyping={() => emitTyping(matchId)}
-        onStopTyping={() => emitStopTyping(matchId)}
-        disabled={conversation.isLoading}
-        otherUserTyping={conversation.userTyping}
-      />
+        {/* Message Input */}
+        <MessageInput
+          onSend={handleSendMessage}
+          onTyping={() => emitTyping(matchId)}
+          onStopTyping={() => emitStopTyping(matchId)}
+          disabled={conversation.isLoading}
+          otherUserTyping={conversation.userTyping}
+        />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -218,28 +230,58 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  keyboardView: {
+    flex: 1,
+  },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: theme.colors.border,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(168, 85, 247, 0.06)",
     gap: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   headerContent: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "600",
     color: theme.colors.text,
+    letterSpacing: 0.2,
+  },
+  onlineStatusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 3,
+    gap: 6,
+  },
+  onlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.success,
   },
   onlineStatus: {
     fontSize: 12,
-    color: theme.colors.primary,
-    marginTop: 2,
+    color: theme.colors.textSecondary,
     fontWeight: "500",
+  },
+  messageListContent: {
+    paddingVertical: 8,
   },
   skeletonContainer: {
     paddingHorizontal: 12,
@@ -249,7 +291,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 40,
+    paddingVertical: 60,
   },
   emptyLoading: {
     paddingVertical: 40,

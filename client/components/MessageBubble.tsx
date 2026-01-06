@@ -7,7 +7,9 @@ import {
   Pressable,
   Animated,
   Alert,
+  Platform,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@/constants/theme";
 import { ChatMessage } from "@/types/chat";
 import { useAuthStore } from "@/store/authStore";
@@ -87,7 +89,11 @@ export function MessageBubble({
           isOwnMessage ? styles.ownContainer : styles.otherContainer,
         ]}
       >
-        {!isOwnMessage && showAvatar && <View style={styles.avatarPlaceholder} />}
+        {!isOwnMessage && showAvatar && (
+          <View style={styles.avatarPlaceholder}>
+            <Ionicons name="person" size={16} color={theme.colors.textSecondary} />
+          </View>
+        )}
 
         <Animated.View
           style={[
@@ -112,36 +118,40 @@ export function MessageBubble({
               />
             )}
 
-            <Text
-              style={[
-                styles.messageText,
-                isOwnMessage ? styles.ownText : styles.otherText,
-              ]}
-            >
-              {message.message}
-            </Text>
+            <View style={styles.messageContent}>
+              <Text
+                style={[
+                  styles.messageText,
+                  isOwnMessage ? styles.ownText : styles.otherText,
+                ]}
+              >
+                {message.message}
+              </Text>
 
-            {message.edited_at && (
-              <Text style={styles.editedLabel}>(edited)</Text>
-            )}
+              <View style={styles.messageFooter}>
+                <Text
+                  style={[
+                    styles.timestamp,
+                    isOwnMessage ? styles.ownTimestamp : styles.otherTimestamp,
+                  ]}
+                >
+                  {formatTime(message.sent_at)}
+                  {message.edited_at && " • edited"}
+                </Text>
 
-            <Text
-              style={[
-                styles.timestamp,
-                isOwnMessage ? styles.ownTimestamp : styles.otherTimestamp,
-              ]}
-            >
-              {formatTime(message.sent_at)}
-            </Text>
+                {isOwnMessage && isLatestOwnMessage && (
+                  <Ionicons
+                    name={message.is_read ? "checkmark-done" : "checkmark"}
+                    size={14}
+                    color="rgba(255, 255, 255, 0.7)"
+                    style={styles.readIcon}
+                  />
+                )}
+              </View>
+            </View>
           </Pressable>
         </Animated.View>
       </View>
-
-      {isOwnMessage && isLatestOwnMessage && (
-        <Text style={styles.readReceipt}>
-          {message.is_read ? "Read" : "Sent"}
-        </Text>
-      )}
     </View>
   );
 }
@@ -149,8 +159,8 @@ export function MessageBubble({
 const styles = StyleSheet.create({
   messageWrapper: {
     flexDirection: "column",
-    marginVertical: 4,
-    marginHorizontal: 12,
+    marginVertical: 2,
+    marginHorizontal: 16,
   },
   ownWrapper: {
     alignItems: "flex-end",
@@ -161,6 +171,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "flex-end",
+    maxWidth: "85%",
   },
   ownContainer: {
     justifyContent: "flex-end",
@@ -169,64 +180,80 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   avatarPlaceholder: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: theme.colors.skeleton,
-    marginRight: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: theme.colors.surface,
+    marginRight: 6,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(168, 85, 247, 0.1)",
   },
   bubble: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-    maxWidth: "80%",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   ownBubble: {
     backgroundColor: theme.colors.primary,
     borderBottomRightRadius: 4,
   },
   otherBubble: {
-    backgroundColor: theme.colors.messageOtherBg || "#E5E5EA",
+    backgroundColor: "#FFFFFF",
     borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: "rgba(168, 85, 247, 0.08)",
+  },
+  messageContent: {
+    flexDirection: "column",
   },
   messageText: {
     fontSize: 15,
     lineHeight: 20,
+    letterSpacing: 0.2,
   },
   ownText: {
     color: "#FFFFFF",
-    fontWeight: "500",
   },
   otherText: {
     color: theme.colors.text,
   },
   media: {
-    width: 200,
-    height: 200,
-    borderRadius: 14,
-    marginBottom: 8,
+    width: 180,
+    height: 180,
+    borderRadius: 12,
+    marginBottom: 6,
   },
-  editedLabel: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-    fontStyle: "italic",
-    marginTop: 4,
+  messageFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 2,
+    gap: 4,
   },
   timestamp: {
-    fontSize: 11,
-    marginTop: 4,
+    fontSize: 10,
     fontWeight: "500",
+    letterSpacing: 0.3,
   },
   ownTimestamp: {
-    color: "rgba(255, 255, 255, 0.7)",
+    color: "rgba(255, 255, 255, 0.65)",
   },
   otherTimestamp: {
     color: theme.colors.textSecondary,
   },
-  readReceipt: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-    fontWeight: "500",
-    marginTop: 2,
+  readIcon: {
+    marginLeft: 2,
   },
 });
