@@ -1,0 +1,394 @@
+import prisma from "@/lib/prismaClient";
+import { redis } from "@/lib/redis";
+import logger from "@/config/logger";
+import { Like, CreateLikeResult } from "@/types/Like";
+
+// Configuration constants
+const DAILY_SUPERLIKE_LIMIT = 5; // Adjust based on your business logic
+
+/**
+ * Invalidate discover feed cache for a user
+ * Called when likes or matches are created/deleted to ensure fresh results
+ * Uses SCAN to iterate through all matching keys and delete them
+ * @param userId - User ID whose cache should be invalidated
+ */
+const invalidateDiscoverCache = async (userId: string): Promise<void> => {
+  try {
+    const pattern = `discover:${userId}:*`;
+    let cursor = '0';
+    let totalDeleted = 0;
+
+    // Iterate through all batches using SCAN cursor
+    do {
+      const result = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = result[0]; // Next cursor
+      const keys = result[1]; // Keys in this batch
+
+      if (keys.length > 0) {
+        await redis.del(...keys);
+        totalDeleted += keys.length;
+      }
+    } while (cursor !== '0');
+
+    if (totalDeleted > 0) {
+      logger.debug('CACHE_INVALIDATED', { userId, keysDeleted: totalDeleted });
+    }
+  } catch (error) {
+    // Log but don't throw - cache invalidation failure shouldn't break the operation
+    logger.error('CACHE_INVALIDATION_FAILED', {
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Creates a like or superlike from one user to another.
+ * Handles automatic matching, validation, and prevents race conditions.
+ *
+ * @param data - Like object containing from_user, to_user, and optional is_superlike
+ * @returns Object with like data, match status, and match ID if applicable
+ * @throws Error for validation failures or business rule violations
+ */
+export const createLike = async (data: Like): Promise<CreateLikeResult> => {
+  // Input validation
+  if (data.from_user === data.to_user) {
+    throw new Error('Users cannot like themselves');
+  }
+
+  if (!data.from_user || !data.to_user) {
+    throw new Error('Both from_user and to_user are required');
+  }
+
+  // Pre-transaction validation to avoid unnecessary DB load
+  const [fromProfile, toProfile] = await Promise.all([
+    prisma.profiles.findUnique({
+      where: { user_id: data.from_user },
+      select: { university_id: true, user_id: true }
+    }),
+    prisma.profiles.findUnique({
+      where: { user_id: data.to_user },
+      select: { university_id: true, user_id: true }
+    }),
+  ]);
+
+  if (!fromProfile || !toProfile) {
+    throw new Error('User profiles not found');
+  }
+
+  // Enforce campus-only matching
+  if (fromProfile.university_id !== toProfile.university_id) {
+    throw new Error('Users must be from the same university');
+  }
+
+  // Check for blocks
+  const blocked = await prisma.blocks.findFirst({
+    where: {
+      OR: [
+        { blocker_id: data.from_user, blocked_id: data.to_user },
+        { blocker_id: data.to_user, blocked_id: data.from_user },
+      ],
+    },
+  });
+
+  if (blocked) {
+    throw new Error('Cannot like blocked user');
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    // Check for existing like to prevent duplicates
+    const existingLike = await tx.likes.findFirst({
+      where: {
+        from_user: data.from_user,
+        to_user: data.to_user,
+      },
+    });
+
+    if (existingLike) {
+      throw new Error('Like already exists');
+    }
+
+    // Validate superlike limits
+    if (data.is_superlike) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const superlikesToday = await tx.likes.count({
+        where: {
+          from_user: data.from_user,
+          is_superlike: true,
+          created_at: { gte: today },
+        },
+      });
+
+      if (superlikesToday >= DAILY_SUPERLIKE_LIMIT) {
+        throw new Error(`Daily superlike limit of ${DAILY_SUPERLIKE_LIMIT} reached`);
+      }
+    }
+
+    // Create the like
+    const like = await tx.likes.create({ data });
+
+    // Check for reciprocal like
+    const reciprocal = await tx.likes.findFirst({
+      where: {
+        from_user: data.to_user,
+        to_user: data.from_user,
+      },
+    });
+
+    let matchId: string | null = null;
+
+    // If reciprocal exists, the DB trigger will create the match automatically.
+    // We can check if it exists, but since it's async, we might not see it immediately in this transaction unless the trigger runs synchronously (which it usually does in Postgres).
+    // However, to be safe and consistent with the "trigger" approach, we shouldn't manually create it.
+
+    // We can still check for reciprocal to return 'matched: true' to the UI.
+
+    if (reciprocal) {
+       // We can try to fetch the match if the trigger ran, or just assume it will be created.
+       // The UI might expect a matchId.
+       // If the trigger runs AFTER the transaction commits, we won't see it here.
+       // If it runs AFTER INSERT (which it does), it runs within the same transaction context usually.
+       // Let's try to find it.
+       const match = await tx.matches.findFirst({
+         where: {
+            OR: [
+              { user1: data.from_user, user2: data.to_user },
+              { user1: data.to_user, user2: data.from_user },
+            ]
+         }
+       });
+       matchId = match?.id || null;
+    }
+
+    return {
+      like,
+      matched: !!reciprocal,
+      matchId,
+    };
+  });
+
+  // Invalidate discover cache for both users after successful transaction
+  // This ensures they see updated results (the user they liked is removed from their feed)
+  await Promise.all([
+    invalidateDiscoverCache(data.from_user),
+    invalidateDiscoverCache(data.to_user)
+  ]).catch(error => {
+    // Log but don't throw - cache invalidation failure shouldn't break the operation
+    logger.error('CACHE_INVALIDATION_FAILED', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  });
+
+  return result;
+};
+
+/**
+ * Retrieves all likes sent by a specific user with profile information.
+ *
+ * @param userId - ID of the user whose sent likes to retrieve
+ * @param limit - Maximum number of likes to return (for pagination)
+ * @param offset - Number of likes to skip (for pagination)
+ * @returns Array of likes with recipient profile data
+ */
+export const getSentLikes = async (userId: string, limit: number = 50, offset: number = 0) => {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+
+  return prisma.likes.findMany({
+    where: { from_user: userId },
+    include: {
+      users_likes_to_userTousers: {
+        include: {
+          profiles: {
+            select: {
+              name: true,
+              avatar_url: true,
+              university_id: true,
+              bio: true,
+              birthdate: true, // For age calculation
+            }
+          }
+        }
+      }
+    },
+    orderBy: { created_at: 'desc' },
+    take: limit,
+    skip: offset,
+  });
+};
+
+/**
+ * Retrieves all likes received by a specific user with sender profile information.
+ * Useful for showing "who liked you" features.
+ *
+ * @param userId - ID of the user whose received likes to retrieve
+ * @param limit - Maximum number of likes to return (for pagination)
+ * @param offset - Number of likes to skip (for pagination)
+ * @returns Array of likes with sender profile data
+ */
+export const getReceivedLikes = async (userId: string, limit: number = 50, offset: number = 0) => {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+
+  return prisma.likes.findMany({
+    where: { to_user: userId },
+    include: {
+      users_likes_from_userTousers: {
+        include: {
+          profiles: {
+            select: {
+              name: true,
+              avatar_url: true,
+              university_id: true,
+              bio: true,
+              birthdate: true, // For age calculation
+            }
+          }
+        }
+      }
+    },
+    orderBy: { created_at: 'desc' },
+    take: limit,
+    skip: offset,
+  });
+};
+
+/**
+ * Get count of received likes (useful for "X people liked you" counters).
+ *
+ * @param userId - ID of the user
+ * @returns Count of received likes
+ */
+export const getReceivedLikesCount = async (userId: string): Promise<number> => {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+
+  return prisma.likes.count({
+    where: { to_user: userId },
+  });
+};
+
+/**
+ * Get count of today's superlikes for rate limiting.
+ *
+ * @param userId - ID of the user
+ * @returns Count of superlikes sent today
+ */
+export const getTodaysSuperlikeCount = async (userId: string): Promise<number> => {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return prisma.likes.count({
+    where: {
+      from_user: userId,
+      is_superlike: true,
+      created_at: { gte: today },
+    },
+  });
+};
+
+/**
+ * Check if user can send a superlike (hasn't reached daily limit).
+ *
+ * @param userId - ID of the user
+ * @returns Boolean indicating if user can send superlike
+ */
+export const canSendSuperlike = async (userId: string): Promise<boolean> => {
+  const count = await getTodaysSuperlikeCount(userId);
+  return count < DAILY_SUPERLIKE_LIMIT;
+};
+
+/**
+ * Check if two users have liked each other (are matched).
+ *
+ * @param user1Id - First user ID
+ * @param user2Id - Second user ID
+ * @returns Boolean indicating if users are matched
+ */
+export const areUsersMatched = async (user1Id: string, user2Id: string): Promise<boolean> => {
+  if (!user1Id || !user2Id || user1Id === user2Id) {
+    return false;
+  }
+
+  const match = await prisma.matches.findFirst({
+    where: {
+      OR: [
+        { user1: user1Id, user2: user2Id },
+        { user1: user2Id, user2: user1Id },
+      ],
+    },
+  });
+
+  return !!match;
+};
+
+/**
+ * Remove a like (unlike functionality).
+ * Note: This doesn't remove matches - you might want separate logic for unmatching.
+ *
+ * @param likeId - ID of the like to remove
+ * @param userId - ID of the user removing the like (for authorization)
+ * @returns The deleted like record
+ */
+export const removeLike = async (likeId: string, userId: string) => {
+  if (!likeId || !userId) {
+    throw new Error('Like ID and User ID are required');
+  }
+
+  // Verify the like belongs to the user
+  const like = await prisma.likes.findFirst({
+    where: {
+      id: likeId,
+      from_user: userId,
+    },
+  });
+
+  if (!like) {
+    throw new Error('Like not found or unauthorized');
+  }
+
+  const deletedLike = await prisma.likes.delete({
+    where: { id: likeId },
+  });
+
+  // Invalidate discover cache for both users
+  await Promise.all([
+    invalidateDiscoverCache(userId),
+    invalidateDiscoverCache(deletedLike.to_user)
+  ]);
+
+  return deletedLike;
+};
+
+/**
+ * Get mutual likes between two users (for debugging/admin purposes).
+ *
+ * @param user1Id - First user ID
+ * @param user2Id - Second user ID
+ * @returns Object with both likes if they exist
+ */
+export const getMutualLikes = async (user1Id: string, user2Id: string) => {
+  const [like1, like2] = await Promise.all([
+    prisma.likes.findFirst({
+      where: { from_user: user1Id, to_user: user2Id },
+    }),
+    prisma.likes.findFirst({
+      where: { from_user: user2Id, to_user: user1Id },
+    }),
+  ]);
+
+  return {
+    user1ToUser2: like1,
+    user2ToUser1: like2,
+    areMutual: !!like1 && !!like2,
+  };
+};

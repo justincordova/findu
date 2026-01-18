@@ -1,96 +1,152 @@
-# FindU
+# FindU - College Dating & Social Discovery App
 
-**Dating App for Verified College Students Only**
+## Project Overview
 
-*Discover real connections on your campus.*
+FindU is a mobile-first social discovery and dating app built exclusively for college students. Focused on authenticity and safety, it helps students connect through their campus community, shared interests, and personal goals without the distractions of generic dating platforms.
 
----
+### Core Mission
 
-## Core Idea
-
-> Create a **trusted, community-driven dating platform** for college students, verified through their `.edu` email, where they can meet peers from their campus or nearby universities with meaningful intent.
-
----
-
-## User Flow
-
-1. **Download & Onboard**  
-   - Download from App Store or Play Store  
-   - Intro tutorial on privacy, purpose, and safety  
-   - Signup with `.edu` email verification  
-
-2. **Profile Setup**  
-   - Add photos, bio, major, graduation year  
-   - Choose interests and intent (dating, friendship, etc.)  
-   - Optionally link Instagram or Spotify  
-
-3. **Discovery**  
-   - Browse verified students from your campus or nearby schools  
-   - Swipe or double-tap to like  
-   - View compatibility score based on shared interests & goals  
-
-4. **Match & Chat**  
-   - Mutual likes create a match  
-   - In-app chat opens  
-   - Icebreaker prompts help start conversations  
-
-5. **Safety Features**  
-   - Report/block users  
-   - Option to blur photos for privacy  
-   - Time-limited campus-only visibility  
-
-6. **Optional Upgrades**  
-   - See who liked you  
-   - Boost profile visibility  
-   - Send SuperLikes or Icebreakers  
-
----
-
-## Features
-
-- **Verified Students Only** via `.edu` emails  
-- **Campus-Based Matching**  
-- **Private & Secure Profiles**  
-- **Smart Matching Algorithm**  
-- **Icebreakers & Safe Chat**  
-- **Built-in Reporting & Moderation**  
-- **No Bots, Creeps, or Catfishing**  
-- **Intent-Based Filtering** (Dating, Friendship, Study Buddy)  
-
----
-
-## Monetization Overview
-
-| Revenue Source           | How it Works                              | Powered By    |
-|--------------------------|------------------------------------------|---------------|
-| Campus Boosts            | Users pay to boost visibility to nearby users | Stripe        |
-| SuperLikes / Icebreakers | One-time purchases to stand out          | Stripe        |
-| Premium Subscription     | See who liked you, unlimited swipes, rewind | Stripe Billing |
-| Tips / Donations         | Users can support the project             | Stripe        |
-
----
-
-## Target Audience
-
-- **College Students (18–25 years old)**  
-- Seeking relationships, friendship, networking  
-- Campus-limited discovery for safety & authenticity  
-- Priority on large universities & community colleges with active social life  
+> Create a trusted, community-driven dating platform for college students, verified through their `.edu` email, where they can meet peers from their campus or nearby universities with meaningful intent.
 
 ---
 
 ## Tech Stack
 
-| Layer           | Tool / Tech              | Notes                             |
-|-----------------|--------------------------|----------------------------------|
-| **Frontend**    | React Native + Expo      | Cross-platform native apps       |
-| **Styling**     | Tailwind CSS             | Via Tailwind for React Native    |
-| **State Mgmt**  | ZuStand                  | Lightweight and scalable         |
-| **Backend**     | Fastify                  | Handles auth, payments, moderation|
-| **Auth**        | Magic Link / OTP via Supabase | Custom login/signup (MFA-ready)  |
-| **Database**    | Supabase (PostgreSQL)    | Schema with RLS for security     |
-| **Payments**    | Stripe Billing & Checkout| Subscriptions, boosts, tips      |
-| **Storage**     | Supabase Storage (optional) | Profile pics, chat images       |
-| **Hosting**     | Vercel + Render                   | Backend dashboard, landing site  |
+| Layer              | Technology            | Purpose                            |
+| ------------------ | --------------------- | ---------------------------------- |
+| Frontend           | React Native + Expo   | Cross-platform mobile app          |
+| State Management   | Zustand               | Lightweight state management       |
+| Backend            | Node.js + Express     | API server                         |
+| Real-time          | Socket.IO             | Live messaging & typing indicators |
+| Authentication     | Better Auth           | Email verification & magic links   |
+| Database           | Supabase (PostgreSQL) | Primary data storage               |
+| Cache / Queue      | Redis                 | Caching, sessions, job queues      |
+| File Storage       | Supabase Storage      | Profile pictures, chat media       |
+| Hosting            | Render                | Backend deployment                 |
 
 ---
+
+## Demo
+
+<p align="center">
+  <img src="./docs/demo/demo.gif" width="280" alt="FindU Demo">
+</p>
+
+---
+
+## App Features
+
+### Authentication
+- Email/password and magic link login
+- `.edu` email verification
+- User registration and profile setup
+- Secure session management
+
+### Profile Management
+- Multi-step onboarding (photos, bio, interests)
+- Campus and school selection
+- Intent-based filtering (dating, friendship, etc.)
+- Profile editing and photo management
+
+### Discovery
+- Swipe-based matching interface
+- Campus-based user filtering
+- Interest-based compatibility scoring
+- Cached feed for performance
+
+### Matching
+- Mutual like detection with real-time notifications
+- Match management (view, unmatch)
+- Match history tracking
+
+### Messaging
+- Socket.IO-powered live chat
+- Message history with pagination
+- Typing indicators
+- Read receipts
+- Message editing and deletion
+- Media sharing (images)
+- Conversation list with latest message preview
+- Unread message indicators
+
+### Safety
+- User blocking system
+- Block cleanup (auto-remove likes/matches)
+- Privacy controls
+
+---
+
+## Architecture Highlights
+
+### Real-time Messaging
+- Socket.IO integration for instant message delivery
+- Automatic room management (users join match rooms on chat open)
+- Message deduplication to prevent duplicates
+- Offline user handling with graceful degradation
+- Optimistic UI updates for better UX
+
+### Performance Optimizations
+- Redis caching for discover feed
+- Message pagination (50 messages per fetch)
+- Efficient database queries with proper indexing
+- Zustand for lightweight state management
+
+### Security
+- Session-based authentication with Better Auth
+- `.edu` email verification requirement
+- Secure WebSocket connections
+- Input validation and sanitization
+- Block system with automatic cleanup
+
+---
+
+## Getting Started
+
+See [SETUP.md](./SETUP.md) for detailed setup instructions.
+
+---
+
+## Project Structure
+
+```
+findu/
+├── client/              # React Native mobile app
+│   ├── app/            # Expo Router screens
+│   ├── components/     # Reusable UI components
+│   ├── store/          # Zustand state management
+│   ├── api/            # API client functions
+│   └── utils/          # Socket.IO and helpers
+├── server/             # Node.js backend
+│   ├── src/
+│   │   ├── modules/    # Feature modules (auth, matches, chats, etc.)
+│   │   ├── websocket/  # Socket.IO configuration
+│   │   ├── middleware/ # Express middleware
+│   │   └── lib/        # Shared utilities
+│   └── prisma/         # Database schema and migrations
+└── docs/               # Documentation and assets
+```
+
+---
+
+## Planned Features
+
+- Report functionality
+- Photo verification
+- Campus-only visibility periods
+- Advanced moderation tools
+- Subscription tiers (Bachelors, Masters, PhD)
+- Boost functionality
+- SuperLikes and Icebreakers
+- Stripe payment integration
+- Instagram/Spotify integration
+- Group events and meetups
+- Campus-specific activities
+
+---
+
+## Contact & Support
+
+- **Email**: findu.team@gmail.com
+- **Project Status**: Beta
+- **Platform**: iOS & Android
+- **Target Audience**: College students (18-26)

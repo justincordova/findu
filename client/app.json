@@ -1,33 +1,53 @@
 {
   "expo": {
-    "scheme": "findu",
     "name": "FindU",
     "slug": "findu",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./src/assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/images/logo.png",
+    "scheme": "findu",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./src/assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+    "deeplinks": {
+      "enabled": true,
+      "config": [
+        {
+          "scheme": "findu",
+          "host": "profile",
+          "path": "/:userId"
+        }
+      ]
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./src/assets/favicon.png"
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/logo.png"
     },
     "plugins": [
-      "expo-router"
-    ]
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

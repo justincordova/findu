@@ -1,0 +1,241 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                              String          @id @default(cuid())
+  name                            String?
+  email                           String          @unique
+  emailVerified                   Boolean?        @default(false)
+  image                           String?
+  createdAt                       DateTime        @default(now())
+  updatedAt                       DateTime        @updatedAt
+  accounts                        Account[]
+  blocks_blocks_blocked_idTousers blocks[]        @relation("blocks_blocked_idTousers")
+  blocks_blocks_blocker_idTousers blocks[]        @relation("blocks_blocker_idTousers")
+  chats                           chats[]
+  donations                       donations[]
+  likes_likes_from_userTousers    likes[]         @relation("likes_from_userTousers")
+  likes_likes_to_userTousers      likes[]         @relation("likes_to_userTousers")
+  matches_matches_user1Tousers    matches[]       @relation("matches_user1Tousers")
+  matches_matches_user2Tousers    matches[]       @relation("matches_user2Tousers")
+  profiles                        profiles?
+  sessions                        Session[]
+  subscriptions                   subscriptions[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, value])
+  @@index([identifier])
+  @@map("verification_tokens")
+}
+
+model blocks {
+  id                             String    @id @default(cuid())
+  blocker_id                     String?
+  blocked_id                     String?
+  created_at                     DateTime? @default(now())
+  updated_at                     DateTime? @updatedAt
+  users_blocks_blocked_idTousers User?     @relation("blocks_blocked_idTousers", fields: [blocked_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_blocks_blocker_idTousers User?     @relation("blocks_blocker_idTousers", fields: [blocker_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([blocker_id, blocked_id])
+  @@index([blocked_id], map: "idx_blocks_blocked")
+  @@index([blocker_id], map: "idx_blocks_blocker")
+}
+
+model chats {
+  id              String    @id @default(cuid())
+  match_id        String
+  sender_id       String
+  message         String
+  is_read         Boolean   @default(false)
+  read_at         DateTime?
+  sent_at         DateTime  @default(now())
+  edited_at       DateTime?
+  media_url       String?
+  message_type    String    @default("TEXT") @db.VarChar(20)
+  matches         matches   @relation(fields: [match_id], references: [id], onDelete: Cascade)
+  users           User      @relation(fields: [sender_id], references: [id], onDelete: Cascade)
+
+  @@index([match_id], map: "idx_chats_match")
+  @@index([sender_id], map: "idx_chats_sender")
+  @@index([match_id, sent_at], map: "idx_chats_match_sent")
+}
+
+model donations {
+  id         String    @id @default(cuid())
+  user_id    String?
+  amount     Decimal?
+  created_at DateTime? @default(now())
+  updated_at DateTime? @updatedAt
+  users      User?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model likes {
+  id                           String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  from_user                    String
+  to_user                      String
+  is_superlike                 Boolean   @default(false)
+  created_at                   DateTime  @default(now())
+  updated_at                   DateTime? @updatedAt
+  users_likes_from_userTousers User      @relation("likes_from_userTousers", fields: [from_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_likes_to_userTousers   User      @relation("likes_to_userTousers", fields: [to_user], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([from_user, to_user])
+  @@index([from_user], map: "idx_likes_from_user")
+  @@index([to_user], map: "idx_likes_to_user")
+}
+
+model matches {
+  id                         String    @id @default(cuid())
+  user1                      String
+  user2                      String
+  matched_at                 DateTime? @default(now())
+  created_at                 DateTime? @default(now())
+  updated_at                 DateTime? @updatedAt
+  chats                      chats[]
+  users_matches_user1Tousers User      @relation("matches_user1Tousers", fields: [user1], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_matches_user2Tousers User      @relation("matches_user2Tousers", fields: [user2], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user1, user2])
+}
+
+model profiles {
+  user_id            String       @id
+  name               String       @db.VarChar(100)
+  avatar_url         String
+  birthdate          DateTime     @db.Date
+  gender             String       @db.VarChar(20)
+  pronouns           String       @db.VarChar(20)
+  bio                String
+  university_year    Int
+  major              String       @db.VarChar(100)
+  grad_year          Int
+  interests          String[]
+  intent             String       @db.VarChar(50)
+  gender_preference  String[]
+  sexual_orientation String       @db.VarChar(50)
+  min_age            Int
+  max_age            Int
+  photos             String[]     @default([])
+  lifestyle          Json?
+  created_at         DateTime?    @default(now())
+  updated_at         DateTime?    @updatedAt
+  university_id      String
+  campus_id          String?
+  campuses           campuses?    @relation(fields: [campus_id], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  universities       universities @relation(fields: [university_id], references: [id], onUpdate: NoAction)
+  users              User         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model subscriptions {
+  id         String    @id @default(cuid())
+  user_id    String?
+  plan_name  String
+  start_date DateTime? @default(now())
+  end_date   DateTime?
+  is_active  Boolean?  @default(true)
+  created_at DateTime? @default(now())
+  updated_at DateTime? @updatedAt
+  users      User?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model universities {
+  id                 String               @id @default(cuid())
+  name               String
+  slug               String               @unique
+  created_at         DateTime?            @default(now())
+  updated_at         DateTime?            @updatedAt
+  campuses           campuses[]
+  profiles           profiles[]
+  university_domains university_domains[]
+}
+
+model pending_signups {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  hashed_password    String
+  verification_token String    @unique
+  expires_at         DateTime
+  created_at         DateTime? @default(now())
+  updated_at         DateTime? @updatedAt
+
+  @@index([email], map: "idx_pending_signups_email")
+  @@index([verification_token], map: "idx_pending_signups_verification_token")
+}
+
+model campuses {
+  id            String       @id @default(cuid())
+  university_id String
+  name          String
+  slug          String
+  created_at    DateTime?    @default(now())
+  updated_at    DateTime?    @updatedAt
+  universities  universities @relation(fields: [university_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles      profiles[]
+
+  @@unique([university_id, slug], map: "campus_unique_per_university")
+}
+
+model university_domains {
+  id            String       @id @default(cuid())
+  university_id String
+  domain        String
+  created_at    DateTime?    @default(now())
+  updated_at    DateTime?    @updatedAt
+  universities  universities @relation(fields: [university_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([university_id, domain], map: "university_domain_unique")
+}

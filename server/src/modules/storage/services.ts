@@ -1,0 +1,138 @@
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import logger from "@/config/logger";
+
+/**
+ * Delete all files for a user from the "profiles" bucket.
+ * Typically used during profile setup or account reset.
+ *
+ * @param userId - ID of the user whose files should be deleted.
+ */
+const deleteAllUserFiles = async (userId: string): Promise<void> => {
+  try {
+    const { data: files, error } = await supabaseAdmin.storage.from("profiles").list(userId);
+    if (error) {
+      logger.error("[deleteAllUserFiles] Error listing files", { userId, error });
+      throw new Error(error.message);
+    }
+
+    if (files && files.length > 0) {
+      const paths = files.map(f => `${userId}/${f.name}`);
+      logger.info("[deleteAllUserFiles] Deleting files", { userId, paths });
+
+      const { error: removeError } = await supabaseAdmin.storage.from("profiles").remove(paths);
+      if (removeError) {
+        logger.error("[deleteAllUserFiles] Error removing files", { userId, removeError });
+        throw new Error(removeError.message);
+      }
+    }
+  } catch (err: any) {
+    logger.error("[deleteAllUserFiles] Exception", { error: err });
+    // Optional: re-throw or handle silently depending on business logic
+    throw err;
+  }
+};
+
+/**
+ * Delete a single file for a user from the "profiles" bucket.
+ * Typically used when replacing an existing file (e.g., avatar update).
+ *
+ * Handles extension mismatches: if the base filename exists with a different
+ * extension (e.g., photo_3.jpg vs photo_3.png), it will find and delete the
+ * existing file regardless of extension.
+ *
+ * @param userId - ID of the user.
+ * @param filename - Name of the file to delete (used to extract base name).
+ */
+const deleteSingleUserFile = async (userId: string, filename: string): Promise<void> => {
+  try {
+    // Extract base filename without extension
+    const baseFilename = filename.split('.')[0];
+
+    // List all files in user's folder
+    const { data: files, error: listError } = await supabaseAdmin.storage
+      .from("profiles")
+      .list(userId);
+
+    if (listError) {
+      logger.error("[deleteSingleUserFile] Failed to list files", { userId, listError });
+      return;
+    }
+
+    // Find any file matching the base filename (handles extension differences)
+    const fileToDelete = files?.find(f => f.name.split('.')[0] === baseFilename);
+
+    if (!fileToDelete) {
+      logger.info("[deleteSingleUserFile] No existing file found to delete", { userId, baseFilename });
+      return;
+    }
+
+    const path = `${userId}/${fileToDelete.name}`;
+    logger.info("[deleteSingleUserFile] Attempting to delete file", { path, baseFilename });
+
+    const { error } = await supabaseAdmin.storage.from("profiles").remove([path]);
+    if (error) {
+      logger.error("[deleteSingleUserFile] Failed to delete file", { path, error });
+      return;
+    }
+
+    logger.info("[deleteSingleUserFile] File deleted successfully", { path });
+  } catch (err: any) {
+    logger.error("[deleteSingleUserFile] Exception", { error: err });
+  }
+};
+
+/**
+ * Generates a signed Supabase Storage upload URL for a user.
+ *
+ * This function supports two modes:
+ * - `setup`: Deletes all existing files for the user before generating a new signed URL.
+ * - `update`: Deletes only the specific file being replaced before generating a new signed URL.
+ *
+ * @param userId - ID of the user uploading the file.
+ * @param filename - The fixed name of the file (e.g., "avatar.jpg").
+ * @param mode - Upload mode: `"setup"` or `"update"`.
+ * @returns A promise that resolves to an object containing:
+ *   - `uploadUrl`: The signed URL to upload the file.
+ *   - `path`: The full object path in Supabase storage.
+ *   Or, in case of an error:
+ *   - `error`: Error message describing the failure.
+ */
+export const generateSignedUploadUrl = async (
+  userId: string,
+  filename: string,
+  mode: "setup" | "update"
+): Promise<{ uploadUrl: string; path: string } | { error: string }> => {
+  try {
+    logger.info("[generateSignedUploadUrl] Start", { userId, filename, mode });
+
+    if (mode === "setup") {
+      // Destructive action: delete all existing files
+      await deleteAllUserFiles(userId);
+    } else if (mode === "update") {
+      // Delete only the specific file being replaced
+      await deleteSingleUserFile(userId, filename);
+    }
+
+    const objectPath = `${userId}/${filename}`;
+    logger.info("[generateSignedUploadUrl] Object path", { objectPath });
+
+    const { data, error } = await supabaseAdmin.storage
+      .from("profiles")
+      .createSignedUploadUrl(objectPath);
+
+    if (error) {
+      logger.error("[generateSignedUploadUrl] Supabase error", { error });
+      return { error: error.message };
+    }
+
+    logger.info("[generateSignedUploadUrl] Signed URL created", {
+      uploadUrl: data.signedUrl,
+      path: objectPath,
+    });
+
+    return { uploadUrl: data.signedUrl, path: objectPath };
+  } catch (err: any) {
+    logger.error("[generateSignedUploadUrl] Exception", { error: err });
+    return { error: err.message || "Unknown error creating upload URL" };
+  }
+};
