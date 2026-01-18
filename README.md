@@ -28,7 +28,7 @@ FindU is a mobile-first social discovery and dating app built exclusively for co
 
 ## Demo
 
-[Watch Demo Video](./docs/demo/demo.mp4)
+![Demo](./docs/demo/demo.gif)
 
 ---
 
