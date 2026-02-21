@@ -1,5 +1,4 @@
-import { prisma } from '@/lib/prismaClient';
-import { Prisma } from '@prisma/client';
+import prisma from '@/lib/prismaClient';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
@@ -17,7 +16,7 @@ export async function createTestUser() {
   // Hash password
   const hashedPassword = await bcrypt.hash('password123', 10);
 
-  const user = await prisma.users.create({
+  const user = await prisma.user.create({
     data: {
       id: userId,
       email,
@@ -27,7 +26,7 @@ export async function createTestUser() {
   });
 
   // Create account with password
-  await prisma.accounts.create({
+  await prisma.account.create({
     data: {
       userId: user.id,
       providerId: 'credential',
@@ -93,7 +92,7 @@ export async function createTestProfile(userId: string) {
 export async function createTestOTP(email: string): Promise<string> {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  await prisma.verification_tokens.create({
+  await prisma.verification.create({
     data: {
       identifier: email,
       value: otp,
@@ -127,9 +126,9 @@ export async function cleanupTestData() {
   await prisma.blocks.deleteMany({});
   await prisma.likes.deleteMany({});
   await prisma.profiles.deleteMany({});
-  await prisma.accounts.deleteMany({});
-  await prisma.verification_tokens.deleteMany({});
-  await prisma.users.deleteMany({});
+  await prisma.account.deleteMany({});
+  await prisma.verification.deleteMany({});
+  await prisma.user.deleteMany({});
 }
 
 /**

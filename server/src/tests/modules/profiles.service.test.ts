@@ -6,11 +6,15 @@ import logger from "@/config/logger";
 
 // Mock prisma and logger
 jest.mock("@/lib/prismaClient", () => ({
+  $transaction: jest.fn(),
   profiles: {
     create: jest.fn(),
     findUnique: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+  },
+  university_domains: {
+    findFirst: jest.fn(),
   },
 }));
 
@@ -103,15 +107,20 @@ describe("Profiles API happy path cases", () => {
   });
 
   it("should update a profile successfully", async () => {
-    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleProfile);
-    (prisma.profiles.update as jest.Mock).mockResolvedValue(sampleProfile);
+    const mockTx = {
+      profiles: {
+        findUnique: jest.fn().mockResolvedValue(sampleProfile),
+        update: jest.fn().mockResolvedValue(sampleProfile),
+      },
+    };
+    (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
 
     const partialUpdate: Partial<Profile> = {
       birthdate: new Date("1999-12-31"),
     };
     const result = await ProfileService.updateProfile(userId, partialUpdate);
 
-    expect(prisma.profiles.update).toHaveBeenCalledWith({
+    expect(mockTx.profiles.update).toHaveBeenCalledWith({
       where: { user_id: userId },
       data: expect.objectContaining({
         birthdate: new Date("1999-12-31"),
@@ -130,6 +139,39 @@ describe("Profiles API happy path cases", () => {
       where: { user_id: userId },
     });
   });
+
+  it("should update only optional fields without affecting other profile data", async () => {
+    const mockTx = {
+      profiles: {
+        findUnique: jest.fn().mockResolvedValue(sampleProfile),
+        update: jest.fn().mockImplementation(({ data }) => {
+          return { ...sampleProfile, ...data }; // merge updated fields
+        }),
+      },
+    };
+    (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
+
+    const partialUpdate: Partial<Profile> = {
+      spotify_url: "http://spotify.com/new-user",
+      instagram_url: "http://instagram.com/new-user",
+    };
+
+    const result = await ProfileService.updateProfile(userId, partialUpdate);
+
+    expect(mockTx.profiles.update).toHaveBeenCalledWith({
+      where: { user_id: userId },
+      data: expect.objectContaining({
+        spotify_url: "http://spotify.com/new-user",
+        instagram_url: "http://instagram.com/new-user",
+        updated_at: expect.any(Date),
+      }),
+    });
+
+    // Ensure unchanged fields are still intact
+    expect(result?.name).toBe(sampleProfile.name);
+    expect(result?.birthdate).toEqual(sampleProfile.birthdate);
+    expect(result?.bio).toBe(sampleProfile.bio);
+  });
 });
 
 describe("Profiles API edge & failure cases", () => {
@@ -138,7 +180,13 @@ describe("Profiles API edge & failure cases", () => {
   });
 
   it("should return null when updating a non-existent profile", async () => {
-    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(null);
+    const mockTx = {
+      profiles: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        update: jest.fn(),
+      },
+    };
+    (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
 
     const partialUpdate: Partial<Profile> = {
       birthdate: new Date("1999-12-31"),
@@ -180,16 +228,21 @@ describe("Profiles API edge & failure cases", () => {
 
   it("should throw an error if update fails", async () => {
     const error = new Error("DB error");
-    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleProfile);
-    (prisma.profiles.update as jest.Mock).mockRejectedValue(error);
+    const mockTx = {
+      profiles: {
+        findUnique: jest.fn().mockResolvedValue(sampleProfile),
+        update: jest.fn().mockRejectedValue(error),
+      },
+    };
+    (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
 
     await expect(
       ProfileService.updateProfile(userId, { bio: "New bio" })
     ).rejects.toThrow("DB error");
     expect(logger.error).toHaveBeenCalledWith("UPDATE_PROFILE_ERROR", {
       error,
-      userId,
       profileData: { bio: "New bio" },
+      userId,
     });
   });
 
@@ -219,32 +272,17 @@ describe("Profiles API edge & failure cases", () => {
     });
   });
 
-  it("should update only optional fields without affecting other profile data", async () => {
-    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleProfile);
-    (prisma.profiles.update as jest.Mock).mockImplementation(({ data }) => {
-      return { ...sampleProfile, ...data }; // merge updated fields
+  it("should throw an error if deleteProfile fails", async () => {
+    const error = new Error("DB error");
+    (prisma.profiles.delete as jest.Mock).mockRejectedValue(error);
+
+    await expect(ProfileService.deleteProfile(userId)).rejects.toThrow(
+      "DB error"
+    );
+    expect(logger.error).toHaveBeenCalledWith("DELETE_PROFILE_ERROR", {
+      error,
+      userId,
     });
-
-    const partialUpdate: Partial<Profile> = {
-      spotify_url: "http://spotify.com/new-user",
-      instagram_url: "http://instagram.com/new-user",
-    };
-
-    const result = await ProfileService.updateProfile(userId, partialUpdate);
-
-    expect(prisma.profiles.update).toHaveBeenCalledWith({
-      where: { user_id: userId },
-      data: expect.objectContaining({
-        spotify_url: "http://spotify.com/new-user",
-        instagram_url: "http://instagram.com/new-user",
-        updated_at: expect.any(Date),
-      }),
-    });
-
-    // Ensure unchanged fields are still intact
-    expect(result?.name).toBe(sampleProfile.name);
-    expect(result?.birthdate).toEqual(sampleProfile.birthdate);
-    expect(result?.bio).toBe(sampleProfile.bio);
   });
 });
 
@@ -254,8 +292,6 @@ describe("resolveUniversityAndCampuses", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Mock for university_domains needs to be on the root prisma object
-    (prisma as any).university_domains = { findFirst: jest.fn() };
   });
 
   it("should resolve university and campuses from email", async () => {
@@ -270,7 +306,7 @@ describe("resolveUniversityAndCampuses", () => {
         ],
       },
     };
-    ((prisma as any).university_domains.findFirst as jest.Mock).mockResolvedValue(mockUniDomain);
+    (prisma.university_domains.findFirst as jest.Mock).mockResolvedValue(mockUniDomain);
 
     const result = await ProfileService.resolveUniversityAndCampuses(email);
 
@@ -284,14 +320,14 @@ describe("resolveUniversityAndCampuses", () => {
         { id: "campus-1", name: "Main Campus", slug: "main-campus" },
       ],
     });
-    expect((prisma as any).university_domains.findFirst).toHaveBeenCalledWith({
+    expect(prisma.university_domains.findFirst).toHaveBeenCalledWith({
       where: { domain },
       include: { universities: { include: { campuses: true } } },
     });
   });
 
   it("should return null if university not found for domain", async () => {
-    ((prisma as any).university_domains.findFirst as jest.Mock).mockResolvedValue(null);
+    (prisma.university_domains.findFirst as jest.Mock).mockResolvedValue(null);
 
     const result = await ProfileService.resolveUniversityAndCampuses(email);
 
@@ -300,7 +336,7 @@ describe("resolveUniversityAndCampuses", () => {
 
   it("should throw an error if database call fails", async () => {
     const error = new Error("DB Error");
-    ((prisma as any).university_domains.findFirst as jest.Mock).mockRejectedValue(error);
+    (prisma.university_domains.findFirst as jest.Mock).mockRejectedValue(error);
 
     await expect(ProfileService.resolveUniversityAndCampuses(email)).rejects.toThrow("DB Error");
   });
@@ -327,8 +363,13 @@ describe("Lifestyle field handling", () => {
 
   it("should handle null lifestyle field", async () => {
     const profileWithoutLifestyle = { ...sampleProfile, lifestyle: null };
-    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleProfile);
-    (prisma.profiles.update as jest.Mock).mockResolvedValue(profileWithoutLifestyle);
+    const mockTx = {
+      profiles: {
+        findUnique: jest.fn().mockResolvedValue(sampleProfile),
+        update: jest.fn().mockResolvedValue(profileWithoutLifestyle),
+      },
+    };
+    (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
 
     const result = await ProfileService.updateProfile(userId, { lifestyle: null });
 
@@ -342,8 +383,13 @@ describe("Lifestyle field handling", () => {
       cleanliness: "Very clean",
     };
     const profileWithLifestyle = { ...sampleProfile, lifestyle: lifestyleData };
-    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleProfile);
-    (prisma.profiles.update as jest.Mock).mockResolvedValue(profileWithLifestyle);
+    const mockTx = {
+      profiles: {
+        findUnique: jest.fn().mockResolvedValue(sampleProfile),
+        update: jest.fn().mockResolvedValue(profileWithLifestyle),
+      },
+    };
+    (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
 
     const result = await ProfileService.updateProfile(userId, {
       lifestyle: lifestyleData,
@@ -355,12 +401,17 @@ describe("Lifestyle field handling", () => {
   it("should preserve existing lifestyle data when updating other fields", async () => {
     const existingLifestyle = { drinking: "Never", fitness: "Gym regular" };
     const profileWithLifestyle = { ...sampleProfile, lifestyle: existingLifestyle };
-    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(profileWithLifestyle);
-    (prisma.profiles.update as jest.Mock).mockResolvedValue(profileWithLifestyle);
+    const mockTx = {
+      profiles: {
+        findUnique: jest.fn().mockResolvedValue(profileWithLifestyle),
+        update: jest.fn().mockResolvedValue(profileWithLifestyle),
+      },
+    };
+    (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
 
     await ProfileService.updateProfile(userId, { bio: "New bio" });
 
     // Lifestyle should not be modified when updating other fields
-    expect((prisma.profiles.update as jest.Mock).mock.calls[0][0].data.lifestyle).not.toBeDefined();
+    expect((mockTx.profiles.update as jest.Mock).mock.calls[0][0].data.lifestyle).not.toBeDefined();
   });
 });

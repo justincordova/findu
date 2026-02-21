@@ -8,8 +8,6 @@ import {
   Image,
   Animated,
   Platform,
-  Keyboard,
-  LayoutAnimation,
   UIManager,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -86,7 +84,7 @@ export function MessageInput({
       typingDot2.setValue(0);
       typingDot3.setValue(0);
     }
-  }, [otherUserTyping]);
+  }, [otherUserTyping, typingDot1, typingDot2, typingDot3]);
 
   // Media preview animation
   useEffect(() => {
@@ -100,7 +98,7 @@ export function MessageInput({
     } else {
       mediaPreviewScale.setValue(0);
     }
-  }, [selectedMedia]);
+  }, [selectedMedia, mediaPreviewScale]);
 
   const handleTextChange = (newText: string) => {
     setText(newText);

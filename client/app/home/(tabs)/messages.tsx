@@ -58,7 +58,7 @@ export default function MessagesScreen() {
               ...match,
               lastMessage: lastMessage || undefined,
             };
-          } catch (error) {
+          } catch {
             // 404 is expected when no messages exist yet
             return { ...match };
           }

@@ -9,6 +9,7 @@ import logger from "@/config/logger";
 jest.mock("@/lib/prismaClient", () => ({
   __esModule: true,
   default: {
+    $transaction: jest.fn(),
     user: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -131,11 +132,18 @@ describe("AuthService", () => {
         (redis.get as jest.Mock).mockResolvedValue("123456");
         const ctx = await auth.$context;
         (ctx.password.hash as jest.Mock).mockResolvedValue("hashedPassword");
-        (prisma.user.create as jest.Mock).mockResolvedValue({
-          id: "1",
-          email: "test@example.com",
-        });
-        (prisma.account.create as jest.Mock).mockResolvedValue({});
+        const mockTx = {
+          user: {
+            create: jest.fn().mockResolvedValue({
+              id: "1",
+              email: "test@example.com",
+            }),
+          },
+          account: {
+            create: jest.fn().mockResolvedValue({}),
+          },
+        };
+        (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
         jest.spyOn(AuthService, "signIn").mockResolvedValue({
           success: true,
           user: { id: "1", email: "test@example.com" },
@@ -151,13 +159,13 @@ describe("AuthService", () => {
         expect(result.success).toBe(true);
         expect(redis.get).toHaveBeenCalledWith("otp:test@university.edu");
         expect(ctx.password.hash).toHaveBeenCalledWith("password");
-        expect(prisma.user.create).toHaveBeenCalledWith({
+        expect(mockTx.user.create).toHaveBeenCalledWith({
           data: {
             email: "test@university.edu",
             name: "test",
           },
         });
-        expect(prisma.account.create).toHaveBeenCalledWith({
+        expect(mockTx.account.create).toHaveBeenCalledWith({
           data: {
             userId: "1",
             providerId: "credential",
@@ -209,8 +217,15 @@ describe("AuthService", () => {
         const ctx = await auth.$context;
         (ctx.password.hash as jest.Mock).mockReset();
         (ctx.password.hash as jest.Mock).mockResolvedValue("hashedPassword");
-        (prisma.user.create as jest.Mock).mockReset();
-        (prisma.user.create as jest.Mock).mockRejectedValue(error);
+        const mockTx = {
+          user: {
+            create: jest.fn().mockRejectedValue(error),
+          },
+          account: {
+            create: jest.fn(),
+          },
+        };
+        (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
         (prisma.user.findUnique as jest.Mock).mockReset();
         (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
@@ -237,20 +252,18 @@ describe("AuthService", () => {
         const ctx = await auth.$context;
         (ctx.password.hash as jest.Mock).mockReset();
         (ctx.password.hash as jest.Mock).mockResolvedValue("hashedPassword");
-        (prisma.user.create as jest.Mock).mockReset();
-        (prisma.user.create as jest.Mock).mockResolvedValue({
-          id: "1",
-          email: "test@university.edu",
-        });
-        (prisma.account.create as jest.Mock).mockReset();
-        (prisma.account.create as jest.Mock).mockRejectedValue(error);
-        (prisma.user.findUnique as jest.Mock).mockReset();
-        (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-          id: "1",
-          email: "test@university.edu",
-        });
-        (prisma.user.delete as jest.Mock).mockReset();
-        (prisma.user.delete as jest.Mock).mockResolvedValue({});
+        const mockTx = {
+          user: {
+            create: jest.fn().mockResolvedValue({
+              id: "1",
+              email: "test@university.edu",
+            }),
+          },
+          account: {
+            create: jest.fn().mockRejectedValue(error),
+          },
+        };
+        (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
 
         const result = await AuthService.signUpAndVerify(
           "test@university.edu",
@@ -260,8 +273,11 @@ describe("AuthService", () => {
 
         expect(result.success).toBe(false);
         expect(result.error).toBe("Account creation failed");
-        expect(prisma.user.delete).toHaveBeenCalledWith({
-          where: { id: "1" },
+        expect(logger.error).toHaveBeenCalledWith("SIGN_UP_ERROR", {
+          error: "Account creation failed",
+          errorName: "Error",
+          stack: expect.any(String),
+          email: "test@university.edu",
         });
       });
 
@@ -271,20 +287,24 @@ describe("AuthService", () => {
         (redis.get as jest.Mock).mockResolvedValue("123456");
         const ctx = await auth.$context;
         (ctx.password.hash as jest.Mock).mockResolvedValue("hashedPassword");
-        (prisma.user.create as jest.Mock).mockResolvedValue({ id: "1", email: "test@university.edu" });
-        (prisma.account.create as jest.Mock).mockRejectedValue(error);
-        (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: "1", email: "test@university.edu" });
-        (prisma.user.delete as jest.Mock).mockResolvedValue({});
-    
+        const mockTx = {
+          user: {
+            create: jest.fn().mockResolvedValue({ id: "1", email: "test@university.edu" }),
+          },
+          account: {
+            create: jest.fn().mockRejectedValue(error),
+          },
+        };
+        (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
+
         const result = await AuthService.signUpAndVerify(
           "test@university.edu",
           "password",
           "123456"
         );
-    
+
         expect(result.success).toBe(false);
         expect(result.error).toBe("Failed to create user account");
-        expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: "1" } });
       });
     });
 

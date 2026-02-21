@@ -13,6 +13,11 @@ jest.mock("@/lib/prismaClient", () => ({
   },
 }));
 
+jest.mock("@/lib/redis", () => ({
+  scan: jest.fn().mockResolvedValue(['0', []]),
+  del: jest.fn().mockResolvedValue(1),
+}));
+
 const user1 = "user1-id";
 const user2 = "user2-id";
 const matchSample: Match = {
@@ -111,10 +116,18 @@ describe("Matches API happy path cases", () => {
   });
 
   it("should delete a match successfully", async () => {
+    (prisma.matches.findUnique as jest.Mock).mockResolvedValue({
+      user1: user1,
+      user2: user2,
+    });
     (prisma.matches.delete as jest.Mock).mockResolvedValue(undefined);
 
     await MatchesService.deleteMatch(matchSample.id);
 
+    expect(prisma.matches.findUnique).toHaveBeenCalledWith({
+      where: { id: matchSample.id },
+      select: { user1: true, user2: true }
+    });
     expect(prisma.matches.delete).toHaveBeenCalledWith({ where: { id: matchSample.id } });
   });
 
