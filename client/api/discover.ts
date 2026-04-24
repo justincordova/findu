@@ -18,6 +18,6 @@ export const DiscoverAPI = {
     const res = await fetch(`${API_BASE}?${params.toString()}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return handleResponse(res);
+    return handleResponse<{ profiles?: any[] }>(res);
   },
 };

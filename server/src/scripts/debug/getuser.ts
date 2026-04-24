@@ -1,11 +1,10 @@
-
-import prisma from '@/lib/prismaClient';
+import prisma from "@/lib/prismaClient";
 
 async function main() {
   const email = process.argv[2];
 
   if (!email) {
-    console.error('Please provide an email as an argument.');
+    console.error("Please provide an email as an argument.");
     process.exit(1);
   }
 
@@ -24,10 +23,10 @@ async function main() {
       return;
     }
 
-    console.log('User found:', user);
-    console.log('Profile:', user.profiles);
+    console.log("User found:", user);
+    console.log("Profile:", user.profiles);
   } catch (error) {
-    console.error('Error fetching user:', error);
+    console.error("Error fetching user:", error);
   } finally {
     await prisma.$disconnect();
   }

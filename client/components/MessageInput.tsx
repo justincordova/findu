@@ -1,23 +1,24 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  View,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  ActivityIndicator,
-  Image,
-  Animated,
-  Platform,
-  Keyboard,
-  LayoutAnimation,
-  UIManager,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Animated,
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  UIManager,
+  View,
+} from "react-native";
 import { theme } from "@/constants/theme";
 
 // Enable LayoutAnimation on Android
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -39,7 +40,9 @@ export function MessageInput({
   const [text, setText] = useState("");
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [typingTimer, setTypingTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [typingTimer, setTypingTimer] = useState<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const [inputHeight, setInputHeight] = useState(40);
 
   // Animation values
@@ -68,7 +71,7 @@ export function MessageInput({
               duration: 400,
               useNativeDriver: true,
             }),
-          ])
+          ]),
         );
       };
 
@@ -86,7 +89,14 @@ export function MessageInput({
       typingDot2.setValue(0);
       typingDot3.setValue(0);
     }
-  }, [otherUserTyping]);
+  }, [
+    otherUserTyping,
+    typingDot3,
+    typingDot2.setValue,
+    typingDot2,
+    typingDot1.setValue,
+    typingDot1,
+  ]);
 
   // Media preview animation
   useEffect(() => {
@@ -100,7 +110,7 @@ export function MessageInput({
     } else {
       mediaPreviewScale.setValue(0);
     }
-  }, [selectedMedia]);
+  }, [selectedMedia, mediaPreviewScale.setValue, mediaPreviewScale]);
 
   const handleTextChange = (newText: string) => {
     setText(newText);

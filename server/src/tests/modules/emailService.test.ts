@@ -1,4 +1,3 @@
-
 const mockSendMail = jest.fn();
 const mockVerify = jest.fn();
 
@@ -9,13 +8,12 @@ jest.mock("nodemailer", () => ({
   }),
 }));
 
+import logger from "@/config/logger";
 import {
-  sendVerificationEmail,
   sendOTPEmail,
+  sendVerificationEmail,
   testEmailConnection,
 } from "@/modules/auth/emailService";
-import logger from "@/config/logger";
-
 
 jest.mock("@/config/logger", () => ({
   info: jest.fn(),
@@ -48,16 +46,18 @@ describe("Email Service", () => {
     });
 
     it("should use FRONTEND_URL environment variable if set", async () => {
-        const originalEnv = process.env;
-        process.env = { ...originalEnv, FRONTEND_URL: "https://findu.app" };
-  
-        await sendVerificationEmail(verificationData);
-  
-        const emailHtml = mockSendMail.mock.calls[0][0].html;
-        expect(emailHtml).toContain("https://findu.app/auth/account-created?token=token123");
-  
-        process.env = originalEnv; // Restore original environment
-      });
+      const originalEnv = process.env;
+      process.env = { ...originalEnv, FRONTEND_URL: "https://findu.app" };
+
+      await sendVerificationEmail(verificationData);
+
+      const emailHtml = mockSendMail.mock.calls[0][0].html;
+      expect(emailHtml).toContain(
+        "https://findu.app/auth/account-created?token=token123",
+      );
+
+      process.env = originalEnv; // Restore original environment
+    });
 
     it("should return an error if sending fails", async () => {
       const error = new Error("SMTP Error");

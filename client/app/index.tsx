@@ -1,12 +1,11 @@
 // React Native core
 import { StyleSheet, View } from "react-native";
-
-// Project imports
-import { BACKGROUND } from "@/constants/theme";
 import ActionButtons from "@/components/entry/ActionButtons";
 import FloatingLogo from "@/components/entry/FoatingLogo";
 import HeaderSection from "@/components/entry/HeaderSection";
 import TermsSection from "@/components/entry/TermsSection";
+// Project imports
+import { BACKGROUND } from "@/constants/theme";
 
 // Constants
 const TOP_SECTION_MARGIN_TOP = 40;

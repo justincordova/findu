@@ -1,6 +1,6 @@
-import { Request, Response } from "express";
-import * as LikesService from "./services";
+import type { Request, Response } from "express";
 import logger from "@/config/logger";
+import * as LikesService from "./services";
 
 /**
  * Create a like or superlike from one user to another
@@ -15,7 +15,7 @@ export const createLike = async (req: Request, res: Response) => {
       fromUser: from_user,
       toUser: to_user,
       isSuperlike: is_superlike,
-      matched: result.matched
+      matched: result.matched,
     });
 
     return res.status(201).json({
@@ -24,13 +24,15 @@ export const createLike = async (req: Request, res: Response) => {
       matchId: result.matchId,
     });
   } catch (err: any) {
-    if (err.message.includes("Users cannot like themselves") ||
-        err.message.includes("Both from_user and to_user are required") ||
-        err.message.includes("User profiles not found") ||
-        err.message.includes("Users must be from the same university") ||
-        err.message.includes("Cannot like blocked user") ||
-        err.message.includes("Like already exists") ||
-        err.message.includes("Daily superlike limit")) {
+    if (
+      err.message.includes("Users cannot like themselves") ||
+      err.message.includes("Both from_user and to_user are required") ||
+      err.message.includes("User profiles not found") ||
+      err.message.includes("Users must be from the same university") ||
+      err.message.includes("Cannot like blocked user") ||
+      err.message.includes("Like already exists") ||
+      err.message.includes("Daily superlike limit")
+    ) {
       return res.status(400).json({ message: err.message });
     }
     return res.status(500).json({ message: err.message });
@@ -47,7 +49,9 @@ export const getSentLikes = async (req: Request, res: Response) => {
 
   // Authorization check: user can only view their own sent likes
   if (authenticatedUserId !== userId) {
-    return res.status(403).json({ message: "Unauthorized: Cannot view another user's sent likes" });
+    return res
+      .status(403)
+      .json({ message: "Unauthorized: Cannot view another user's sent likes" });
   }
 
   try {
@@ -68,7 +72,9 @@ export const getReceivedLikes = async (req: Request, res: Response) => {
 
   // Authorization check: user can only view their own received likes
   if (authenticatedUserId !== userId) {
-    return res.status(403).json({ message: "Unauthorized: Cannot view another user's received likes" });
+    return res.status(403).json({
+      message: "Unauthorized: Cannot view another user's received likes",
+    });
   }
 
   try {

@@ -1,30 +1,29 @@
 import express, {
-  Request,
-  Response,
-  RequestHandler,
+  type Request,
+  type RequestHandler,
+  type Response,
 } from "express";
-import cors from "@/middleware/security/corsConfig";
-import helmet from "@/middleware/security/helmetConfig";
-import compression from "@/middleware/security/compressionConfig";
-import limiter from "@/middleware/security/rateLimiterConfig";
-import morgan from "@/middleware/security/morganConfig";
-
-// Custom Middleware
-import { notFoundHandler } from "@/middleware/error/notFoundHandler";
+import logger from "@/config/logger";
 import { errorHandler } from "@/middleware/error/errorHandler";
 import { handleValidationErrors } from "@/middleware/error/handleValidationErrors";
-import logger from "@/config/logger";
+// Custom Middleware
+import { notFoundHandler } from "@/middleware/error/notFoundHandler";
+import compression from "@/middleware/security/compressionConfig";
+import cors from "@/middleware/security/corsConfig";
+import helmet from "@/middleware/security/helmetConfig";
+import morgan from "@/middleware/security/morganConfig";
+import limiter from "@/middleware/security/rateLimiterConfig";
 
 // Route Imports
 import authRoutes from "@/modules/auth/routes";
-import storageRoutes from "@/modules/storage/routes";
-import profileRoutes from "@/modules/profiles/routes";
+import blocksRoutes from "@/modules/blocks/routes";
+import chatsRoutes from "@/modules/chats/routes";
+import constantsRoutes from "@/modules/constants/routes";
+import discoverRoutes from "@/modules/discover/routes";
 import likesRoutes from "@/modules/likes/routes";
 import matchesRoutes from "@/modules/matches/routes";
-import discoverRoutes from "@/modules/discover/routes";
-import blocksRoutes from "@/modules/blocks/routes";
-import constantsRoutes from "@/modules/constants/routes";
-import chatsRoutes from "@/modules/chats/routes";
+import profileRoutes from "@/modules/profiles/routes";
+import storageRoutes from "@/modules/storage/routes";
 
 const app = express();
 

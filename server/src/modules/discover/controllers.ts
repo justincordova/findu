@@ -1,6 +1,6 @@
-import { Request, Response } from "express";
-import * as DiscoverService from "./services";
+import type { Request, Response } from "express";
 import prisma from "@/lib/prismaClient";
+import * as DiscoverService from "./services";
 
 /**
  * Get discovery feed for a user - potential matches with compatibility scores
@@ -8,12 +8,16 @@ import prisma from "@/lib/prismaClient";
  */
 export const getDiscoverFeed = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
-  const limit = parseInt(req.query.limit as string) || 10;
-  const offset = parseInt(req.query.offset as string) || 0;
+  const limit = parseInt(req.query.limit as string, 10) || 10;
+  const offset = parseInt(req.query.offset as string, 10) || 0;
 
   try {
-    const profiles = await DiscoverService.getDiscoverProfiles(userId, limit, offset);
-    
+    const profiles = await DiscoverService.getDiscoverProfiles(
+      userId,
+      limit,
+      offset,
+    );
+
     return res.status(200).json({
       profiles,
       count: profiles.length,
@@ -22,9 +26,11 @@ export const getDiscoverFeed = async (req: Request, res: Response) => {
       hasMore: profiles.length === limit, // Simple check - could be improved with total count
     });
   } catch (err: any) {
-    if (err.message.includes("User ID is required") ||
-        err.message.includes("User profile not found") ||
-        err.message.includes("User must have at least one gender preference set")) {
+    if (
+      err.message.includes("User ID is required") ||
+      err.message.includes("User profile not found") ||
+      err.message.includes("User must have at least one gender preference set")
+    ) {
       return res.status(400).json({ message: err.message });
     }
     return res.status(500).json({ message: err.message });
@@ -41,22 +47,27 @@ export const getEligibleCandidates = async (req: Request, res: Response) => {
   try {
     // First get user profile
     const userProfile = await prisma.profiles.findUnique({
-      where: { user_id: userId }
+      where: { user_id: userId },
     });
 
     if (!userProfile) {
       return res.status(404).json({ message: "User profile not found" });
     }
 
-    const candidates = await DiscoverService.getEligibleCandidates(userId, userProfile);
-    
+    const candidates = await DiscoverService.getEligibleCandidates(
+      userId,
+      userProfile,
+    );
+
     return res.status(200).json({
       candidates,
       count: candidates.length,
     });
   } catch (err: any) {
-    if (err.message.includes("User ID is required") ||
-        err.message.includes("User must have at least one gender preference set")) {
+    if (
+      err.message.includes("User ID is required") ||
+      err.message.includes("User must have at least one gender preference set")
+    ) {
       return res.status(400).json({ message: err.message });
     }
     return res.status(500).json({ message: err.message });
@@ -73,14 +84,14 @@ export const calculateCompatibility = async (req: Request, res: Response) => {
   const { candidateId } = req.body;
 
   if (!candidateId) {
-    return res.status(400).json({ 
-      message: "candidateId is required" 
+    return res.status(400).json({
+      message: "candidateId is required",
     });
   }
 
   if (userId === candidateId) {
-    return res.status(400).json({ 
-      message: "Cannot calculate compatibility with yourself" 
+    return res.status(400).json({
+      message: "Cannot calculate compatibility with yourself",
     });
   }
 
@@ -88,7 +99,7 @@ export const calculateCompatibility = async (req: Request, res: Response) => {
     // Get both user profiles
     const [userProfile, candidateProfile] = await Promise.all([
       prisma.profiles.findUnique({ where: { user_id: userId } }),
-      prisma.profiles.findUnique({ where: { user_id: candidateId } })
+      prisma.profiles.findUnique({ where: { user_id: candidateId } }),
     ]);
 
     if (!userProfile) {
@@ -100,20 +111,33 @@ export const calculateCompatibility = async (req: Request, res: Response) => {
     }
 
     // Calculate compatibility using existing service function
-    const compatibilityScore = DiscoverService.calculateCompatibilityScore(userProfile, candidateProfile);
-    
-    // Get detailed breakdown
-    const sharedInterests = DiscoverService.getSharedInterests(userProfile.interests, candidateProfile.interests);
-    const sharedInterestsScore = DiscoverService.calculateSharedInterestsScore(userProfile.interests, candidateProfile.interests);
-    const intentScore = DiscoverService.calculateIntentCompatibilityScore(userProfile.intent, candidateProfile.intent);
-    const orientationScore = DiscoverService.calculateOrientationCompatibilityScore(
-      userProfile.sexual_orientation,
-      candidateProfile.sexual_orientation,
-      userProfile.gender,
-      candidateProfile.gender,
-      userProfile.gender_preference,
-      candidateProfile.gender_preference
+    const compatibilityScore = DiscoverService.calculateCompatibilityScore(
+      userProfile,
+      candidateProfile,
     );
+
+    // Get detailed breakdown
+    const sharedInterests = DiscoverService.getSharedInterests(
+      userProfile.interests,
+      candidateProfile.interests,
+    );
+    const sharedInterestsScore = DiscoverService.calculateSharedInterestsScore(
+      userProfile.interests,
+      candidateProfile.interests,
+    );
+    const intentScore = DiscoverService.calculateIntentCompatibilityScore(
+      userProfile.intent,
+      candidateProfile.intent,
+    );
+    const orientationScore =
+      DiscoverService.calculateOrientationCompatibilityScore(
+        userProfile.sexual_orientation,
+        candidateProfile.sexual_orientation,
+        userProfile.gender,
+        candidateProfile.gender,
+        userProfile.gender_preference,
+        candidateProfile.gender_preference,
+      );
 
     return res.status(200).json({
       compatibilityScore,
@@ -130,9 +154,9 @@ export const calculateCompatibility = async (req: Request, res: Response) => {
           DiscoverService.calculateAge(userProfile.birthdate),
           DiscoverService.calculateAge(candidateProfile.birthdate),
           userProfile.min_age,
-          userProfile.max_age
+          userProfile.max_age,
         ),
-      }
+      },
     });
   } catch (err: any) {
     return res.status(500).json({ message: err.message });
@@ -148,13 +172,15 @@ export const refreshDiscoverFeed = async (req: Request, res: Response) => {
 
   try {
     await DiscoverService.refreshDiscoverFeed(userId);
-    
-    return res.status(200).json({ 
-      message: "Discovery feed refreshed successfully" 
+
+    return res.status(200).json({
+      message: "Discovery feed refreshed successfully",
     });
   } catch (err: any) {
-    if (err.message.includes("User ID is required") ||
-        err.message.includes("User not found")) {
+    if (
+      err.message.includes("User ID is required") ||
+      err.message.includes("User not found")
+    ) {
       return res.status(400).json({ message: err.message });
     }
     return res.status(500).json({ message: err.message });

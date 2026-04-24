@@ -4,5 +4,5 @@
 
 export * from "./auth/requireAuth";
 export * from "./error/errorHandler";
-export * from "./error/notFoundHandler";
 export * from "./error/handleValidationErrors";
+export * from "./error/notFoundHandler";

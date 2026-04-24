@@ -1,28 +1,23 @@
 // React core
-import { useCallback, useMemo, useState } from "react";
 
+import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { useCallback, useMemo, useState } from "react";
 // React Native
 import {
+  FlatList,
+  Keyboard,
+  Modal,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Modal,
-  FlatList,
-  Keyboard,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-
-// Reanimated
-import Animated, {
-  ZoomIn,
-  ZoomOut,
-} from "react-native-reanimated";
-import { BlurView } from "expo-blur";
-
 // Third-party
-import { ItemType } from "react-native-dropdown-picker";
+import type { ItemType } from "react-native-dropdown-picker";
+// Reanimated
+import Animated, { ZoomIn, ZoomOut } from "react-native-reanimated";
 
 // Project imports
 import { BACKGROUND, DARK, MUTED, PRIMARY, SECONDARY } from "@/constants/theme";
@@ -73,7 +68,7 @@ export default function SearchableModal({
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return items;
     return items.filter((item) =>
-      (item.label || "").toLowerCase().includes(searchQuery.toLowerCase())
+      (item.label || "").toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [items, searchQuery]);
 
@@ -92,7 +87,7 @@ export default function SearchableModal({
         setTimeout(() => onOpenChange(), 100);
       }
     },
-    [multiSelect, value, onValueChange, onOpenChange]
+    [multiSelect, value, onValueChange, onOpenChange],
   );
 
   const handleModalClose = useCallback(() => {
@@ -109,9 +104,9 @@ export default function SearchableModal({
   }, [value, items, multiSelect]);
 
   // Determine if field is completed (for green border)
-  const isCompleted = showCompleted && (
-    multiSelect ? (Array.isArray(value) ? value.length > 0 : false) : value
-  );
+  const isCompleted =
+    showCompleted &&
+    (multiSelect ? (Array.isArray(value) ? value.length > 0 : false) : value);
 
   return (
     <View style={[styles.fieldContainer, { zIndex }]}>
@@ -121,10 +116,7 @@ export default function SearchableModal({
 
       {/* Dropdown trigger button */}
       <TouchableOpacity
-        style={[
-          styles.dropdown,
-          isCompleted && styles.dropdownCompleted,
-        ]}
+        style={[styles.dropdown, isCompleted && styles.dropdownCompleted]}
         onPress={onOpenChange}
         activeOpacity={0.7}
       >
@@ -221,7 +213,9 @@ export default function SearchableModal({
               }
               renderItem={({ item }) => {
                 const isSelected = multiSelect
-                  ? (Array.isArray(value) ? value.includes(item.value || "") : false)
+                  ? Array.isArray(value)
+                    ? value.includes(item.value || "")
+                    : false
                   : value === item.value;
 
                 return (

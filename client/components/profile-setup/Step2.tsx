@@ -31,9 +31,14 @@ type DropdownKey = "gender" | "pronouns" | null;
 /**
  * Step 2: Personal information - name, gender, pronouns, and birthdate
  */
-export default function Step2({ onNext, onValidityChange }: Step2Props) {
+export default function Step2({
+  onNext: _onNext,
+  onValidityChange,
+}: Step2Props) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
+  const setProfileField = useProfileSetupStore(
+    (state) => state.setProfileField,
+  );
 
   const [activeDropdown, setActiveDropdown] = useState<DropdownKey>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -47,7 +52,7 @@ export default function Step2({ onNext, onValidityChange }: Step2Props) {
     return new Date(
       today.getFullYear() - 18,
       today.getMonth(),
-      today.getDate()
+      today.getDate(),
     );
   }, []);
 
@@ -74,7 +79,7 @@ export default function Step2({ onNext, onValidityChange }: Step2Props) {
       { label: "Non-binary", value: "Non-binary" },
       { label: "Other", value: "Other" },
     ],
-    []
+    [],
   );
 
   const pronounItems = useMemo(
@@ -86,7 +91,7 @@ export default function Step2({ onNext, onValidityChange }: Step2Props) {
       { label: "ze/zir", value: "ze/zir" },
       { label: "other", value: "other" },
     ],
-    []
+    [],
   );
 
   const emptyCallback = useCallback(() => {}, []);

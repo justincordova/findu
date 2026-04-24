@@ -1,25 +1,30 @@
 // React core
-import React, { useCallback, useEffect, useRef, useState } from "react";
 
-// React Native
-import { Alert, Animated, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-
 // Navigation & Hooks
 import { useFocusEffect } from "@react-navigation/native";
-
+import { useCallback, useEffect, useRef, useState } from "react";
+// React Native
+import {
+  Alert,
+  Animated,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { profileApi } from "@/api/profile";
 // Project imports
 import SwipeCard from "@/components/discover/SwipeCard";
 import UserProfileModal from "@/components/discover/UserProfileModal";
 import { SkeletonCard } from "@/components/shared/SkeletonLoader";
 import logger from "@/config/logger";
 import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
-import { sendLike } from "@/services/likesService";
 import { getDiscoverFeed } from "@/services/discoverService";
-import { profileApi } from "@/api/profile";
+import { sendLike } from "@/services/likesService";
 import { useDiscoverPreferencesStore } from "@/store/discoverPreferencesStore";
-import { Profile } from "@/types/Profile";
+import type { Profile } from "@/types/Profile";
 
 // Constants
 const INITIAL_FETCH_LIMIT = 10;
@@ -62,7 +67,8 @@ export default function DiscoverScreen() {
   const [isProcessingSwipe, setIsProcessingSwipe] = useState(false);
 
   // Store for tracking preference changes
-  const { hardFiltersChanged, updateHardFilters, initializeHardFilters } = useDiscoverPreferencesStore();
+  const { hardFiltersChanged, updateHardFilters, initializeHardFilters } =
+    useDiscoverPreferencesStore();
 
   // Keep reference to current profile for hard filter comparison
   const currentProfileRef = useRef<Partial<Profile> | null>(null);
@@ -81,7 +87,10 @@ export default function DiscoverScreen() {
    * Logs all key events and updates hard filter baselines after successful fetch
    */
   const fetchProfiles = useCallback(async () => {
-    logger.debug("[discover] Fetching profiles", { limit: INITIAL_FETCH_LIMIT, offset: INITIAL_OFFSET });
+    logger.debug("[discover] Fetching profiles", {
+      limit: INITIAL_FETCH_LIMIT,
+      offset: INITIAL_OFFSET,
+    });
     setLoading(true);
 
     try {
@@ -95,7 +104,11 @@ export default function DiscoverScreen() {
           maxAge: profile.max_age,
           genderPreference: profile.gender_preference,
         });
-        initializeHardFilters(profile.min_age, profile.max_age, profile.gender_preference);
+        initializeHardFilters(
+          profile.min_age,
+          profile.max_age,
+          profile.gender_preference,
+        );
       }
 
       currentProfileRef.current = profile;
@@ -104,7 +117,9 @@ export default function DiscoverScreen() {
       const res = await getDiscoverFeed(INITIAL_FETCH_LIMIT, INITIAL_OFFSET);
 
       if (res.success && res.data?.profiles) {
-        logger.info("[discover] Profiles fetched successfully", { count: res.data.profiles.length });
+        logger.info("[discover] Profiles fetched successfully", {
+          count: res.data.profiles.length,
+        });
         setProfiles(res.data.profiles);
         setCurrentIndex(0); // Reset to first card on refetch
 
@@ -112,9 +127,15 @@ export default function DiscoverScreen() {
         hasInitializedRef.current = true;
 
         // Update hard filter baselines after successful fetch
-        updateHardFilters(profile.min_age, profile.max_age, profile.gender_preference);
+        updateHardFilters(
+          profile.min_age,
+          profile.max_age,
+          profile.gender_preference,
+        );
       } else {
-        logger.error("[discover] Failed to fetch profiles", { error: res.error });
+        logger.error("[discover] Failed to fetch profiles", {
+          error: res.error,
+        });
         Alert.alert("Error", res.error || "Failed to load profiles.");
       }
     } catch (err) {
@@ -143,14 +164,21 @@ export default function DiscoverScreen() {
     // Condition 1: Out of profiles
     const outOfProfiles = currentIndex >= profiles.length;
     if (outOfProfiles) {
-      logger.debug("[discover] Should refetch: out of profiles", { currentIndex, profilesLength: profiles.length });
+      logger.debug("[discover] Should refetch: out of profiles", {
+        currentIndex,
+        profilesLength: profiles.length,
+      });
       return true;
     }
 
     // Condition 2: Hard filters changed
     try {
       const profile = await profileApi.me();
-      const filtersChanged = hardFiltersChanged(profile.min_age, profile.max_age, profile.gender_preference);
+      const filtersChanged = hardFiltersChanged(
+        profile.min_age,
+        profile.max_age,
+        profile.gender_preference,
+      );
 
       if (filtersChanged) {
         logger.debug("[discover] Should refetch: hard filters changed");
@@ -180,7 +208,7 @@ export default function DiscoverScreen() {
       };
 
       checkAndRefetch();
-    }, [shouldRefetch, fetchProfiles])
+    }, [shouldRefetch, fetchProfiles]),
   );
 
   /**
@@ -223,7 +251,7 @@ export default function DiscoverScreen() {
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
-      })
+      }),
     );
     animationRef.current.start();
 
@@ -243,7 +271,9 @@ export default function DiscoverScreen() {
 
     // Discard - just move to next
     const currentProfile = profiles[currentIndex];
-    logger.debug("[discover] Swiped left", { discardedUserId: currentProfile?.user_id });
+    logger.debug("[discover] Swiped left", {
+      discardedUserId: currentProfile?.user_id,
+    });
     setCurrentIndex((prev) => prev + 1);
   }, [profiles, currentIndex, isProcessingSwipe]);
 
@@ -267,10 +297,18 @@ export default function DiscoverScreen() {
       // Send like API call
       const res = await sendLike(currentProfile.user_id);
       if (res.success) {
-        logger.info("[discover] Like sent", { likedUserId: currentProfile.user_id });
+        logger.info("[discover] Like sent", {
+          likedUserId: currentProfile.user_id,
+        });
         if (res.match) {
-          logger.info("[discover] Match found", { matchedUserId: currentProfile.user_id, matchedName: currentProfile.name });
-          Alert.alert("It's a Match!", `You matched with ${currentProfile.name}`);
+          logger.info("[discover] Match found", {
+            matchedUserId: currentProfile.user_id,
+            matchedName: currentProfile.name,
+          });
+          Alert.alert(
+            "It's a Match!",
+            `You matched with ${currentProfile.name}`,
+          );
         }
       }
     } finally {
@@ -321,8 +359,14 @@ export default function DiscoverScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Pressable onPress={handleRefresh} disabled={refreshing} style={styles.headerButton}>
-            <Animated.View style={{ transform: [{ rotate: rotateInterpolation }] }}>
+          <Pressable
+            onPress={handleRefresh}
+            disabled={refreshing}
+            style={styles.headerButton}
+          >
+            <Animated.View
+              style={{ transform: [{ rotate: rotateInterpolation }] }}
+            >
               <Ionicons name="refresh" size={24} color={PRIMARY} />
             </Animated.View>
           </Pressable>
@@ -340,13 +384,21 @@ export default function DiscoverScreen() {
 
   // Render current card and next card (for stack effect)
   // We reverse the array slice so the current card is on top (last in render order)
-  const cardsToRender = profiles.slice(currentIndex, currentIndex + 2).reverse();
+  const cardsToRender = profiles
+    .slice(currentIndex, currentIndex + 2)
+    .reverse();
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={handleRefresh} disabled={refreshing} style={styles.headerButton}>
-          <Animated.View style={{ transform: [{ rotate: rotateInterpolation }] }}>
+        <Pressable
+          onPress={handleRefresh}
+          disabled={refreshing}
+          style={styles.headerButton}
+        >
+          <Animated.View
+            style={{ transform: [{ rotate: rotateInterpolation }] }}
+          >
             <Ionicons name="refresh" size={24} color={PRIMARY} />
           </Animated.View>
         </Pressable>
@@ -364,7 +416,11 @@ export default function DiscoverScreen() {
                 active={isTopCard}
                 onSwipeLeft={isTopCard ? handleSwipeLeft : () => {}}
                 onSwipeRight={isTopCard ? handleSwipeRight : () => {}}
-                onViewProfile={isTopCard ? () => handleViewProfile(profile.user_id) : undefined}
+                onViewProfile={
+                  isTopCard
+                    ? () => handleViewProfile(profile.user_id)
+                    : undefined
+                }
               />
             </View>
           );

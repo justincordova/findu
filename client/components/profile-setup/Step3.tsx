@@ -2,22 +2,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // React Native
-import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Dimensions, StyleSheet, Text, View } from "react-native";
 
 // Third-party
-import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
-
+import DropDownPicker, { type ItemType } from "react-native-dropdown-picker";
+import SearchableModal from "@/components/shared/SearchableModal";
 // Project imports
 import { BACKGROUND, DARK, MUTED, SECONDARY } from "@/constants/theme";
-import { useProfileSetupStore } from "@/store/profileStore";
 import { useConstantsStore } from "@/store/constantsStore";
+import { useProfileSetupStore } from "@/store/profileStore";
 import UniversityCard from "./UniversityCard";
-import SearchableModal from "@/components/shared/SearchableModal";
 
 // Types
 interface Step3Props {
@@ -37,7 +31,9 @@ type DropdownKey =
  */
 export default function Step3({ onValidityChange }: Step3Props) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
+  const setProfileField = useProfileSetupStore(
+    (state) => state.setProfileField,
+  );
   const { data, campuses } = useProfileSetupStore();
   const universityName = data?.university_name;
   const constants = useConstantsStore((state) => state.constants);
@@ -53,7 +49,7 @@ export default function Step3({ onValidityChange }: Step3Props) {
       !!profileData?.major &&
       !!profileData?.university_year &&
       !!profileData?.grad_year,
-    [profileData]
+    [profileData],
   );
 
   useEffect(() => {
@@ -68,7 +64,7 @@ export default function Step3({ onValidityChange }: Step3Props) {
       { label: "Senior", value: "4" },
       { label: "Graduate", value: "5" },
     ],
-    []
+    [],
   );
 
   const majorItems: ItemType<string>[] = useMemo(() => {
@@ -119,7 +115,10 @@ export default function Step3({ onValidityChange }: Step3Props) {
             listMode="SCROLLVIEW"
             style={[
               styles.dropdown,
-              profileData?.campus_id && { borderColor: SECONDARY, borderWidth: 2 },
+              profileData?.campus_id && {
+                borderColor: SECONDARY,
+                borderWidth: 2,
+              },
             ]}
             dropDownContainerStyle={[
               styles.dropdownContainer,
@@ -134,7 +133,9 @@ export default function Step3({ onValidityChange }: Step3Props) {
         label="Major"
         value={profileData?.major ?? null}
         items={majorItems}
-        onValueChange={(value) => setProfileField("major", Array.isArray(value) ? value[0] : value)}
+        onValueChange={(value) =>
+          setProfileField("major", Array.isArray(value) ? value[0] : value)
+        }
         open={activeDropdown === "major"}
         onOpenChange={() => handleOpen("major")}
         placeholder="Select your major..."
@@ -170,16 +171,18 @@ export default function Step3({ onValidityChange }: Step3Props) {
                 ? callback(
                     profileData?.university_year
                       ? String(profileData.university_year)
-                      : ""
+                      : "",
                   )
                 : callback;
-            setProfileField("university_year", value ? parseInt(value) : 0);
+            setProfileField("university_year", value ? parseInt(value, 10) : 0);
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
           style={[
             styles.dropdown,
-            profileData?.university_year ? { borderColor: SECONDARY, borderWidth: 2 } : undefined,
+            profileData?.university_year
+              ? { borderColor: SECONDARY, borderWidth: 2 }
+              : undefined,
           ]}
           dropDownContainerStyle={[
             styles.dropdownContainer,
@@ -207,16 +210,18 @@ export default function Step3({ onValidityChange }: Step3Props) {
             const value =
               typeof callback === "function"
                 ? callback(
-                    profileData?.grad_year ? String(profileData.grad_year) : ""
+                    profileData?.grad_year ? String(profileData.grad_year) : "",
                   )
                 : callback;
-            setProfileField("grad_year", value ? parseInt(value) : 0);
+            setProfileField("grad_year", value ? parseInt(value, 10) : 0);
           }}
           setItems={emptyCallback}
           listMode="SCROLLVIEW"
           style={[
             styles.dropdown,
-            profileData?.grad_year ? { borderColor: SECONDARY, borderWidth: 2 } : undefined,
+            profileData?.grad_year
+              ? { borderColor: SECONDARY, borderWidth: 2 }
+              : undefined,
           ]}
           dropDownContainerStyle={[
             styles.dropdownContainer,

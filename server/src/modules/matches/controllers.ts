@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import logger from "@/config/logger";
 import * as matchesService from "./services";
 
@@ -32,7 +32,9 @@ export const getMatchByIdController = async (req: Request, res: Response) => {
 
     // Authorization check: User must be part of the match
     if (match.user1 !== userId && match.user2 !== userId) {
-      return res.status(403).json({ error: "Not authorized to view this match" });
+      return res
+        .status(403)
+        .json({ error: "Not authorized to view this match" });
     }
 
     res.json(match);
@@ -80,7 +82,9 @@ export const deleteMatchController = async (req: Request, res: Response) => {
 
     // Authorization check: User must be part of the match
     if (match.user1 !== userId && match.user2 !== userId) {
-      return res.status(403).json({ error: "Not authorized to delete this match" });
+      return res
+        .status(403)
+        .json({ error: "Not authorized to delete this match" });
     }
 
     await matchesService.deleteMatch(id);
@@ -94,18 +98,25 @@ export const deleteMatchController = async (req: Request, res: Response) => {
 /**
  * Check if two users are matched
  */
-export const areUsersMatchedController = async (req: Request, res: Response) => {
+export const areUsersMatchedController = async (
+  req: Request,
+  res: Response,
+) => {
   try {
     const { user1Id, user2Id } = req.params;
     const userId = (req as any).user.id;
 
     if (!user1Id || !user2Id) {
-      return res.status(400).json({ error: "user1Id and user2Id are required" });
+      return res
+        .status(400)
+        .json({ error: "user1Id and user2Id are required" });
     }
 
     // Authorization check: User can only check if they are one of the users
     if (userId !== user1Id && userId !== user2Id) {
-      return res.status(403).json({ error: "Not authorized to check this match" });
+      return res
+        .status(403)
+        .json({ error: "Not authorized to check this match" });
     }
 
     const matched = await matchesService.areUsersMatched(user1Id, user2Id);

@@ -1,3 +1,3 @@
-declare module 'react-native-global-props' {
+declare module "react-native-global-props" {
   export function setCustomText(props: { style: any }): void;
 }

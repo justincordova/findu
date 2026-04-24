@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { useAuthStore } from "@/store/authStore";
 import * as AuthService from "@/services/authService";
+import { useAuthStore } from "@/store/authStore";
 
 interface UseAuthReturn {
   userId: string | null;

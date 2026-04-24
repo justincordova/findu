@@ -1,32 +1,32 @@
-import React, { useEffect, useState, useRef } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { useEffect, useRef, useState } from "react";
 import {
-  StyleSheet,
-  View,
-  FlatList,
   ActivityIndicator,
-  SafeAreaView,
-  Text,
-  Pressable,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
-import { useRoute, useNavigation } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
-import { theme } from "@/constants/theme";
-import { useAuthStore } from "@/store/authStore";
-import { useChatStore } from "@/store/chatStore";
+import { ChatsAPI } from "@/api/chats";
 import { MessageBubble } from "@/components/MessageBubble";
 import { MessageInput } from "@/components/MessageInput";
 import { SkeletonGroup } from "@/components/shared/SkeletonLoader";
-import { ChatsAPI } from "@/api/chats";
+import { theme } from "@/constants/theme";
+import { useAuthStore } from "@/store/authStore";
+import { useChatStore } from "@/store/chatStore";
 import {
+  emitStopTyping,
+  emitTyping,
   initializeSocket,
   joinMatch,
   leaveMatch,
-  sendMessageSocket,
   markReadSocket,
-  emitTyping,
-  emitStopTyping,
+  sendMessageSocket,
 } from "@/utils/socketClient";
 
 export default function ChatDetailScreen() {
@@ -109,7 +109,14 @@ export default function ChatDetailScreen() {
       initializedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matchId]);
+  }, [
+    matchId, // Set as current match
+    setCurrentMatch,
+    userName,
+    setMessages,
+    setLoading, // Set navigation title
+    navigation.setOptions,
+  ]);
 
   const handleSendMessage = async (text: string, mediaUrl?: string) => {
     try {
@@ -210,7 +217,9 @@ export default function ChatDetailScreen() {
               </View>
             ) : (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No messages yet. Say hello!</Text>
+                <Text style={styles.emptyText}>
+                  No messages yet. Say hello!
+                </Text>
               </View>
             )
           }

@@ -1,15 +1,14 @@
 import { AuthAPI } from "@/api/auth";
-import { setTokenRefreshCallback, getErrorMessage } from "@/api/utils";
+import { getErrorMessage, setTokenRefreshCallback } from "@/api/utils";
+import logger from "@/config/logger";
+import {
+  deleteSecureItem,
+  getSecureItem,
+  saveSecureItem,
+} from "@/storage/secure";
 import { useAuthStore } from "@/store/authStore";
 import { useMatchesStore } from "@/store/matchesStore";
-import { useDiscoverPreferencesStore } from "@/store/discoverPreferencesStore";
-import { useProfileStore } from "@/store/profileStore";
-import {
-  saveSecureItem,
-  getSecureItem,
-  deleteSecureItem,
-} from "@/storage/secure";
-import logger from "@/config/logger";
+import { useProfileSetupStore } from "@/store/profileStore";
 
 const ACCESS_TOKEN_KEY = "accessToken";
 
@@ -25,8 +24,7 @@ let restorationPromise: Promise<void> | null = null;
 function resetAllUserStores() {
   useAuthStore.getState().reset();
   useMatchesStore.getState().stopPolling();
-  useDiscoverPreferencesStore.getState().reset();
-  useProfileStore.getState().reset();
+  useProfileSetupStore.getState().reset();
   logger.debug("All user stores reset");
 }
 
@@ -105,7 +103,7 @@ export async function sendOtp(email: string) {
 export async function verifyAndSignup(
   email: string,
   password: string,
-  otp: string
+  otp: string,
 ) {
   const { setUserId, setEmail, setToken, setLoggedIn, setLoading } =
     useAuthStore.getState();
@@ -208,7 +206,9 @@ export async function refreshToken(): Promise<boolean> {
     logger.warn("Token refresh failed", { error: res?.error });
     return false;
   } catch (err) {
-    logger.error("AuthService: token refresh error", { error: getErrorMessage(err) });
+    logger.error("AuthService: token refresh error", {
+      error: getErrorMessage(err),
+    });
     return false;
   }
 }
@@ -223,7 +223,9 @@ export async function refreshToken(): Promise<boolean> {
 export async function restoreSession() {
   // If restoration is already in progress, return the existing promise
   if (isRestoringSession && restorationPromise) {
-    logger.debug("Session restoration already in progress, returning existing promise");
+    logger.debug(
+      "Session restoration already in progress, returning existing promise",
+    );
     return restorationPromise;
   }
 

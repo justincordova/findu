@@ -1,12 +1,17 @@
 // React core
-import { useState } from "react";
 
-// React Native
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-
+import { Ionicons } from "@expo/vector-icons";
 // Third-party
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+// React Native
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 // Project imports
 import Button from "@/components/shared/Button";
@@ -173,7 +178,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: BACK_LINK_MARGIN_TOP,
     color: BACK_LINK_COLOR,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   passwordContainer: {
     position: "relative",

@@ -1,14 +1,14 @@
-import {
-  generateVerificationToken,
-  generateOTP,
-  hashPassword,
-  verifyPassword,
-  generateTokenExpiration,
-  isTokenExpired,
-  extractBearerToken,
-} from "@/utils/auth";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
+import {
+  extractBearerToken,
+  generateOTP,
+  generateTokenExpiration,
+  generateVerificationToken,
+  hashPassword,
+  isTokenExpired,
+  verifyPassword,
+} from "@/utils/auth";
 
 jest.mock("bcrypt");
 jest.mock("uuid");
@@ -56,28 +56,28 @@ describe("Auth Utils", () => {
     it("should return expiration date 24 hours from now by default", () => {
       const now = new Date();
       jest.useFakeTimers().setSystemTime(now);
-      
+
       const result = generateTokenExpiration();
-      
+
       const expected = new Date(now);
       expected.setSeconds(expected.getSeconds() + 86400);
-      
+
       expect(result).toEqual(expected);
-      
+
       jest.useRealTimers();
     });
 
     it("should return expiration date with custom seconds", () => {
       const now = new Date();
       jest.useFakeTimers().setSystemTime(now);
-      
+
       const result = generateTokenExpiration(3600);
-      
+
       const expected = new Date(now);
       expected.setSeconds(expected.getSeconds() + 3600);
-      
+
       expect(result).toEqual(expected);
-      
+
       jest.useRealTimers();
     });
   });

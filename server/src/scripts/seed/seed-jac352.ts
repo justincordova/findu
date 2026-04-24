@@ -1,5 +1,5 @@
-import { PrismaClient } from "@/generated/prisma";
 import * as bcrypt from "bcrypt";
+import prisma from "@/lib/prismaClient";
 
 /**
  * Seed script specifically for jac352's profile
@@ -9,14 +9,13 @@ import * as bcrypt from "bcrypt";
  * Password: password123
  */
 
-const prisma = new PrismaClient();
-
 const jac352Data = {
   email: "jac352@njit.edu",
   name: "jac352",
   profile: {
     name: "justin",
-    avatar_url: "https://gwaxrjeitjtxmlbahkye.supabase.co/storage/v1/object/public/profiles/cmiwet6z30000bi1f4a3cx1ci/avatar.jpeg",
+    avatar_url:
+      "https://gwaxrjeitjtxmlbahkye.supabase.co/storage/v1/object/public/profiles/cmiwet6z30000bi1f4a3cx1ci/avatar.jpeg",
     birthdate: "2005-06-30",
     gender: "Male",
     pronouns: "he/him",
@@ -33,7 +32,7 @@ const jac352Data = {
       "Gaming",
       "Reading",
       "Fitness",
-      "Photography"
+      "Photography",
     ],
     intent: "Dating",
     gender_preference: ["All"],
@@ -46,7 +45,7 @@ const jac352Data = {
       "https://gwaxrjeitjtxmlbahkye.supabase.co/storage/v1/object/public/profiles/cmiwet6z30000bi1f4a3cx1ci/photo_2.jpeg?t=1765335728071",
       "https://gwaxrjeitjtxmlbahkye.supabase.co/storage/v1/object/public/profiles/cmiwet6z30000bi1f4a3cx1ci/photo_3.jpeg",
       "https://gwaxrjeitjtxmlbahkye.supabase.co/storage/v1/object/public/profiles/cmiwet6z30000bi1f4a3cx1ci/photo_4.jpeg",
-      "https://gwaxrjeitjtxmlbahkye.supabase.co/storage/v1/object/public/profiles/cmiwet6z30000bi1f4a3cx1ci/photo_5.jpeg?t=1765334506957?t=1765334506957"
+      "https://gwaxrjeitjtxmlbahkye.supabase.co/storage/v1/object/public/profiles/cmiwet6z30000bi1f4a3cx1ci/photo_5.jpeg?t=1765334506957?t=1765334506957",
     ],
     lifestyle: {
       drinking: "On occasion",
@@ -54,9 +53,9 @@ const jac352Data = {
       cleanliness: "Very clean",
       caffeine: "Daily coffee/tea",
       living_situation: "On-campus dorm",
-      fitness: "Gym regular"
-    }
-  }
+      fitness: "Gym regular",
+    },
+  },
 };
 
 async function seedJac352() {
@@ -65,16 +64,18 @@ async function seedJac352() {
 
     // Get NJIT university
     const university = await prisma.universities.findUnique({
-      where: { slug: "njit" }
+      where: { slug: "njit" },
     });
 
     if (!university) {
-      throw new Error("NJIT university not found. Please run the main seed script first.");
+      throw new Error(
+        "NJIT university not found. Please run the main seed script first.",
+      );
     }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: jac352Data.email }
+      where: { email: jac352Data.email },
     });
 
     if (existingUser) {
@@ -128,9 +129,10 @@ async function seedJac352() {
       },
     });
 
-    console.log(`Created profile for jac352 with ${jac352Data.profile.photos.length} photos`);
+    console.log(
+      `Created profile for jac352 with ${jac352Data.profile.photos.length} photos`,
+    );
     console.log("jac352 seed completed successfully!");
-
   } catch (error) {
     console.error("Error seeding jac352:", error);
     process.exit(1);

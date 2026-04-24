@@ -1,7 +1,6 @@
 import axios from "axios";
-import { useAuthStore } from "@/store/authStore";
 import logger from "@/config/logger";
-import { getErrorMessage } from "./utils";
+import { useAuthStore } from "@/store/authStore";
 
 const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/storage`;
 
@@ -23,14 +22,18 @@ export const storageApi = {
    * @param {"setup" | "update"} mode - Upload mode (setup during profile creation, update for existing)
    * @returns {Promise<{uploadUrl: string; path: string}>} Signed URL and storage path
    */
-  getUploadUrl: async (userId: string, filename: string, mode: "setup" | "update") => {
+  getUploadUrl: async (
+    userId: string,
+    filename: string,
+    mode: "setup" | "update",
+  ) => {
     const headers = getAuthHeaders();
     logger.debug("Requesting signed URL", { filename });
 
     const { data } = await axios.post(
       `${API_BASE}/url`,
       { userId, filename, mode },
-      { headers }
+      { headers },
     );
 
     logger.debug("Signed URL received", {
@@ -62,4 +65,3 @@ export const storageApi = {
     logger.info("File uploaded", { uploadUrl });
   },
 };
-

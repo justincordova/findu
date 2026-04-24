@@ -1,8 +1,8 @@
 import { Router } from "express";
-import * as BlocksController from "./controllers";
 import * as authMiddleware from "@/middleware/auth/requireAuth";
-import { validateBlock } from "./validators";
 import { handleValidationErrors } from "@/middleware/error/handleValidationErrors";
+import * as BlocksController from "./controllers";
+import { validateBlock } from "./validators";
 
 const router = Router();
 
@@ -10,7 +10,12 @@ const router = Router();
 router.use(authMiddleware.requireAuth);
 
 // Block a user
-router.post("/", validateBlock, handleValidationErrors, BlocksController.createBlock);
+router.post(
+  "/",
+  validateBlock,
+  handleValidationErrors,
+  BlocksController.createBlock,
+);
 
 // Unblock a user
 router.delete("/:blockedId", BlocksController.unblockUser);

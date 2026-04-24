@@ -1,5 +1,5 @@
-import * as BlocksService from "@/modules/blocks/services";
 import prisma from "@/lib/prismaClient";
+import * as BlocksService from "@/modules/blocks/services";
 
 // Mock prisma
 jest.mock("@/lib/prismaClient", () => ({
@@ -51,9 +51,9 @@ describe("Blocks Service", () => {
     });
 
     it("should throw error if blocking self", async () => {
-      await expect(BlocksService.createBlock(blockerId, blockerId)).rejects.toThrow(
-        "Cannot block yourself"
-      );
+      await expect(
+        BlocksService.createBlock(blockerId, blockerId),
+      ).rejects.toThrow("Cannot block yourself");
     });
   });
 

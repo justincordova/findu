@@ -1,13 +1,13 @@
-import { Request, Response, NextFunction } from "express";
-import { AuthService } from "@/modules/auth/services"; // updated import
+import type { NextFunction, Request, Response } from "express";
 import logger from "@/config/logger";
+import { AuthService } from "@/modules/auth/services"; // updated import
 
 const enableAuth = process.env.ENABLE_AUTH === "true";
 
 export async function requireAuth(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   if (!enableAuth) {
     // Auth disabled → attach mock user for dev/test convenience
@@ -26,7 +26,7 @@ export async function requireAuth(
   }
 
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader?.startsWith("Bearer ")) {
     logger.warn("AUTH_FAILED", {
       reason: "missing_or_invalid_header",
       ip: req.ip,

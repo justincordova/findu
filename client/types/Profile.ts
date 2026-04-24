@@ -1,4 +1,4 @@
-import { Lifestyle } from "./Lifestyle";
+import type { Lifestyle } from "./Lifestyle";
 
 export interface Profile {
   user_id: string;

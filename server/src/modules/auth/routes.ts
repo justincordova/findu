@@ -1,7 +1,7 @@
 import { Router } from "express";
-import * as AuthValidators from "./validators";
-import * as AuthController from "./controllers";
 import { rateLimitOTP } from "@/middleware/auth/rateLimitOTP";
+import * as AuthController from "./controllers";
+import * as AuthValidators from "./validators";
 
 const router = Router();
 
@@ -10,35 +10,35 @@ router.post(
   "/send-otp",
   rateLimitOTP,
   AuthValidators.validateEmail,
-  AuthController.sendOtpController
+  AuthController.sendOtpController,
 );
 
 // Verify OTP (after email sent)
 router.post(
   "/verify-otp",
   AuthValidators.validateVerifyOtp,
-  AuthController.verifyOtpController
+  AuthController.verifyOtpController,
 );
 
 // Create account with password (after OTP verified)
 router.post(
   "/create-account",
   AuthValidators.validateCreateAccount,
-  AuthController.createAccountController
+  AuthController.createAccountController,
 );
 
 // Signup a new user with OTP (legacy - deprecated, kept for backwards compatibility)
 router.post(
   "/signup",
   AuthValidators.validateSignup,
-  AuthController.signupController
+  AuthController.signupController,
 );
 
 // Signin a user
 router.post(
   "/signin",
   AuthValidators.validateLogin,
-  AuthController.signinController
+  AuthController.signinController,
 );
 
 // Refresh session token (token passed in Authorization header)

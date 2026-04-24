@@ -1,13 +1,17 @@
 // React core
-import React, { useCallback, useState, useRef, useEffect } from "react";
 
+import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 // React Native
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ScrollView, StyleSheet, Text, View, TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-
-// Project imports
-import Button from "@/components/shared/Button";
+import { profileApi } from "@/api/profile";
 import Step1 from "@/components/profile-setup/Step1";
 import Step2 from "@/components/profile-setup/Step2";
 import Step3 from "@/components/profile-setup/Step3";
@@ -18,12 +22,13 @@ import Step7 from "@/components/profile-setup/Step7";
 import Step8 from "@/components/profile-setup/Step8";
 import Step9 from "@/components/profile-setup/Step9";
 import Step10 from "@/components/profile-setup/Step10";
-import { BACKGROUND, DARK, PRIMARY } from "@/constants/theme";
-import { useProfileSetupStore } from "@/store/profileStore";
-import { useTokenValidation } from "@/hooks/useTokenValidation";
-import { profileApi } from "@/api/profile";
-import { useAuthStore } from "@/store/authStore";
+// Project imports
+import Button from "@/components/shared/Button";
 import logger from "@/config/logger";
+import { BACKGROUND, DARK, PRIMARY } from "@/constants/theme";
+import { useTokenValidation } from "@/hooks/useTokenValidation";
+import { useAuthStore } from "@/store/authStore";
+import { useProfileSetupStore } from "@/store/profileStore";
 
 // Constants
 const STEPS = [
@@ -55,23 +60,23 @@ function isProfileComplete(data: any): boolean {
   if (!data) return false;
 
   const requiredFields = [
-    'name',
-    'birthdate',
-    'gender',
-    'pronouns',
-    'university_name',
-    'major',
-    'university_year',
-    'grad_year',
-    'sexual_orientation',
-    'gender_preference',
-    'intent',
-    'min_age',
-    'max_age',
-    'avatar_url',
-    'bio',
-    'interests',
-    'photos',
+    "name",
+    "birthdate",
+    "gender",
+    "pronouns",
+    "university_name",
+    "major",
+    "university_year",
+    "grad_year",
+    "sexual_orientation",
+    "gender_preference",
+    "intent",
+    "min_age",
+    "max_age",
+    "avatar_url",
+    "bio",
+    "interests",
+    "photos",
   ];
 
   return requiredFields.every((field) => {
@@ -83,11 +88,11 @@ function isProfileComplete(data: any): boolean {
     }
 
     // Handle strings and numbers
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       return value.trim().length > 0;
     }
 
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
       return value > 0;
     }
 
@@ -104,13 +109,15 @@ export default function ProfileSetupStep() {
 
   // Access profile setup store
   const profileData = useProfileSetupStore((state) => state.data);
-  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
+  const setProfileField = useProfileSetupStore(
+    (state) => state.setProfileField,
+  );
 
   // Auth store for user ID
   const userId = useAuthStore((state) => state.userId);
 
   // Auto-save debouncing
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedDataRef = useRef<string>("");
 
   /**
@@ -133,7 +140,11 @@ export default function ProfileSetupStep() {
     autoSaveTimeoutRef.current = setTimeout(async () => {
       try {
         // Exclude display-only fields from save
-        const { university_name: _universityName, campus_name: _campusName, ...dataToSave } = profileData;
+        const {
+          university_name: _universityName,
+          campus_name: _campusName,
+          ...dataToSave
+        } = profileData;
 
         await profileApi.update(userId, dataToSave);
         lastSavedDataRef.current = currentDataStr;
@@ -221,7 +232,11 @@ export default function ProfileSetupStep() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.progressContainer}>
           <View style={styles.progressHeader}>
             <View>
@@ -239,7 +254,12 @@ export default function ProfileSetupStep() {
                 activeOpacity={0.7}
               >
                 <Text style={styles.finishButtonText}>Go to Finish</Text>
-                <Ionicons name="arrow-forward" size={16} color="white" style={styles.finishButtonIcon} />
+                <Ionicons
+                  name="arrow-forward"
+                  size={16}
+                  color="white"
+                  style={styles.finishButtonIcon}
+                />
               </TouchableOpacity>
             )}
           </View>

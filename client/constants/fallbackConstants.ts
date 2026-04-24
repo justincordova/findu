@@ -1,4 +1,4 @@
-import { Constants } from "@/api/constants";
+import type { Constants } from "@/api/constants";
 
 /**
  * Fallback constants shipped with the app
@@ -388,7 +388,15 @@ export const FALLBACK_CONSTANTS: Constants = {
     "Exploratory Studies",
     "Self-Designed Major",
   ],
-  genderPreferences: ["Men", "Women", "Non-binary", "Trans Men", "Trans Women", "Other", "All"],
+  genderPreferences: [
+    "Men",
+    "Women",
+    "Non-binary",
+    "Trans Men",
+    "Trans Women",
+    "Other",
+    "All",
+  ],
   sexualOrientations: [
     "Straight",
     "Gay",
@@ -402,7 +410,15 @@ export const FALLBACK_CONSTANTS: Constants = {
     "Prefer not to say",
     "Other",
   ],
-  pronouns: ["he/him", "she/her", "they/them", "ze/zir", "xe/xem", "prefer not to say", "other"],
+  pronouns: [
+    "he/him",
+    "she/her",
+    "they/them",
+    "ze/zir",
+    "xe/xem",
+    "prefer not to say",
+    "other",
+  ],
   interests: {},
   lifestyleOptions: {
     drinking: ["Never", "Rarely", "Socially", "Often", "Very Often"],
@@ -410,11 +426,22 @@ export const FALLBACK_CONSTANTS: Constants = {
     cannabis: ["Never", "Rarely", "Socially", "Often", "Very Often"],
     sleepHabits: ["Early Bird", "Night Owl", "Variable"],
     pets: ["None", "Cat", "Dog", "Fish", "Bird", "Other"],
-    dietaryPreferences: ["No restrictions", "Vegetarian", "Vegan", "Pescatarian", "Other"],
+    dietaryPreferences: [
+      "No restrictions",
+      "Vegetarian",
+      "Vegan",
+      "Pescatarian",
+      "Other",
+    ],
     studyStyle: ["Group", "Alone", "Library", "Coffee Shop", "Online"],
     cleanliness: ["Very Clean", "Clean", "Average", "Messy"],
     caffeine: ["Don't use", "Moderate", "Heavy User"],
     livingSituation: ["Dorm", "Apartment", "House", "Off-campus", "Other"],
-    fitness: ["Not Active", "Lightly Active", "Moderately Active", "Very Active"],
+    fitness: [
+      "Not Active",
+      "Lightly Active",
+      "Moderately Active",
+      "Very Active",
+    ],
   },
 };

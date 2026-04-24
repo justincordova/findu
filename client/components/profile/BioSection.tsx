@@ -1,6 +1,8 @@
 // React core
-import { useCallback, useState } from "react";
 
+// Third-party
+import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useState } from "react";
 // React Native
 import {
   Alert,
@@ -14,17 +16,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-// Third-party
-import { Ionicons } from "@expo/vector-icons";
-
-// Project imports
-import { profileStyles } from "./shared/profileStyles";
-import { useProfile } from "@/contexts/ProfileContext";
-import { useAuthStore } from "@/store/authStore";
 import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
 import { MUTED, PRIMARY } from "@/constants/theme";
+import { useProfile } from "@/contexts/ProfileContext";
+import { useAuthStore } from "@/store/authStore";
+// Project imports
+import { profileStyles } from "./shared/profileStyles";
 
 /**
  * BioSection Component
@@ -170,9 +168,7 @@ export default function BioSection() {
                     multiline
                     maxLength={500}
                   />
-                  <Text style={styles.charCount}>
-                    {editingBio.length}/500
-                  </Text>
+                  <Text style={styles.charCount}>{editingBio.length}/500</Text>
                 </View>
               </View>
             </ScrollView>

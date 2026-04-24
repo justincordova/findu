@@ -1,6 +1,8 @@
 // React core
-import { useEffect } from "react";
 
+// Navigation
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { useEffect } from "react";
 // React Native
 import {
   Dimensions,
@@ -9,16 +11,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
 // Animations
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-
-// Navigation
-import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
 // Project imports
 import { PRIMARY } from "@/constants/theme";
@@ -80,8 +78,8 @@ export default function CustomTabBar({
             options.tabBarLabel !== undefined
               ? options.tabBarLabel
               : options.title !== undefined
-              ? options.title
-              : route.name;
+                ? options.title
+                : route.name;
           const isFocused = state.index === idx;
 
           const onPress = () => {

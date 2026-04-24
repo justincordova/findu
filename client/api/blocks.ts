@@ -1,7 +1,7 @@
 import { handleResponse } from "./utils";
 
 if (!process.env.EXPO_PUBLIC_API_URL) {
-  throw new Error('EXPO_PUBLIC_API_URL environment variable is required');
+  throw new Error("EXPO_PUBLIC_API_URL environment variable is required");
 }
 
 const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/blocks`;

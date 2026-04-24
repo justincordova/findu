@@ -1,18 +1,25 @@
-
-import * as ProfileService from "@/modules/profiles/services";
-import { Profile } from "@/types/Profile";
-import prisma from "@/lib/prismaClient";
 import logger from "@/config/logger";
+import prisma from "@/lib/prismaClient";
+import * as ProfileService from "@/modules/profiles/services";
+import type { Profile } from "@/types/Profile";
 
 // Mock prisma and logger
-jest.mock("@/lib/prismaClient", () => ({
-  profiles: {
+jest.mock("@/lib/prismaClient", () => {
+  const mockProfiles = {
     create: jest.fn(),
     findUnique: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
-  },
-}));
+  };
+  return {
+    __esModule: true,
+    default: {
+      profiles: mockProfiles,
+      university_domains: { findFirst: jest.fn() },
+      $transaction: jest.fn((fn) => fn({ profiles: mockProfiles })),
+    },
+  };
+});
 
 jest.mock("@/config/logger", () => ({
   info: jest.fn(),
@@ -145,7 +152,7 @@ describe("Profiles API edge & failure cases", () => {
     };
     const result = await ProfileService.updateProfile(
       "non-existent-user",
-      partialUpdate
+      partialUpdate,
     );
 
     expect(result).toBeNull();
@@ -170,7 +177,7 @@ describe("Profiles API edge & failure cases", () => {
     (prisma.profiles.create as jest.Mock).mockRejectedValue(error);
 
     await expect(ProfileService.createProfile(sampleProfile)).rejects.toThrow(
-      "DB error"
+      "DB error",
     );
     expect(logger.error).toHaveBeenCalledWith("CREATE_PROFILE_ERROR", {
       error,
@@ -184,7 +191,7 @@ describe("Profiles API edge & failure cases", () => {
     (prisma.profiles.update as jest.Mock).mockRejectedValue(error);
 
     await expect(
-      ProfileService.updateProfile(userId, { bio: "New bio" })
+      ProfileService.updateProfile(userId, { bio: "New bio" }),
     ).rejects.toThrow("DB error");
     expect(logger.error).toHaveBeenCalledWith("UPDATE_PROFILE_ERROR", {
       error,
@@ -198,7 +205,7 @@ describe("Profiles API edge & failure cases", () => {
     (prisma.profiles.findUnique as jest.Mock).mockRejectedValue(error);
 
     await expect(ProfileService.getProfileByUserId(userId)).rejects.toThrow(
-      "DB error"
+      "DB error",
     );
     expect(logger.error).toHaveBeenCalledWith("GET_PROFILE_ERROR", {
       error,
@@ -211,7 +218,7 @@ describe("Profiles API edge & failure cases", () => {
     (prisma.profiles.delete as jest.Mock).mockRejectedValue(error);
 
     await expect(ProfileService.deleteProfile(userId)).rejects.toThrow(
-      "DB error"
+      "DB error",
     );
     expect(logger.error).toHaveBeenCalledWith("DELETE_PROFILE_ERROR", {
       error,
@@ -254,8 +261,6 @@ describe("resolveUniversityAndCampuses", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Mock for university_domains needs to be on the root prisma object
-    (prisma as any).university_domains = { findFirst: jest.fn() };
   });
 
   it("should resolve university and campuses from email", async () => {
@@ -270,7 +275,9 @@ describe("resolveUniversityAndCampuses", () => {
         ],
       },
     };
-    ((prisma as any).university_domains.findFirst as jest.Mock).mockResolvedValue(mockUniDomain);
+    (
+      (prisma as any).university_domains.findFirst as jest.Mock
+    ).mockResolvedValue(mockUniDomain);
 
     const result = await ProfileService.resolveUniversityAndCampuses(email);
 
@@ -280,9 +287,7 @@ describe("resolveUniversityAndCampuses", () => {
         name: "Example University",
         slug: "example-university",
       },
-      campuses: [
-        { id: "campus-1", name: "Main Campus", slug: "main-campus" },
-      ],
+      campuses: [{ id: "campus-1", name: "Main Campus", slug: "main-campus" }],
     });
     expect((prisma as any).university_domains.findFirst).toHaveBeenCalledWith({
       where: { domain },
@@ -291,7 +296,9 @@ describe("resolveUniversityAndCampuses", () => {
   });
 
   it("should return null if university not found for domain", async () => {
-    ((prisma as any).university_domains.findFirst as jest.Mock).mockResolvedValue(null);
+    (
+      (prisma as any).university_domains.findFirst as jest.Mock
+    ).mockResolvedValue(null);
 
     const result = await ProfileService.resolveUniversityAndCampuses(email);
 
@@ -300,9 +307,13 @@ describe("resolveUniversityAndCampuses", () => {
 
   it("should throw an error if database call fails", async () => {
     const error = new Error("DB Error");
-    ((prisma as any).university_domains.findFirst as jest.Mock).mockRejectedValue(error);
+    (
+      (prisma as any).university_domains.findFirst as jest.Mock
+    ).mockRejectedValue(error);
 
-    await expect(ProfileService.resolveUniversityAndCampuses(email)).rejects.toThrow("DB Error");
+    await expect(
+      ProfileService.resolveUniversityAndCampuses(email),
+    ).rejects.toThrow("DB Error");
   });
 });
 
@@ -318,7 +329,9 @@ describe("Lifestyle field handling", () => {
       fitness: "Casual gym-goer",
     };
     const profileWithLifestyle = { ...sampleProfile, lifestyle: lifestyleData };
-    (prisma.profiles.create as jest.Mock).mockResolvedValue(profileWithLifestyle);
+    (prisma.profiles.create as jest.Mock).mockResolvedValue(
+      profileWithLifestyle,
+    );
 
     const result = await ProfileService.createProfile(profileWithLifestyle);
 
@@ -328,9 +341,13 @@ describe("Lifestyle field handling", () => {
   it("should handle null lifestyle field", async () => {
     const profileWithoutLifestyle = { ...sampleProfile, lifestyle: null };
     (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleProfile);
-    (prisma.profiles.update as jest.Mock).mockResolvedValue(profileWithoutLifestyle);
+    (prisma.profiles.update as jest.Mock).mockResolvedValue(
+      profileWithoutLifestyle,
+    );
 
-    const result = await ProfileService.updateProfile(userId, { lifestyle: null });
+    const result = await ProfileService.updateProfile(userId, {
+      lifestyle: null,
+    });
 
     expect(result?.lifestyle).toBeNull();
   });
@@ -343,7 +360,9 @@ describe("Lifestyle field handling", () => {
     };
     const profileWithLifestyle = { ...sampleProfile, lifestyle: lifestyleData };
     (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleProfile);
-    (prisma.profiles.update as jest.Mock).mockResolvedValue(profileWithLifestyle);
+    (prisma.profiles.update as jest.Mock).mockResolvedValue(
+      profileWithLifestyle,
+    );
 
     const result = await ProfileService.updateProfile(userId, {
       lifestyle: lifestyleData,
@@ -354,13 +373,22 @@ describe("Lifestyle field handling", () => {
 
   it("should preserve existing lifestyle data when updating other fields", async () => {
     const existingLifestyle = { drinking: "Never", fitness: "Gym regular" };
-    const profileWithLifestyle = { ...sampleProfile, lifestyle: existingLifestyle };
-    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(profileWithLifestyle);
-    (prisma.profiles.update as jest.Mock).mockResolvedValue(profileWithLifestyle);
+    const profileWithLifestyle = {
+      ...sampleProfile,
+      lifestyle: existingLifestyle,
+    };
+    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(
+      profileWithLifestyle,
+    );
+    (prisma.profiles.update as jest.Mock).mockResolvedValue(
+      profileWithLifestyle,
+    );
 
     await ProfileService.updateProfile(userId, { bio: "New bio" });
 
     // Lifestyle should not be modified when updating other fields
-    expect((prisma.profiles.update as jest.Mock).mock.calls[0][0].data.lifestyle).not.toBeDefined();
+    expect(
+      (prisma.profiles.update as jest.Mock).mock.calls[0][0].data.lifestyle,
+    ).not.toBeDefined();
   });
 });

@@ -376,4 +376,4 @@ export const MAJORS = [
   "Self-Designed Major",
 ] as const;
 
-export type Major = typeof MAJORS[number];
+export type Major = (typeof MAJORS)[number];

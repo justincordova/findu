@@ -1,7 +1,7 @@
 import { Router } from "express";
+import * as authMiddleware from "@/middleware/auth/requireAuth";
 import { generateUploadUrlController } from "./controllers";
 import { validateGenerateUploadUrl } from "./validators";
-import * as authMiddleware from "@/middleware/auth/requireAuth";
 
 const router = Router();
 

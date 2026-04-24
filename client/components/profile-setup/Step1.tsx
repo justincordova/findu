@@ -1,21 +1,13 @@
 // React core
-import { useEffect } from "react";
-
-// React Native
-import { StyleSheet, Text, View } from "react-native";
 
 // Third-party
 import { Ionicons } from "@expo/vector-icons";
-
-// Project imports
-import {
-  BACKGROUND,
-  DARK,
-  MUTED,
-  PRIMARY,
-  SECONDARY,
-} from "@/constants/theme";
+import { useEffect } from "react";
+// React Native
+import { StyleSheet, Text, View } from "react-native";
 import { profileApi } from "@/api/profile";
+// Project imports
+import { BACKGROUND, DARK, MUTED, PRIMARY, SECONDARY } from "@/constants/theme";
 import { useAuthStore } from "@/store/authStore";
 import { useProfileSetupStore } from "@/store/profileStore";
 
@@ -30,7 +22,9 @@ interface WelcomeStepProps {
  */
 export default function Step1(_props: WelcomeStepProps) {
   const email = useAuthStore((state) => state.email);
-  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
+  const setProfileField = useProfileSetupStore(
+    (state) => state.setProfileField,
+  );
   const setCampuses = useProfileSetupStore((state) => state.setCampuses);
 
   useEffect(() => {
@@ -81,8 +75,6 @@ export default function Step1(_props: WelcomeStepProps) {
           Let&apos;s get started and set up your profile
         </Text>
       </View>
-
-
     </View>
   );
 }

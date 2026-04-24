@@ -1,6 +1,9 @@
 // React core
-import { useCallback, useMemo, useRef, useState } from "react";
 
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { LinearGradient } from "expo-linear-gradient";
+import { useCallback, useMemo, useRef, useState } from "react";
 // React Native
 import {
   ActivityIndicator,
@@ -12,17 +15,13 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { Ionicons } from "@expo/vector-icons";
-
-// Project imports
-import { useProfile } from "@/contexts/ProfileContext";
-import { useAuthStore } from "@/store/authStore";
-import { updatePhoto } from "@/services/uploadService";
 import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
-import { MUTED, GRADIENT } from "@/constants/theme";
-import { LinearGradient } from "expo-linear-gradient";
+import { GRADIENT, MUTED } from "@/constants/theme";
+// Project imports
+import { useProfile } from "@/contexts/ProfileContext";
+import { updatePhoto } from "@/services/uploadService";
+import { useAuthStore } from "@/store/authStore";
 
 // Constants
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -49,8 +48,8 @@ export default function PhotosSection() {
   const userId = useAuthStore((state) => state.userId);
 
   const photos = useMemo(
-    () => Array.isArray(profile?.photos) ? profile.photos : [],
-    [profile?.photos]
+    () => (Array.isArray(profile?.photos) ? profile.photos : []),
+    [profile?.photos],
   );
 
   // Upload state
@@ -61,11 +60,14 @@ export default function PhotosSection() {
   /**
    * Handle carousel scroll to update active indicator
    */
-  const handleCarouselScroll = useCallback((event: any) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / SCREEN_WIDTH);
-    setCurrentPhotoIndex(Math.max(0, Math.min(index, photos.length - 1)));
-  }, [photos.length]);
+  const handleCarouselScroll = useCallback(
+    (event: any) => {
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const index = Math.round(offsetX / SCREEN_WIDTH);
+      setCurrentPhotoIndex(Math.max(0, Math.min(index, photos.length - 1)));
+    },
+    [photos.length],
+  );
 
   /**
    * Handle tapping a photo to replace it
@@ -146,7 +148,7 @@ export default function PhotosSection() {
           });
           Alert.alert(
             "Upload Failed",
-            "Could not replace the photo. Please try again."
+            "Could not replace the photo. Please try again.",
           );
         } finally {
           setUploadingIndex(null);
@@ -160,7 +162,7 @@ export default function PhotosSection() {
         Alert.alert("Error", "Could not open image picker. Please try again.");
       }
     },
-    [userId, photos, refetch, isEditable]
+    [userId, photos, refetch, isEditable],
   );
 
   // Empty state - don't show section if no photos
@@ -212,7 +214,7 @@ export default function PhotosSection() {
 
         {photos.length > 1 && (
           <View style={styles.indicatorsContainer}>
-            {photos.map((_, index) => (
+            {photos.map((_, index) =>
               index === currentPhotoIndex ? (
                 <LinearGradient
                   key={index}
@@ -222,12 +224,9 @@ export default function PhotosSection() {
                   style={styles.indicator}
                 />
               ) : (
-                <View
-                  key={index}
-                  style={styles.indicator}
-                />
-              )
-            ))}
+                <View key={index} style={styles.indicator} />
+              ),
+            )}
           </View>
         )}
       </View>

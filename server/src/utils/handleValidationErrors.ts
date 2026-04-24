@@ -1,14 +1,14 @@
-import { Request } from 'express';
-import { validationResult } from 'express-validator';
-import logger from '@/config/logger';
+import type { Request } from "express";
+import { validationResult } from "express-validator";
+import logger from "@/config/logger";
 
-const SENSITIVE_FIELDS = ['password', 'token', 'creditCard'];
+const SENSITIVE_FIELDS = ["password", "token", "creditCard"];
 
 const redactSensitive = (obj: Record<string, any>) => {
   if (!obj) return {};
   const redacted: Record<string, any> = { ...obj };
   SENSITIVE_FIELDS.forEach((field) => {
-    if (field in redacted) redacted[field] = '[REDACTED]';
+    if (field in redacted) redacted[field] = "[REDACTED]";
   });
   return redacted;
 };
@@ -17,7 +17,9 @@ const redactSensitive = (obj: Record<string, any>) => {
  * Helper function for controllers to check validation errors
  * Returns true if valid, false otherwise
  */
-export const checkValidationErrors = (req: Request): { valid: boolean; errors?: any[] } => {
+export const checkValidationErrors = (
+  req: Request,
+): { valid: boolean; errors?: any[] } => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const metadata = {
@@ -28,10 +30,10 @@ export const checkValidationErrors = (req: Request): { valid: boolean; errors?: 
       query: req.query,
       headers: { ...req.headers },
       errors: errors.array(),
-      requestId: req.headers['x-request-id'] || 'N/A',
+      requestId: req.headers["x-request-id"] || "N/A",
     };
 
-    logger.warn('VALIDATION_FAILED', metadata);
+    logger.warn("VALIDATION_FAILED", metadata);
     return { valid: false, errors: errors.array() };
   }
   return { valid: true };

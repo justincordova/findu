@@ -1,26 +1,26 @@
-import prisma from "@/lib/prismaClient";
+import { addDays, differenceInYears, subYears } from "date-fns";
 import logger from "@/config/logger";
-import { Profile } from "@/types/Profile";
-import { Lifestyle } from "@/types/Lifestyle";
-import {
-  ProfileWithScore,
-  CompatibilityWeights,
-  IntentCompatibilityMatrix
-} from "@/types/Discover";
-import { differenceInYears, subYears, addDays } from 'date-fns';
 import { getInterestCategory } from "@/constants/interests";
+import type { Prisma } from "@/generated/prisma/client";
+import prisma from "@/lib/prismaClient";
+import type {
+  CompatibilityWeights,
+  IntentCompatibilityMatrix,
+  ProfileWithScore,
+} from "@/types/Discover";
+import type { Lifestyle } from "@/types/Lifestyle";
+import type { Profile } from "@/types/Profile";
 import { genderPreferencesToIdentities } from "@/utils/genderMapping";
-import type { JsonValue } from "@prisma/client/runtime/library";
 
 // Algorithm weights - adjust based on testing/feedback
 // Updated: 30% interests, 25% intent, 15% orientation, 10% major, 10% age, 10% lifestyle
 const COMPATIBILITY_WEIGHTS: CompatibilityWeights = {
-  sharedInterests: 0.30,        // 30% - shared hobbies/interests (reduced from 35%)
-  intentCompatibility: 0.25,    // 25% - relationship goals alignment (reduced from 30%)
+  sharedInterests: 0.3, // 30% - shared hobbies/interests (reduced from 35%)
+  intentCompatibility: 0.25, // 25% - relationship goals alignment (reduced from 30%)
   orientationCompatibility: 0.15, // 15% - sexual orientation match
-  majorCompatibility: 0.10,     // 10% - same major/academic context
-  ageCompatibility: 0.10,       // 10% - age alignment
-  lifestyleCompatibility: 0.10, // 10% - lifestyle compatibility (NEW)
+  majorCompatibility: 0.1, // 10% - same major/academic context
+  ageCompatibility: 0.1, // 10% - age alignment
+  lifestyleCompatibility: 0.1, // 10% - lifestyle compatibility (NEW)
 };
 
 /**
@@ -35,41 +35,43 @@ export const calculateAge = (birthdate: Date): number => {
  */
 const getBirthdateRangeForAge = (minAge: number, maxAge: number) => {
   const today = new Date();
-  
+
   // For max age: person must be born after this date to be younger than maxAge + 1
   // Someone born exactly maxAge years ago is still maxAge until their next birthday
   const maxBirthdate = subYears(today, maxAge + 1);
   const adjustedMaxBirthdate = addDays(maxBirthdate, 1);
-  
+
   // For min age: person must be born on or before this date to be at least minAge
   const minBirthdate = subYears(today, minAge);
-  
-  return { 
-    minBirthdate,           // Latest birth date for minimum age
-    maxBirthdate: adjustedMaxBirthdate  // Earliest birth date for maximum age
+
+  return {
+    minBirthdate, // Latest birth date for minimum age
+    maxBirthdate: adjustedMaxBirthdate, // Earliest birth date for maximum age
   };
 };
 
 /**
  * Utility: Get shared interests between two arrays.
  */
-export const getSharedInterests = (interests1: string[], interests2: string[]): string[] => {
+export const getSharedInterests = (
+  interests1: string[],
+  interests2: string[],
+): string[] => {
   if (!interests1?.length || !interests2?.length) return [];
-  return interests1.filter(interest => interests2.includes(interest));
+  return interests1.filter((interest) => interests2.includes(interest));
 };
 
 /**
  * Utility: Check if candidate age is within user's preference range.
  */
 export const isWithinAgePreference = (
-  userAge: number, 
-  candidateAge: number, 
-  minAge: number, 
-  maxAge: number
+  _userAge: number,
+  candidateAge: number,
+  minAge: number,
+  maxAge: number,
 ): boolean => {
   return candidateAge >= minAge && candidateAge <= maxAge;
 };
-
 
 /**
  * Calculate shared interests score based on exact matches and category matches.
@@ -82,11 +84,14 @@ export const isWithinAgePreference = (
  * - Minimum denominator of 3 prevents penalizing users with diverse interests
  * - Uses minimum to avoid penalizing breadth; max ensures fair baseline
  */
-export const calculateSharedInterestsScore = (interests1: string[], interests2: string[]): number => {
+export const calculateSharedInterestsScore = (
+  interests1: string[],
+  interests2: string[],
+): number => {
   if (!interests1?.length || !interests2?.length) return 0;
 
   let sharedPoints = 0;
-  const interests2Lower = interests2.map(i => i.toLowerCase());
+  const interests2Lower = interests2.map((i) => i.toLowerCase());
 
   // For each interest in interests1, try to find exact match or category match in interests2
   for (const interest1 of interests1) {
@@ -100,7 +105,9 @@ export const calculateSharedInterestsScore = (interests1: string[], interests2: 
 
     // Try category match for interests not found exactly
     const category1 = getInterestCategory(interest1);
-    const category2Of2 = interests2.find(i => getInterestCategory(i) === category1);
+    const category2Of2 = interests2.find(
+      (i) => getInterestCategory(i) === category1,
+    );
 
     if (category1 && category2Of2) {
       sharedPoints += 0.5;
@@ -108,7 +115,10 @@ export const calculateSharedInterestsScore = (interests1: string[], interests2: 
   }
 
   // Normalization: use minimum with floor of 3
-  const denominator = Math.max(3, Math.min(interests1.length, interests2.length));
+  const denominator = Math.max(
+    3,
+    Math.min(interests1.length, interests2.length),
+  );
   return sharedPoints / denominator;
 };
 
@@ -119,93 +129,96 @@ export const calculateSharedInterestsScore = (interests1: string[], interests2: 
  * User autonomy: users decide if they want to like someone with different intent
  */
 const INTENT_MATRIX: IntentCompatibilityMatrix = {
-  'Dating': {
-    'Dating': 1.0,
-    'Casual Dating': 0.8,
-    'Serious Relationship': 0.8,
-    'Friendship': 0.5,
-    'Study Buddy': 0.5,
-    'Hookup': 0.6,
-    'Networking': 0.2,
-    'Unsure': 0.6
+  Dating: {
+    Dating: 1.0,
+    "Casual Dating": 0.8,
+    "Serious Relationship": 0.8,
+    Friendship: 0.5,
+    "Study Buddy": 0.5,
+    Hookup: 0.6,
+    Networking: 0.2,
+    Unsure: 0.6,
   },
-  'Casual Dating': {
-    'Dating': 0.8,
-    'Casual Dating': 1.0,
-    'Serious Relationship': 0.5,
-    'Friendship': 0.5,
-    'Study Buddy': 0.4,
-    'Hookup': 0.8,
-    'Networking': 0.2,
-    'Unsure': 0.7
+  "Casual Dating": {
+    Dating: 0.8,
+    "Casual Dating": 1.0,
+    "Serious Relationship": 0.5,
+    Friendship: 0.5,
+    "Study Buddy": 0.4,
+    Hookup: 0.8,
+    Networking: 0.2,
+    Unsure: 0.7,
   },
-  'Serious Relationship': {
-    'Dating': 0.8,
-    'Casual Dating': 0.5,
-    'Serious Relationship': 1.0,
-    'Friendship': 0.4,
-    'Study Buddy': 0.3,
-    'Hookup': 0.2,
-    'Networking': 0.2,
-    'Unsure': 0.6
+  "Serious Relationship": {
+    Dating: 0.8,
+    "Casual Dating": 0.5,
+    "Serious Relationship": 1.0,
+    Friendship: 0.4,
+    "Study Buddy": 0.3,
+    Hookup: 0.2,
+    Networking: 0.2,
+    Unsure: 0.6,
   },
-  'Friendship': {
-    'Dating': 0.5,
-    'Casual Dating': 0.5,
-    'Serious Relationship': 0.4,
-    'Friendship': 1.0,
-    'Study Buddy': 0.8,
-    'Hookup': 0.3,
-    'Networking': 0.6,
-    'Unsure': 0.5
+  Friendship: {
+    Dating: 0.5,
+    "Casual Dating": 0.5,
+    "Serious Relationship": 0.4,
+    Friendship: 1.0,
+    "Study Buddy": 0.8,
+    Hookup: 0.3,
+    Networking: 0.6,
+    Unsure: 0.5,
   },
-  'Study Buddy': {
-    'Dating': 0.5,
-    'Casual Dating': 0.4,
-    'Serious Relationship': 0.3,
-    'Friendship': 0.8,
-    'Study Buddy': 1.0,
-    'Hookup': 0.2,
-    'Networking': 0.7,
-    'Unsure': 0.5
+  "Study Buddy": {
+    Dating: 0.5,
+    "Casual Dating": 0.4,
+    "Serious Relationship": 0.3,
+    Friendship: 0.8,
+    "Study Buddy": 1.0,
+    Hookup: 0.2,
+    Networking: 0.7,
+    Unsure: 0.5,
   },
-  'Hookup': {
-    'Dating': 0.6,
-    'Casual Dating': 0.8,
-    'Serious Relationship': 0.2,
-    'Friendship': 0.3,
-    'Study Buddy': 0.2,
-    'Hookup': 1.0,
-    'Networking': 0.2,
-    'Unsure': 0.5
+  Hookup: {
+    Dating: 0.6,
+    "Casual Dating": 0.8,
+    "Serious Relationship": 0.2,
+    Friendship: 0.3,
+    "Study Buddy": 0.2,
+    Hookup: 1.0,
+    Networking: 0.2,
+    Unsure: 0.5,
   },
-  'Networking': {
-    'Dating': 0.2,
-    'Casual Dating': 0.2,
-    'Serious Relationship': 0.2,
-    'Friendship': 0.6,
-    'Study Buddy': 0.7,
-    'Hookup': 0.2,
-    'Networking': 1.0,
-    'Unsure': 0.4
+  Networking: {
+    Dating: 0.2,
+    "Casual Dating": 0.2,
+    "Serious Relationship": 0.2,
+    Friendship: 0.6,
+    "Study Buddy": 0.7,
+    Hookup: 0.2,
+    Networking: 1.0,
+    Unsure: 0.4,
   },
-  'Unsure': {
-    'Dating': 0.6,
-    'Casual Dating': 0.7,
-    'Serious Relationship': 0.6,
-    'Friendship': 0.5,
-    'Study Buddy': 0.5,
-    'Hookup': 0.5,
-    'Networking': 0.4,
-    'Unsure': 0.7
-  }
+  Unsure: {
+    Dating: 0.6,
+    "Casual Dating": 0.7,
+    "Serious Relationship": 0.6,
+    Friendship: 0.5,
+    "Study Buddy": 0.5,
+    Hookup: 0.5,
+    Networking: 0.4,
+    Unsure: 0.7,
+  },
 };
 
 /**
  * Calculate intent compatibility (relationship goals).
  * Uses 8x8 matrix allowing cross-intent matching.
  */
-export const calculateIntentCompatibilityScore = (intent1: string, intent2: string): number => {
+export const calculateIntentCompatibilityScore = (
+  intent1: string,
+  intent2: string,
+): number => {
   if (!intent1 || !intent2) return 0.5; // Neutral score if intent missing
 
   return INTENT_MATRIX[intent1]?.[intent2] ?? 0.5;
@@ -215,54 +228,61 @@ export const calculateIntentCompatibilityScore = (intent1: string, intent2: stri
  * Calculate sexual orientation compatibility with improved gender preference logic.
  */
 export const calculateOrientationCompatibilityScore = (
-  orientation1: string, 
-  orientation2: string, 
-  gender1: string, 
+  orientation1: string,
+  orientation2: string,
+  gender1: string,
   gender2: string,
   genderPreference1: string[],
-  genderPreference2: string[]
+  genderPreference2: string[],
 ): number => {
   if (!orientation1 || !orientation2) return 0.5; // Neutral if missing
 
   // Check if each user's gender is in the other's preference list
   const gender1InPrefs = genderPreference2.includes(gender1);
   const gender2InPrefs = genderPreference1.includes(gender2);
-  
+
   // If either gender preference doesn't match, compatibility is very low
   if (!gender1InPrefs || !gender2InPrefs) return 0.1;
 
   // High compatibility orientations
   const highCompatibilityPairs = [
-    ['straight', 'straight'],
-    ['gay', 'gay'],
-    ['lesbian', 'lesbian'],
-    ['bisexual', 'bisexual'],
-    ['pansexual', 'pansexual'],
-    ['queer', 'queer']
+    ["straight", "straight"],
+    ["gay", "gay"],
+    ["lesbian", "lesbian"],
+    ["bisexual", "bisexual"],
+    ["pansexual", "pansexual"],
+    ["queer", "queer"],
   ];
 
   // Cross-compatible orientations
-  const crossCompatible = [
-    'bisexual', 'pansexual', 'queer'
-  ];
+  const crossCompatible = ["bisexual", "pansexual", "queer"];
 
   const orientations = [orientation1, orientation2].sort();
-  
+
   // Perfect matches
-  if (highCompatibilityPairs.some(pair => 
-    pair[0] === orientations[0] && pair[1] === orientations[1]
-  )) {
+  if (
+    highCompatibilityPairs.some(
+      (pair) => pair[0] === orientations[0] && pair[1] === orientations[1],
+    )
+  ) {
     return 1.0;
   }
 
   // Cross-compatible orientations (bi/pan/queer with others)
-  if (crossCompatible.includes(orientation1) || crossCompatible.includes(orientation2)) {
+  if (
+    crossCompatible.includes(orientation1) ||
+    crossCompatible.includes(orientation2)
+  ) {
     return 0.9;
   }
 
   // Straight + gay/lesbian of opposite gender
-  if ((orientation1 === 'straight' && (orientation2 === 'gay' || orientation2 === 'lesbian')) ||
-      (orientation2 === 'straight' && (orientation1 === 'gay' || orientation1 === 'lesbian'))) {
+  if (
+    (orientation1 === "straight" &&
+      (orientation2 === "gay" || orientation2 === "lesbian")) ||
+    (orientation2 === "straight" &&
+      (orientation1 === "gay" || orientation1 === "lesbian"))
+  ) {
     return gender1 !== gender2 ? 0.8 : 0.1;
   }
 
@@ -298,7 +318,10 @@ export const calculateAgeScore = (age1: number, age2: number): number => {
  * @param major2 - Second user's major
  * @returns 1.0 if same major, 0.0 otherwise
  */
-export const calculateMajorCompatibilityScore = (major1?: string, major2?: string): number => {
+export const calculateMajorCompatibilityScore = (
+  major1?: string,
+  major2?: string,
+): number => {
   if (!major1 || !major2) return 0;
   return major1.toLowerCase() === major2.toLowerCase() ? 1.0 : 0.0;
 };
@@ -317,12 +340,17 @@ export const calculateMajorCompatibilityScore = (major1?: string, major2?: strin
  * @returns Compatibility score between 0-1
  */
 export const calculateLifestyleCompatibilityScore = (
-  lifestyle1?: JsonValue,
-  lifestyle2?: JsonValue
+  lifestyle1?: Prisma.JsonValue,
+  lifestyle2?: Prisma.JsonValue,
 ): number => {
-  // Cast JsonValue to Lifestyle (or null if not an object)
-  const parsed1 = typeof lifestyle1 === 'object' && lifestyle1 !== null ? (lifestyle1 as Lifestyle) : null;
-  const parsed2 = typeof lifestyle2 === 'object' && lifestyle2 !== null ? (lifestyle2 as Lifestyle) : null;
+  const parsed1 =
+    typeof lifestyle1 === "object" && lifestyle1 !== null
+      ? (lifestyle1 as Lifestyle)
+      : null;
+  const parsed2 =
+    typeof lifestyle2 === "object" && lifestyle2 !== null
+      ? (lifestyle2 as Lifestyle)
+      : null;
 
   if (!parsed1 || !parsed2) return 0;
 
@@ -331,8 +359,15 @@ export const calculateLifestyleCompatibilityScore = (
 
   // Single-value fields (9 fields): exact match = 1.0, no match = 0
   const singleValueFields: (keyof Lifestyle)[] = [
-    'drinking', 'smoking', 'cannabis', 'sleep_habits',
-    'study_style', 'cleanliness', 'caffeine', 'living_situation', 'fitness'
+    "drinking",
+    "smoking",
+    "cannabis",
+    "sleep_habits",
+    "study_style",
+    "cleanliness",
+    "caffeine",
+    "living_situation",
+    "fitness",
   ];
 
   for (const field of singleValueFields) {
@@ -345,14 +380,24 @@ export const calculateLifestyleCompatibilityScore = (
 
   // Array fields (2 fields: pets, dietary_preferences)
   // Weight by overlap percentage for more nuanced scoring
-  const arrayFields: ('pets' | 'dietary_preferences')[] = ['pets', 'dietary_preferences'];
+  const arrayFields: ("pets" | "dietary_preferences")[] = [
+    "pets",
+    "dietary_preferences",
+  ];
 
   for (const field of arrayFields) {
     const arr1 = parsed1[field];
     const arr2 = parsed2[field];
-    if (Array.isArray(arr1) && Array.isArray(arr2) && arr1.length && arr2.length) {
+    if (
+      Array.isArray(arr1) &&
+      Array.isArray(arr2) &&
+      arr1.length &&
+      arr2.length
+    ) {
       // Calculate overlap: items that appear in both arrays
-      const overlappingItems = arr1.filter((item: string) => arr2.includes(item)).length;
+      const overlappingItems = arr1.filter((item: string) =>
+        arr2.includes(item),
+      ).length;
       // Weight by the maximum array length to account for different number of selections
       const maxLength = Math.max(arr1.length, arr2.length);
       totalMatchScore += overlappingItems / maxLength;
@@ -398,7 +443,10 @@ export const calculateLifestyleCompatibilityScore = (
  * @param candidateProfile - Potential match's profile
  * @returns Compatibility score (0-100), where 100 = perfect match, 0 = no compatibility
  */
-export const calculateCompatibilityScore = (userProfile: Profile, candidateProfile: Profile): number => {
+export const calculateCompatibilityScore = (
+  userProfile: Profile,
+  candidateProfile: Profile,
+): number => {
   let totalScore = 0;
 
   // 1. Shared Interests Score (30% weight)
@@ -407,7 +455,7 @@ export const calculateCompatibilityScore = (userProfile: Profile, candidateProfi
   // Formula: sharedPoints / max(3, min(user_interests, candidate_interests))
   const sharedInterestsScore = calculateSharedInterestsScore(
     userProfile.interests,
-    candidateProfile.interests
+    candidateProfile.interests,
   );
   totalScore += sharedInterestsScore * COMPATIBILITY_WEIGHTS.sharedInterests;
 
@@ -419,7 +467,7 @@ export const calculateCompatibilityScore = (userProfile: Profile, candidateProfi
   // Incompatible (e.g., Serious Relationship + Hookup): 0.2
   const intentScore = calculateIntentCompatibilityScore(
     userProfile.intent,
-    candidateProfile.intent
+    candidateProfile.intent,
   );
   totalScore += intentScore * COMPATIBILITY_WEIGHTS.intentCompatibility;
 
@@ -434,16 +482,17 @@ export const calculateCompatibilityScore = (userProfile: Profile, candidateProfi
     userProfile.gender,
     candidateProfile.gender,
     userProfile.gender_preference,
-    candidateProfile.gender_preference
+    candidateProfile.gender_preference,
   );
-  totalScore += orientationScore * COMPATIBILITY_WEIGHTS.orientationCompatibility;
+  totalScore +=
+    orientationScore * COMPATIBILITY_WEIGHTS.orientationCompatibility;
 
   // 4. Major Compatibility (10% weight)
   // Binary: 1.0 if same major, 0.0 otherwise
   // Reflects shared academic context: classes, labs, study groups
   const majorScore = calculateMajorCompatibilityScore(
     userProfile.major,
-    candidateProfile.major
+    candidateProfile.major,
   );
   totalScore += majorScore * COMPATIBILITY_WEIGHTS.majorCompatibility;
 
@@ -462,7 +511,7 @@ export const calculateCompatibilityScore = (userProfile: Profile, candidateProfi
   // Score: % of matching fields
   const lifestyleScore = calculateLifestyleCompatibilityScore(
     userProfile.lifestyle,
-    candidateProfile.lifestyle
+    candidateProfile.lifestyle,
   );
   totalScore += lifestyleScore * COMPATIBILITY_WEIGHTS.lifestyleCompatibility;
 
@@ -474,12 +523,11 @@ export const calculateCompatibilityScore = (userProfile: Profile, candidateProfi
     majorScore,
     ageScore,
     lifestyleScore,
-    totalScore
+    totalScore,
   });
 
   return Math.round(totalScore * 100); // Convert to 0-100 scale
 };
-
 
 /**
  * Gets all eligible candidates for a user based on hard filters.
@@ -489,50 +537,64 @@ export const calculateCompatibilityScore = (userProfile: Profile, candidateProfi
  * @param userProfile - Current user's profile
  * @returns Array of eligible candidate profiles
  */
-export const getEligibleCandidates = async (userId: string, userProfile: Profile): Promise<Profile[]> => {
+export const getEligibleCandidates = async (
+  userId: string,
+  userProfile: Profile,
+): Promise<Profile[]> => {
   const userAge = calculateAge(userProfile.birthdate);
-  
+
   // Edge case protection: ensure gender preferences aren't empty
   if (!userProfile.gender_preference?.length) {
-    throw new Error('User must have at least one gender preference set');
+    throw new Error("User must have at least one gender preference set");
   }
 
   // Get users this person has already interacted with
   const [existingLikes, existingMatches, blockedUsers] = await Promise.all([
     prisma.likes.findMany({
       where: { from_user: userId },
-      select: { to_user: true }
+      select: { to_user: true },
     }),
     prisma.matches.findMany({
       where: { OR: [{ user1: userId }, { user2: userId }] },
-      select: { user1: true, user2: true }
+      select: { user1: true, user2: true },
     }),
     prisma.blocks.findMany({
       where: { OR: [{ blocker_id: userId }, { blocked_id: userId }] },
-      select: { blocker_id: true, blocked_id: true }
-    })
+      select: { blocker_id: true, blocked_id: true },
+    }),
   ]);
 
   // Create exclusion lists
-  const likedUserIds = existingLikes.map(like => like.to_user);
-  const matchedUserIds = existingMatches.flatMap(match => [match.user1, match.user2]);
-  const blockedUserIds = blockedUsers.flatMap(block => [block.blocker_id, block.blocked_id]);
-  
-  const excludedUserIds = [...new Set([
-    userId, // Don't show self
-    ...likedUserIds,
-    ...matchedUserIds,
-    ...blockedUserIds
-  ])].filter((id): id is string => Boolean(id));
+  const likedUserIds = existingLikes.map((like) => like.to_user);
+  const matchedUserIds = existingMatches.flatMap((match) => [
+    match.user1,
+    match.user2,
+  ]);
+  const blockedUserIds = blockedUsers.flatMap((block) => [
+    block.blocker_id,
+    block.blocked_id,
+  ]);
 
-  logger.info(`Discover: Exclusion list size: ${excludedUserIds.length}`, { 
-    liked: likedUserIds.length, 
-    matched: matchedUserIds.length, 
-    blocked: blockedUserIds.length 
+  const excludedUserIds = [
+    ...new Set([
+      userId, // Don't show self
+      ...likedUserIds,
+      ...matchedUserIds,
+      ...blockedUserIds,
+    ]),
+  ].filter((id): id is string => Boolean(id));
+
+  logger.info(`Discover: Exclusion list size: ${excludedUserIds.length}`, {
+    liked: likedUserIds.length,
+    matched: matchedUserIds.length,
+    blocked: blockedUserIds.length,
   });
 
   // Get precise birthdate range for age filtering using date-fns
-  const { minBirthdate, maxBirthdate } = getBirthdateRangeForAge(userProfile.min_age, userProfile.max_age);
+  const { minBirthdate, maxBirthdate } = getBirthdateRangeForAge(
+    userProfile.min_age,
+    userProfile.max_age,
+  );
 
   const where: any = {
     // Hard filters - ALL must match
@@ -546,18 +608,20 @@ export const getEligibleCandidates = async (userId: string, userProfile: Profile
     // Ensure candidate's age preference includes current user
     min_age: { lte: userAge },
     max_age: { gte: userAge },
-  }
+  };
 
-  if (!userProfile.gender_preference.includes('All')) {
-    const genderIdentities = genderPreferencesToIdentities(userProfile.gender_preference);
+  if (!userProfile.gender_preference.includes("All")) {
+    const genderIdentities = genderPreferencesToIdentities(
+      userProfile.gender_preference,
+    );
     where.gender = { in: genderIdentities };
   }
 
-  logger.info(`Discover: Querying profiles with filters`, { 
+  logger.info(`Discover: Querying profiles with filters`, {
     universityId: userProfile.university_id,
     ageRange: `${userProfile.min_age}-${userProfile.max_age}`,
     userAge,
-    genderPref: userProfile.gender_preference
+    genderPref: userProfile.gender_preference,
   });
 
   const profiles = await prisma.profiles.findMany({
@@ -565,19 +629,26 @@ export const getEligibleCandidates = async (userId: string, userProfile: Profile
     // Get a larger pool to score and rank
     take: 200,
     orderBy: {
-      created_at: 'desc',
+      created_at: "desc",
     },
   });
 
-  logger.info(`Discover: Found ${profiles.length} raw candidates after DB query`);
-
-  // Filter out profiles with empty interests or gender_preference after the query
-  const finalProfiles = profiles.filter(profile => 
-    profile.interests && profile.interests.length > 0 &&
-    profile.gender_preference && profile.gender_preference.length > 0
+  logger.info(
+    `Discover: Found ${profiles.length} raw candidates after DB query`,
   );
 
-  logger.info(`Discover: Returning ${finalProfiles.length} candidates after validation`);
+  // Filter out profiles with empty interests or gender_preference after the query
+  const finalProfiles = profiles.filter(
+    (profile) =>
+      profile.interests &&
+      profile.interests.length > 0 &&
+      profile.gender_preference &&
+      profile.gender_preference.length > 0,
+  );
+
+  logger.info(
+    `Discover: Returning ${finalProfiles.length} candidates after validation`,
+  );
 
   return finalProfiles;
 };
@@ -589,18 +660,20 @@ export const getEligibleCandidates = async (userId: string, userProfile: Profile
  * @param userId - Current user ID
  * @returns Array of user IDs who liked this user
  */
-export const getMutualLikedUsers = async (userId: string): Promise<string[]> => {
+export const getMutualLikedUsers = async (
+  userId: string,
+): Promise<string[]> => {
   if (!userId) {
-    throw new Error('User ID is required');
+    throw new Error("User ID is required");
   }
 
   const likers = await prisma.likes.findMany({
     where: { to_user: userId },
-    select: { from_user: true }
+    select: { from_user: true },
   });
 
   return likers
-    .map(liker => liker.from_user)
+    .map((liker) => liker.from_user)
     .filter((id): id is string => Boolean(id));
 };
 
@@ -652,10 +725,10 @@ export const getMutualLikedUsers = async (userId: string): Promise<string[]> => 
 export const getDiscoverProfiles = async (
   userId: string,
   limit: number = 10,
-  offset: number = 0
+  offset: number = 0,
 ): Promise<ProfileWithScore[]> => {
   if (!userId) {
-    throw new Error('User ID is required');
+    throw new Error("User ID is required");
   }
 
   // Get current user's profile and preferences
@@ -664,7 +737,7 @@ export const getDiscoverProfiles = async (
   });
 
   if (!currentUser) {
-    throw new Error('User profile not found');
+    throw new Error("User profile not found");
   }
 
   // TIER 1: Get users who already liked this user (priority candidates)
@@ -675,34 +748,46 @@ export const getDiscoverProfiles = async (
 
   // Separate mutual likes from other candidates for efficient scoring
   // Score mutual likes first, then other candidates
-  const mutualLikeCandidates = candidates.filter(c => mutualLikedUserIds.includes(c.user_id));
-  const otherCandidates = candidates.filter(c => !mutualLikedUserIds.includes(c.user_id));
+  const mutualLikeCandidates = candidates.filter((c) =>
+    mutualLikedUserIds.includes(c.user_id),
+  );
+  const otherCandidates = candidates.filter(
+    (c) => !mutualLikedUserIds.includes(c.user_id),
+  );
 
   // Score mutual likes with compatibility scores
-  const scoredMutualLikes = mutualLikeCandidates.map(candidate => ({
+  const scoredMutualLikes = mutualLikeCandidates.map((candidate) => ({
     ...candidate,
     compatibilityScore: calculateCompatibilityScore(currentUser, candidate),
-    likedByUser: true
+    likedByUser: true,
   }));
 
   // Score other candidates with compatibility scores
-  const scoredOthers = otherCandidates.map(candidate => ({
+  const scoredOthers = otherCandidates.map((candidate) => ({
     ...candidate,
     compatibilityScore: calculateCompatibilityScore(currentUser, candidate),
-    likedByUser: false
+    likedByUser: false,
   }));
 
   // Combine with mutual likes first, then sort others by score
   const rankedCandidates = [
-    ...scoredMutualLikes.sort((a, b) => b.compatibilityScore - a.compatibilityScore || a.user_id.localeCompare(b.user_id)),
-    ...scoredOthers.sort((a, b) => b.compatibilityScore - a.compatibilityScore || a.user_id.localeCompare(b.user_id))
+    ...scoredMutualLikes.sort(
+      (a, b) =>
+        b.compatibilityScore - a.compatibilityScore ||
+        a.user_id.localeCompare(b.user_id),
+    ),
+    ...scoredOthers.sort(
+      (a, b) =>
+        b.compatibilityScore - a.compatibilityScore ||
+        a.user_id.localeCompare(b.user_id),
+    ),
   ];
 
   logger.info(`Discover: Ranked ${rankedCandidates.length} candidates`, {
     totalCandidates: rankedCandidates.length,
     mutualLikes: mutualLikedUserIds.length,
     offset,
-    limit
+    limit,
   });
 
   // Apply pagination
@@ -717,15 +802,15 @@ export const refreshDiscoverFeed = async (userId: string): Promise<void> => {
   // Future: Clear cached discovery results for this user
   // For now, just validate user exists
   if (!userId) {
-    throw new Error('User ID is required');
+    throw new Error("User ID is required");
   }
-  
+
   const userExists = await prisma.profiles.findUnique({
     where: { user_id: userId },
-    select: { user_id: true }
+    select: { user_id: true },
   });
 
   if (!userExists) {
-    throw new Error('User not found');
+    throw new Error("User not found");
   }
 };

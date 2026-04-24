@@ -1,6 +1,6 @@
-import * as MatchesService from "@/modules/matches/services";
-import { Match } from "@/types/Match";
 import prisma from "@/lib/prismaClient";
+import * as MatchesService from "@/modules/matches/services";
+import type { Match } from "@/types/Match";
 
 // Mock prisma
 jest.mock("@/lib/prismaClient", () => ({
@@ -49,14 +49,16 @@ describe("Matches API happy path cases", () => {
     const mockMatchWithProfile = {
       ...matchSample,
       users_matches_user1Tousers: {
-        profiles: { name: "User 1", avatar_url: "url1" }
+        profiles: { name: "User 1", avatar_url: "url1" },
       },
       users_matches_user2Tousers: {
-        profiles: { name: "User 2", avatar_url: "url2" }
-      }
+        profiles: { name: "User 2", avatar_url: "url2" },
+      },
     };
 
-    (prisma.matches.findMany as jest.Mock).mockResolvedValue([mockMatchWithProfile]);
+    (prisma.matches.findMany as jest.Mock).mockResolvedValue([
+      mockMatchWithProfile,
+    ]);
 
     const result = await MatchesService.getMatchesForUser(user1);
 
@@ -66,32 +68,34 @@ describe("Matches API happy path cases", () => {
         users_matches_user1Tousers: {
           include: {
             profiles: {
-              select: { name: true, avatar_url: true }
-            }
-          }
+              select: { name: true, avatar_url: true },
+            },
+          },
         },
         users_matches_user2Tousers: {
           include: {
             profiles: {
-              select: { name: true, avatar_url: true }
-            }
-          }
-        }
+              select: { name: true, avatar_url: true },
+            },
+          },
+        },
       },
       orderBy: { matched_at: "desc" },
     });
 
-    expect(result).toEqual([{
-      id: matchSample.id,
-      user1: matchSample.user1,
-      user2: matchSample.user2,
-      matched_at: matchSample.matched_at,
-      otherUser: {
-        id: user2,
-        name: "User 2",
-        avatar_url: "url2"
-      }
-    }]);
+    expect(result).toEqual([
+      {
+        id: matchSample.id,
+        user1: matchSample.user1,
+        user2: matchSample.user2,
+        matched_at: matchSample.matched_at,
+        otherUser: {
+          id: user2,
+          name: "User 2",
+          avatar_url: "url2",
+        },
+      },
+    ]);
   });
 
   it("should check if users are matched", async () => {
@@ -111,11 +115,14 @@ describe("Matches API happy path cases", () => {
   });
 
   it("should delete a match successfully", async () => {
+    (prisma.matches.findUnique as jest.Mock).mockResolvedValue(matchSample);
     (prisma.matches.delete as jest.Mock).mockResolvedValue(undefined);
 
     await MatchesService.deleteMatch(matchSample.id);
 
-    expect(prisma.matches.delete).toHaveBeenCalledWith({ where: { id: matchSample.id } });
+    expect(prisma.matches.delete).toHaveBeenCalledWith({
+      where: { id: matchSample.id },
+    });
   });
 
   it("should return mutual match info", async () => {
@@ -134,7 +141,11 @@ describe("Matches API happy path cases", () => {
       },
     };
 
-    const result = await MatchesService.createMatch(user1, user2, mockTx as any);
+    const result = await MatchesService.createMatch(
+      user1,
+      user2,
+      mockTx as any,
+    );
 
     expect(mockTx.matches.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -156,11 +167,11 @@ describe("Matches API edge & failure cases", () => {
 
   it("should throw if creating a match with invalid IDs", async () => {
     await expect(MatchesService.createMatch(user1, user1)).rejects.toThrow(
-      "Valid user IDs required and users cannot match themselves"
+      "Valid user IDs required and users cannot match themselves",
     );
 
     await expect(MatchesService.createMatch("", user2)).rejects.toThrow(
-      "Valid user IDs required and users cannot match themselves"
+      "Valid user IDs required and users cannot match themselves",
     );
   });
 
@@ -179,7 +190,9 @@ describe("Matches API edge & failure cases", () => {
   });
 
   it("should throw if deleting match without ID", async () => {
-    await expect(MatchesService.deleteMatch("")).rejects.toThrow("Match ID is required");
+    await expect(MatchesService.deleteMatch("")).rejects.toThrow(
+      "Match ID is required",
+    );
   });
 
   it("should return null for getMutualMatch with invalid IDs", async () => {

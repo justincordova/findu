@@ -1,14 +1,13 @@
 // React core
+
+import { Ionicons } from "@expo/vector-icons";
+import MaskedView from "@react-native-masked-view/masked-view";
+import { LinearGradient } from "expo-linear-gradient";
 import { useMemo, useState } from "react";
-
 // React Native
-import {
-  Dimensions,
-  StyleSheet,
-} from "react-native";
-
+import { Dimensions, StyleSheet } from "react-native";
 // Third-party
-import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Extrapolate,
   interpolate,
@@ -17,18 +16,14 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-import MaskedView from "@react-native-masked-view/masked-view";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-
-// Project imports
-import { DANGER, SUCCESS } from "@/constants/theme";
-import { Profile } from "@/types/Profile";
+import PhotoGalleryCard from "@/components/discover/PhotoGalleryCard";
 import ActionMenu from "@/components/shared/ActionMenu";
 import AlertModal from "@/components/shared/AlertModal";
-import PhotoGalleryCard from "@/components/discover/PhotoGalleryCard";
-import { blockUser } from "@/services/blocksService";
 import logger from "@/config/logger";
+// Project imports
+import { DANGER, SUCCESS } from "@/constants/theme";
+import { blockUser } from "@/services/blocksService";
+import type { Profile } from "@/types/Profile";
 
 const { width } = Dimensions.get("window");
 const SWIPE_THRESHOLD = width * 0.3;
@@ -101,14 +96,14 @@ export default function SwipeCard({
                 } else {
                   runOnJS(onSwipeLeft)();
                 }
-              }
+              },
             );
           } else {
             translateX.value = withSpring(0);
             translateY.value = withSpring(0);
           }
         }),
-    [active, onSwipeLeft, onSwipeRight, context, translateX, translateY]
+    [active, onSwipeLeft, onSwipeRight, context, translateX, translateY],
   );
 
   const cardStyle = useAnimatedStyle(() => {
@@ -116,7 +111,7 @@ export default function SwipeCard({
       translateX.value,
       [-width / 2, 0, width / 2],
       [-10, 0, 10],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     );
 
     return {
@@ -133,7 +128,7 @@ export default function SwipeCard({
       translateX.value,
       [0, width / 4],
       [0, 1],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     ),
   }));
 
@@ -142,7 +137,7 @@ export default function SwipeCard({
       translateX.value,
       [-width / 4, 0],
       [1, 0],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     ),
   }));
 
@@ -169,7 +164,10 @@ export default function SwipeCard({
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
       age--;
     }
     return age;
@@ -184,6 +182,7 @@ export default function SwipeCard({
           <PhotoGalleryCard
             photos={photos}
             avatarUrl={profile.avatar_url}
+            onAvatarTap={() => {}}
             isActive={active}
             userName={profile.name}
             age={age}
@@ -211,7 +210,9 @@ export default function SwipeCard({
           />
 
           {/* Like/Nope Overlays */}
-          <Animated.View style={[styles.overlay, styles.likeOverlay, likeOpacity]}>
+          <Animated.View
+            style={[styles.overlay, styles.likeOverlay, likeOpacity]}
+          >
             <GradientIcon
               name="heart"
               size={100}
@@ -219,7 +220,9 @@ export default function SwipeCard({
             />
           </Animated.View>
 
-          <Animated.View style={[styles.overlay, styles.nopeOverlay, nopeOpacity]}>
+          <Animated.View
+            style={[styles.overlay, styles.nopeOverlay, nopeOpacity]}
+          >
             <GradientIcon
               name="close"
               size={100}

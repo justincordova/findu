@@ -1,18 +1,12 @@
-import React, { useEffect, useState } from "react";
-import {
-  StyleSheet,
-  View,
-  FlatList,
-  Text,
-  SafeAreaView,
-} from "react-native";
-import { theme } from "@/constants/theme";
-import { useAuthStore } from "@/store/authStore";
-import { useMatchStore, type MatchWithLastMessage } from "@/store/matchStore";
-import { ChatListItem } from "@/components/ChatListItem";
-import { SkeletonGroup } from "@/components/shared/SkeletonLoader";
+import { useEffect, useState } from "react";
+import { FlatList, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { ChatsAPI } from "@/api/chats";
 import { MatchesAPI } from "@/api/matches";
+import { ChatListItem } from "@/components/ChatListItem";
+import { SkeletonGroup } from "@/components/shared/SkeletonLoader";
+import { theme } from "@/constants/theme";
+import { useAuthStore } from "@/store/authStore";
+import { type MatchWithLastMessage, useMatchStore } from "@/store/matchStore";
 
 export default function ChatsScreen() {
   const userId = useAuthStore((state) => state.userId);
@@ -34,18 +28,20 @@ export default function ChatsScreen() {
           return;
         }
 
-        const matchesWithMessages: MatchWithLastMessage[] = response.matches.map((match: any) => {
-          const otherUserId = match.user1 === userId ? match.user2 : match.user1;
-          const otherUser = match.otherUser || {};
+        const matchesWithMessages: MatchWithLastMessage[] =
+          response.matches.map((match: any) => {
+            const otherUserId =
+              match.user1 === userId ? match.user2 : match.user1;
+            const otherUser = match.otherUser || {};
 
-          return {
-            ...match,
-            lastMessage: undefined,
-            otherUserId,
-            otherUserName: otherUser.name,
-            otherUserImage: otherUser.avatar_url,
-          };
-        });
+            return {
+              ...match,
+              lastMessage: undefined,
+              otherUserId,
+              otherUserName: otherUser.name,
+              otherUserImage: otherUser.avatar_url,
+            };
+          });
 
         // Set matches immediately so UI shows them
         setMatches(matchesWithMessages);
@@ -55,13 +51,15 @@ export default function ChatsScreen() {
           ChatsAPI.getLatestMessage(match.id).then((lastMessage) => {
             if (lastMessage) {
               // Use the store's updateLastMessage to trigger re-render
-              useMatchStore.getState().updateLastMessage(
-                match.id,
-                lastMessage.message,
-                lastMessage.sent_at,
-                lastMessage.is_read,
-                lastMessage.sender_id === userId
-              );
+              useMatchStore
+                .getState()
+                .updateLastMessage(
+                  match.id,
+                  lastMessage.message,
+                  lastMessage.sent_at,
+                  lastMessage.is_read,
+                  lastMessage.sender_id === userId,
+                );
             }
           });
         });

@@ -20,7 +20,7 @@ export const validateGenerateUploadUrl = [
       const ext = filename.split(".").pop()?.toLowerCase();
       if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
         throw new Error(
-          `Invalid file extension. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}`
+          `Invalid file extension. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}`,
         );
       }
       return true;
@@ -32,14 +32,12 @@ export const validateGenerateUploadUrl = [
     .custom((mimeType) => {
       if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
         throw new Error(
-          `Invalid file type. Allowed: ${ALLOWED_MIME_TYPES.join(", ")}`
+          `Invalid file type. Allowed: ${ALLOWED_MIME_TYPES.join(", ")}`,
         );
       }
       return true;
     }),
   body("fileSize")
     .isInt({ min: 1, max: MAX_FILE_SIZE_BYTES })
-    .withMessage(
-      `File size must be between 1 byte and ${MAX_FILE_SIZE_MB}MB`
-    ),
+    .withMessage(`File size must be between 1 byte and ${MAX_FILE_SIZE_MB}MB`),
 ];

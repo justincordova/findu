@@ -1,34 +1,33 @@
-import { PrismaClient } from "@/generated/prisma";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import * as bcrypt from "bcrypt";
-import * as fs from "fs";
-import * as path from "path";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { INTERESTS } from "@/constants/interests";
-import { INTENTS } from "@/constants/intents";
-import { MAJORS } from "@/constants/majors";
 import { GENDER_PREFERENCES } from "@/constants/genderPreferences";
-import { SEXUAL_ORIENTATIONS } from "@/constants/sexualOrientations";
-import { PRONOUNS } from "@/constants/pronouns";
+import { INTENTS } from "@/constants/intents";
+import { INTERESTS } from "@/constants/interests";
 import {
-  DRINKING,
-  SMOKING,
-  CANNABIS,
-  SLEEP_HABITS,
-  PETS,
-  DIETARY_PREFERENCES,
-  STUDY_STYLE,
-  CLEANLINESS,
   CAFFEINE,
+  CANNABIS,
+  CLEANLINESS,
+  DIETARY_PREFERENCES,
+  DRINKING,
+  FITNESS,
   LIVING_SITUATION,
-  FITNESS
+  PETS,
+  SLEEP_HABITS,
+  SMOKING,
+  STUDY_STYLE,
 } from "@/constants/lifestyleOptions";
+import { MAJORS } from "@/constants/majors";
+import { PRONOUNS } from "@/constants/pronouns";
+import { SEXUAL_ORIENTATIONS } from "@/constants/sexualOrientations";
+import prisma from "@/lib/prismaClient";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /*
 login:
 testuser{i}@njit.edu or testuser{i}@northeastern.edu
 password123
 */
-const prisma = new PrismaClient();
 
 /**
  * Pick diverse interests for seed data from organized interests categories.
@@ -100,48 +99,62 @@ function getRandomPronouns(userIndex: number): string {
 function getLifestyleForUser(userIndex: number): object {
   // All 11 lifestyle field keys
   const allFields = [
-    'drinking', 'smoking', 'cannabis', 'sleep_habits', 'pets',
-    'dietary_preferences', 'study_style', 'cleanliness', 'caffeine',
-    'living_situation', 'fitness'
+    "drinking",
+    "smoking",
+    "cannabis",
+    "sleep_habits",
+    "pets",
+    "dietary_preferences",
+    "study_style",
+    "cleanliness",
+    "caffeine",
+    "living_situation",
+    "fitness",
   ];
 
   // Randomly select 3-8 fields for this user (use userIndex for pseudo-randomness)
   const numFields = 3 + (userIndex % 6); // 3-8 fields
-  const selectedFields = allFields.slice(userIndex % 11, (userIndex % 11) + numFields);
+  const selectedFields = allFields.slice(
+    userIndex % 11,
+    (userIndex % 11) + numFields,
+  );
 
   const lifestyle: any = {};
 
-  if (selectedFields.includes('drinking')) {
+  if (selectedFields.includes("drinking")) {
     lifestyle.drinking = DRINKING[userIndex % DRINKING.length];
   }
-  if (selectedFields.includes('smoking')) {
+  if (selectedFields.includes("smoking")) {
     lifestyle.smoking = SMOKING[userIndex % SMOKING.length];
   }
-  if (selectedFields.includes('cannabis')) {
+  if (selectedFields.includes("cannabis")) {
     lifestyle.cannabis = CANNABIS[userIndex % CANNABIS.length];
   }
-  if (selectedFields.includes('sleep_habits')) {
+  if (selectedFields.includes("sleep_habits")) {
     lifestyle.sleep_habits = SLEEP_HABITS[userIndex % SLEEP_HABITS.length];
   }
-  if (selectedFields.includes('pets')) {
+  if (selectedFields.includes("pets")) {
     lifestyle.pets = [PETS[userIndex % PETS.length]];
   }
-  if (selectedFields.includes('dietary_preferences')) {
-    lifestyle.dietary_preferences = [DIETARY_PREFERENCES[userIndex % DIETARY_PREFERENCES.length]];
+  if (selectedFields.includes("dietary_preferences")) {
+    lifestyle.dietary_preferences = [
+      DIETARY_PREFERENCES[userIndex % DIETARY_PREFERENCES.length],
+    ];
   }
-  if (selectedFields.includes('study_style')) {
+  if (selectedFields.includes("study_style")) {
     lifestyle.study_style = STUDY_STYLE[userIndex % STUDY_STYLE.length];
   }
-  if (selectedFields.includes('cleanliness')) {
+  if (selectedFields.includes("cleanliness")) {
     lifestyle.cleanliness = CLEANLINESS[userIndex % CLEANLINESS.length];
   }
-  if (selectedFields.includes('caffeine')) {
+  if (selectedFields.includes("caffeine")) {
     lifestyle.caffeine = CAFFEINE[userIndex % CAFFEINE.length];
   }
-  if (selectedFields.includes('living_situation')) {
-    lifestyle.living_situation = LIVING_SITUATION[userIndex % LIVING_SITUATION.length];
+  if (selectedFields.includes("living_situation")) {
+    lifestyle.living_situation =
+      LIVING_SITUATION[userIndex % LIVING_SITUATION.length];
   }
-  if (selectedFields.includes('fitness')) {
+  if (selectedFields.includes("fitness")) {
     lifestyle.fitness = FITNESS[userIndex % FITNESS.length];
   }
 
@@ -1296,7 +1309,11 @@ const northeasternUsersData = [
   },
 ];
 
-async function uploadFile(userId: string, localPath: string, targetFilename: string): Promise<string> {
+async function uploadFile(
+  userId: string,
+  localPath: string,
+  targetFilename: string,
+): Promise<string> {
   try {
     const fileContent = fs.readFileSync(localPath);
     const filePath = `${userId}/${targetFilename}`;
@@ -1316,12 +1333,14 @@ async function uploadFile(userId: string, localPath: string, targetFilename: str
       throw uploadError;
     }
 
-    const { data } = supabaseAdmin.storage.from("profiles").getPublicUrl(filePath);
+    const { data } = supabaseAdmin.storage
+      .from("profiles")
+      .getPublicUrl(filePath);
     return data.publicUrl;
   } catch (error) {
     console.error(`Error uploading file for ${userId}:`, error);
     // Fallback to a default or dicebear if upload fails
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`; 
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`;
   }
 }
 
@@ -1329,10 +1348,14 @@ async function seedUniversity(universityData: any, usersData: any[]) {
   const passwordHash = await bcrypt.hash("password123", 12);
 
   const avatarsDir = path.join(__dirname, "..", "sample_avatars");
-  const avatarFiles = fs.readdirSync(avatarsDir).filter(f => f.endsWith('.jpeg') || f.endsWith('.jpg'));
+  const avatarFiles = fs
+    .readdirSync(avatarsDir)
+    .filter((f) => f.endsWith(".jpeg") || f.endsWith(".jpg"));
 
   const photosDir = path.join(__dirname, "..", "sample_photos");
-  const photoFiles = fs.readdirSync(photosDir).filter(f => f.endsWith('.jpeg') || f.endsWith('.jpg'));
+  const photoFiles = fs
+    .readdirSync(photosDir)
+    .filter((f) => f.endsWith(".jpeg") || f.endsWith(".jpg"));
 
   if (avatarFiles.length === 0) {
     console.warn("No sample avatars found in sample_avatars directory!");
@@ -1358,17 +1381,19 @@ async function seedUniversity(universityData: any, usersData: any[]) {
 
   // Check existing users in one query instead of per-user
   const existingEmails = new Set(
-    (await prisma.user.findMany({
-      where: {
-        email: {
-          in: usersData.map(u => u.email),
+    (
+      await prisma.user.findMany({
+        where: {
+          email: {
+            in: usersData.map((u) => u.email),
+          },
         },
-      },
-      select: { email: true },
-    })).map(u => u.email)
+        select: { email: true },
+      })
+    ).map((u) => u.email),
   );
 
-  const usersToCreate = usersData.filter(u => !existingEmails.has(u.email));
+  const usersToCreate = usersData.filter((u) => !existingEmails.has(u.email));
 
   if (usersToCreate.length === 0) {
     console.log("All users already exist, skipping...");
@@ -1379,13 +1404,13 @@ async function seedUniversity(universityData: any, usersData: any[]) {
   const batchedMap = async <T, U>(
     items: T[],
     fn: (item: T, index: number) => Promise<U>,
-    concurrency: number = 5
+    concurrency: number = 5,
   ): Promise<U[]> => {
     const results: U[] = [];
     for (let i = 0; i < items.length; i += concurrency) {
       const batch = items.slice(i, i + concurrency);
       const batchResults = await Promise.all(
-        batch.map((item, idx) => fn(item, i + idx))
+        batch.map((item, idx) => fn(item, i + idx)),
       );
       results.push(...batchResults);
     }
@@ -1395,7 +1420,7 @@ async function seedUniversity(universityData: any, usersData: any[]) {
   // Step 1: Create all users with concurrency limit
   const createdUsers = await batchedMap(
     usersToCreate,
-    userData =>
+    (userData) =>
       prisma.user.create({
         data: {
           email: userData.email,
@@ -1410,7 +1435,7 @@ async function seedUniversity(universityData: any, usersData: any[]) {
           },
         },
       }),
-    5 // Process 5 users at a time
+    5, // Process 5 users at a time
   );
 
   // Step 2: Upload avatars and photos in parallel
@@ -1418,19 +1443,27 @@ async function seedUniversity(universityData: any, usersData: any[]) {
     createdUsers.map((user, index) => ({ user, index })),
     async ({ user, index }) => {
       const userData = usersToCreate[index];
-      
+
       // 1. Upload Avatar
       let avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.email}`;
       if (userData.avatarFile) {
         const specificAvatarPath = path.join(avatarsDir, userData.avatarFile);
         if (fs.existsSync(specificAvatarPath)) {
           try {
-            avatarUrl = await uploadFile(user.id, specificAvatarPath, 'avatar.jpeg');
+            avatarUrl = await uploadFile(
+              user.id,
+              specificAvatarPath,
+              "avatar.jpeg",
+            );
           } catch {
-            console.warn(`Failed to upload avatar for ${userData.name}, using default.`);
+            console.warn(
+              `Failed to upload avatar for ${userData.name}, using default.`,
+            );
           }
         } else {
-          console.warn(`Avatar file ${userData.avatarFile} not found for user ${userData.name}.`);
+          console.warn(
+            `Avatar file ${userData.avatarFile} not found for user ${userData.name}.`,
+          );
         }
       }
 
@@ -1445,17 +1478,24 @@ async function seedUniversity(universityData: any, usersData: any[]) {
           const photoFile = selectedPhotos[i];
           const photoPath = path.join(photosDir, photoFile);
           try {
-            const photoUrl = await uploadFile(user.id, photoPath, `photo_${i}.jpg`);
+            const photoUrl = await uploadFile(
+              user.id,
+              photoPath,
+              `photo_${i}.jpg`,
+            );
             profilePhotoUrls.push(photoUrl);
           } catch (e) {
-             console.warn(`Failed to upload photo ${photoFile} for ${userData.name}:`, e);
+            console.warn(
+              `Failed to upload photo ${photoFile} for ${userData.name}:`,
+              e,
+            );
           }
         }
       }
 
       return { user, avatarUrl, profilePhotoUrls, userData };
     },
-    5 // Process 5 users (uploads) at a time
+    5, // Process 5 users (uploads) at a time
   );
 
   // Step 3: Create all profiles with concurrency limit
@@ -1485,7 +1525,7 @@ async function seedUniversity(universityData: any, usersData: any[]) {
           photos: profilePhotoUrls,
         },
       }),
-    5 // Process 5 profiles at a time
+    5, // Process 5 profiles at a time
   );
 
   console.log(`Created ${createdUsers.length} users for ${university.name}`);
@@ -1497,12 +1537,20 @@ async function main() {
   // Seed both universities in parallel
   await Promise.all([
     seedUniversity(
-      { name: "New Jersey Institute of Technology", slug: "njit", domain: "njit.edu" },
-      njitUsersData
+      {
+        name: "New Jersey Institute of Technology",
+        slug: "njit",
+        domain: "njit.edu",
+      },
+      njitUsersData,
     ),
     seedUniversity(
-      { name: "Northeastern University", slug: "northeastern", domain: "northeastern.edu" },
-      northeasternUsersData
+      {
+        name: "Northeastern University",
+        slug: "northeastern",
+        domain: "northeastern.edu",
+      },
+      northeasternUsersData,
     ),
   ]);
 

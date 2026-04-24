@@ -35,7 +35,7 @@ export const hashPassword = async (password: string): Promise<string> => {
  */
 export const verifyPassword = async (
   password: string,
-  hash: string
+  hash: string,
 ): Promise<boolean> => {
   return bcrypt.compare(password, hash);
 };
@@ -66,9 +66,9 @@ export const isTokenExpired = (expiresAt: Date): boolean => {
  * @returns string | null - The token if valid, null otherwise
  */
 export const extractBearerToken = (
-  authHeader: string | undefined
+  authHeader: string | undefined,
 ): string | null => {
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader?.startsWith("Bearer ")) {
     return null;
   }
   return authHeader.substring(7);

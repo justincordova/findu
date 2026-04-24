@@ -1,11 +1,11 @@
+import * as bcrypt from "bcrypt";
+import logger from "@/config/logger";
 import { auth } from "@/lib/auth";
+import prisma from "@/lib/prismaClient";
 import { redis } from "@/lib/redis";
 import { sendOTPEmail } from "@/modules/auth/emailService";
-import logger from "@/config/logger";
+import type { AuthResult, PendingSignupResult } from "@/types/auth";
 import { generateOTP } from "@/utils/auth";
-import prisma from "@/lib/prismaClient";
-import * as bcrypt from "bcrypt";
-import { AuthResult, PendingSignupResult } from "@/types/auth";
 
 const OTP_EXPIRATION = Number(process.env.OTP_EXPIRATION_SECONDS) || 600;
 const OTP_RATE_LIMIT_KEY = (email: string) => `otp_rate_limit:${email}`;
@@ -40,10 +40,10 @@ export const OTPService = {
       // Check rate limiting
       const rateLimitKey = OTP_RATE_LIMIT_KEY(email);
       const attemptCount = await redis.get(rateLimitKey);
-      if (attemptCount && parseInt(attemptCount) >= MAX_RETRIES) {
+      if (attemptCount && parseInt(attemptCount, 10) >= MAX_RETRIES) {
         return {
           success: false,
-          error: "Too many OTP requests. Please try again later."
+          error: "Too many OTP requests. Please try again later.",
         };
       }
 
@@ -64,8 +64,12 @@ export const OTPService = {
         emailError = error || "Failed to send OTP email";
 
         if (attempt < MAX_RETRIES) {
-          logger.debug("OTP_SEND_RETRY", { email, attempt, nextDelayMs: delayMs });
-          await new Promise(resolve => setTimeout(resolve, delayMs));
+          logger.debug("OTP_SEND_RETRY", {
+            email,
+            attempt,
+            nextDelayMs: delayMs,
+          });
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
           delayMs *= 2; // Exponential backoff
         }
       }
@@ -104,7 +108,7 @@ export const AuthService = {
   signUpAndVerify: async (
     email: string,
     password: string,
-    otp: string
+    otp: string,
   ): Promise<AuthResult> => {
     try {
       // Validate email is a .edu address
@@ -144,7 +148,11 @@ export const AuthService = {
 
       return await AuthService.signIn(email, password);
     } catch (error: any) {
-      const { message: errorMessage, name: errorName, stack: errorStack } = error || {};
+      const {
+        message: errorMessage,
+        name: errorName,
+        stack: errorStack,
+      } = error || {};
       logger.error("SIGN_UP_ERROR", {
         error: errorMessage || error,
         errorName,
@@ -176,7 +184,7 @@ export const AuthService = {
         where: { userId: user.id, providerId: "credential" },
       });
 
-      if (!account || !account.password) {
+      if (!account?.password) {
         return { success: false, error: "Invalid credentials" };
       }
 
@@ -188,7 +196,7 @@ export const AuthService = {
         body: { email, password },
       });
 
-      if (!signInResult || !signInResult.user || !signInResult.token) {
+      if (!signInResult?.user || !signInResult.token) {
         return {
           success: false,
           error: "Failed to create session after signup",
@@ -205,7 +213,7 @@ export const AuthService = {
         success: true,
         user: {
           id: signedInUser.id,
-          email: signedInUser.email
+          email: signedInUser.email,
         },
         token,
       };
@@ -222,7 +230,7 @@ export const AuthService = {
    * @returns Promise resolving to user info or null if invalid/expired
    */
   verifySession: async (
-    token: string
+    token: string,
   ): Promise<{ id: string; email: string | null } | null> => {
     try {
       const session = await prisma.session.findUnique({
@@ -230,8 +238,7 @@ export const AuthService = {
         include: { user: true },
       });
 
-      if (!session || !session.user || session.expiresAt < new Date())
-        return null;
+      if (!session?.user || session.expiresAt < new Date()) return null;
 
       return { id: session.user.id, email: session.user.email || null };
     } catch (error) {
@@ -269,7 +276,7 @@ export const AuthService = {
    * @returns Promise resolving to refreshed session info or null if invalid
    */
   refreshSession: async (
-    token: string
+    token: string,
   ): Promise<{
     token: string;
     user: { id: string; email: string | null };
@@ -280,8 +287,7 @@ export const AuthService = {
         include: { user: true },
       });
 
-      if (!session || !session.user || session.expiresAt < new Date())
-        return null;
+      if (!session?.user || session.expiresAt < new Date()) return null;
 
       const daysUntilExpiry =
         (session.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
@@ -332,7 +338,7 @@ export const AuthService = {
    */
   verifyOtp: async (
     email: string,
-    otp: string
+    otp: string,
   ): Promise<PendingSignupResult> => {
     try {
       // Validate email is a .edu address
@@ -363,7 +369,7 @@ export const AuthService = {
    */
   createAccountWithPassword: async (
     email: string,
-    password: string
+    password: string,
   ): Promise<AuthResult> => {
     try {
       // Validate email is a .edu address
@@ -404,7 +410,11 @@ export const AuthService = {
       // Sign in the user and return token
       return await AuthService.signIn(email, password);
     } catch (error: any) {
-      const { message: errorMessage, name: errorName, stack: errorStack } = error || {};
+      const {
+        message: errorMessage,
+        name: errorName,
+        stack: errorStack,
+      } = error || {};
       logger.error("CREATE_ACCOUNT_ERROR", {
         error: errorMessage || error,
         errorName,

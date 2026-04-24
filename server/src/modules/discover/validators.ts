@@ -12,13 +12,12 @@ export const validateCompatibilityRequest = [
     .isString()
     .notEmpty()
     .withMessage("Candidate ID is required and must be a non-empty string"),
-  body("userId")
-    .custom((value, { req }) => {
-      if (value === req.body.candidateId) {
-        throw new Error("Cannot calculate compatibility with yourself");
-      }
-      return true;
-    }),
+  body("userId").custom((value, { req }) => {
+    if (value === req.body.candidateId) {
+      throw new Error("Cannot calculate compatibility with yourself");
+    }
+    return true;
+  }),
 ];
 
 /**
@@ -54,10 +53,10 @@ export const validateAgePreferences = [
       if (req.body.max_age && value > req.body.max_age) {
         throw new Error("Minimum age cannot be greater than maximum age");
       }
-      if (req.body.max_age && (req.body.max_age - value) < 1) {
+      if (req.body.max_age && req.body.max_age - value < 1) {
         throw new Error("Age range must be at least 1 year");
       }
-      if (req.body.max_age && (req.body.max_age - value) > 50) {
+      if (req.body.max_age && req.body.max_age - value > 50) {
         throw new Error("Age range cannot exceed 50 years");
       }
       return true;
@@ -74,8 +73,10 @@ export const validateGenderPreferences = [
     .withMessage("Gender preferences must be a non-empty array"),
   body("gender_preference.*")
     .optional()
-    .isIn(['male', 'female', 'non-binary', 'other'])
-    .withMessage("Invalid gender preference. Valid options: male, female, non-binary, other"),
+    .isIn(["male", "female", "non-binary", "other"])
+    .withMessage(
+      "Invalid gender preference. Valid options: male, female, non-binary, other",
+    ),
 ];
 
 /**
@@ -84,23 +85,27 @@ export const validateGenderPreferences = [
 export const validateDiscoveryPreferences = [
   ...validateAgePreferences,
   ...validateGenderPreferences,
-  body()
-    .custom((value) => {
-      const hasAgePrefs = value.min_age !== undefined || value.max_age !== undefined;
-      const hasGenderPrefs = value.gender_preference !== undefined;
-      
-      if (!hasAgePrefs && !hasGenderPrefs) {
-        throw new Error("At least one preference field (age or gender) must be provided");
-      }
-      
-      // If one age field is provided, both must be provided
-      if ((value.min_age !== undefined || value.max_age !== undefined) && 
-          (value.min_age === undefined || value.max_age === undefined)) {
-        throw new Error("Both min_age and max_age must be provided together");
-      }
-      
-      return true;
-    }),
+  body().custom((value) => {
+    const hasAgePrefs =
+      value.min_age !== undefined || value.max_age !== undefined;
+    const hasGenderPrefs = value.gender_preference !== undefined;
+
+    if (!hasAgePrefs && !hasGenderPrefs) {
+      throw new Error(
+        "At least one preference field (age or gender) must be provided",
+      );
+    }
+
+    // If one age field is provided, both must be provided
+    if (
+      (value.min_age !== undefined || value.max_age !== undefined) &&
+      (value.min_age === undefined || value.max_age === undefined)
+    ) {
+      throw new Error("Both min_age and max_age must be provided together");
+    }
+
+    return true;
+  }),
 ];
 
 /**

@@ -6,7 +6,7 @@ async function cleanupJac352() {
 
     // Find the user
     const user = await prisma.user.findUnique({
-      where: { email: "jac352@njit.edu" }
+      where: { email: "jac352@njit.edu" },
     });
 
     if (!user) {
@@ -18,25 +18,25 @@ async function cleanupJac352() {
 
     // Delete profile
     await prisma.profiles.delete({
-      where: { user_id: user.id }
+      where: { user_id: user.id },
     });
     console.log("Deleted profile for jac352");
 
     // Delete sessions
     await prisma.session.deleteMany({
-      where: { userId: user.id }
+      where: { userId: user.id },
     });
     console.log("Deleted sessions for jac352");
 
     // Delete accounts
     await prisma.account.deleteMany({
-      where: { userId: user.id }
+      where: { userId: user.id },
     });
     console.log("Deleted accounts for jac352");
 
     // Delete user
     await prisma.user.delete({
-      where: { id: user.id }
+      where: { id: user.id },
     });
     console.log("Deleted user jac352");
 

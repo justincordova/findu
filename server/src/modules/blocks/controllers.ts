@@ -1,10 +1,10 @@
-import { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 import * as BlocksService from "./services";
 
 export const createBlock = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { blockedId } = req.body;
@@ -28,7 +28,7 @@ export const createBlock = async (
 export const unblockUser = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { blockedId } = req.params;
@@ -52,7 +52,7 @@ export const unblockUser = async (
 export const getBlockedUsers = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = (req as any).user?.id;

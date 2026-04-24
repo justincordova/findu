@@ -1,5 +1,5 @@
+import type { RequestHandler } from "express";
 import helmetLib from "helmet";
-import { RequestHandler } from "express";
 
 /**
  * Helmet Middleware Config

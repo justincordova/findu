@@ -1,9 +1,9 @@
 import prisma from "@/lib/prismaClient";
-import {
-  CreateMessageInput,
-  UpdateMessageInput,
+import type {
   ChatHistoryQuery,
+  CreateMessageInput,
   MessageResponse,
+  UpdateMessageInput,
 } from "./types";
 
 /**
@@ -22,10 +22,15 @@ function formatMessage(msg: any): MessageResponse {
  * Create a new message in a chat
  */
 export async function createMessage(
-  input: CreateMessageInput
+  input: CreateMessageInput,
 ): Promise<MessageResponse> {
-  const { match_id, sender_id, message, media_url, message_type = "TEXT" } =
-    input;
+  const {
+    match_id,
+    sender_id,
+    message,
+    media_url,
+    message_type = "TEXT",
+  } = input;
 
   // Verify sender is part of the match
   const match = await prisma.matches.findUnique({
@@ -65,7 +70,7 @@ export async function createMessage(
  * Fetch chat history with pagination (hard deletes only - deleted messages are completely removed)
  */
 export async function getChatHistory(
-  query: ChatHistoryQuery
+  query: ChatHistoryQuery,
 ): Promise<MessageResponse[]> {
   const { match_id, limit = 50, cursor } = query;
 
@@ -98,7 +103,7 @@ export async function getChatHistory(
  */
 export async function markMessagesAsRead(
   match_id: string,
-  user_id: string
+  user_id: string,
 ): Promise<number> {
   const result = await prisma.chats.updateMany({
     where: {
@@ -120,7 +125,7 @@ export async function markMessagesAsRead(
  */
 export async function deleteMessage(
   message_id: string,
-  user_id: string
+  user_id: string,
 ): Promise<{ id: string }> {
   const message = await prisma.chats.findUnique({
     where: { id: message_id },
@@ -143,7 +148,7 @@ export async function deleteMessage(
 export async function editMessage(
   message_id: string,
   user_id: string,
-  input: UpdateMessageInput
+  input: UpdateMessageInput,
 ): Promise<MessageResponse> {
   const message = await prisma.chats.findUnique({
     where: { id: message_id },
@@ -180,7 +185,7 @@ export async function editMessage(
  * Get the latest message in a match (for unread indicator)
  */
 export async function getLatestMessage(
-  match_id: string
+  match_id: string,
 ): Promise<MessageResponse | null> {
   const message = await prisma.chats.findFirst({
     where: {

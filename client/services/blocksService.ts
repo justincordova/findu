@@ -1,6 +1,6 @@
 import { BlocksAPI } from "@/api/blocks";
-import { useAuthStore } from "@/store/authStore";
 import logger from "@/config/logger";
+import { useAuthStore } from "@/store/authStore";
 
 /**
  * Block a user
@@ -9,7 +9,7 @@ import logger from "@/config/logger";
  * @returns {Promise<{success: boolean; error?: string}>} Block result
  */
 export async function blockUser(
-  blockedUserId: string
+  blockedUserId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const { token } = useAuthStore.getState();
   if (!token) {
@@ -34,7 +34,7 @@ export async function blockUser(
  * @returns {Promise<{success: boolean; error?: string}>} Unblock result
  */
 export async function unblockUser(
-  blockedUserId: string
+  blockedUserId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const { token } = useAuthStore.getState();
   if (!token) {

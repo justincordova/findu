@@ -1,17 +1,21 @@
 // React core
-import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { LinearGradient } from "expo-linear-gradient";
+import { useCallback, useEffect, useMemo, useState } from "react";
 // React Native
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
 // Third-party
-import DropDownPicker, { ItemType } from "react-native-dropdown-picker";
-
+import DropDownPicker, { type ItemType } from "react-native-dropdown-picker";
 // Project imports
-import { BACKGROUND, DARK, MUTED, SECONDARY, GRADIENT } from "@/constants/theme";
-import { LinearGradient } from "expo-linear-gradient";
-import { useProfileSetupStore } from "@/store/profileStore";
+import {
+  BACKGROUND,
+  DARK,
+  GRADIENT,
+  MUTED,
+  SECONDARY,
+} from "@/constants/theme";
 import { useConstantsStore } from "@/store/constantsStore";
+import { useProfileSetupStore } from "@/store/profileStore";
 
 // Types
 interface Step4Props {
@@ -21,16 +25,16 @@ interface Step4Props {
 /**
  * Step 4: Preferences - sexual orientation and age range
  */
-export default function Step4({
-  onValidityChange,
-}: Step4Props) {
+export default function Step4({ onValidityChange }: Step4Props) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
+  const setProfileField = useProfileSetupStore(
+    (state) => state.setProfileField,
+  );
   const constants = useConstantsStore((state) => state.constants);
 
   /** Active dropdown state for orientation */
   const [activeDropdown, setActiveDropdown] = useState<"orientation" | null>(
-    null
+    null,
   );
 
   /** Dropdown items */
@@ -40,19 +44,19 @@ export default function Step4({
         label: orientation,
         value: orientation,
       })) ?? [],
-    [constants?.sexualOrientations]
+    [constants?.sexualOrientations],
   );
 
   /** Gender preference options (multi-select tap boxes) */
   const genderOptions = useMemo(
     () => constants?.genderPreferences ?? [],
-    [constants?.genderPreferences]
+    [constants?.genderPreferences],
   );
 
   /** Intent options (tap boxes) - aligned with discovery algorithm intent matrix (8 intents) */
   const intentOptions = useMemo(
     () => constants?.intents ?? [],
-    [constants?.intents]
+    [constants?.intents],
   );
 
   /** Dropdown handlers */
@@ -64,11 +68,11 @@ export default function Step4({
   /** Intent selection */
   const toggleIntent = useCallback(
     (intent: string) => setProfileField("intent", intent),
-    [setProfileField]
+    [setProfileField],
   );
   const isIntentSelected = useCallback(
     (intent: string) => profileData?.intent === intent,
-    [profileData?.intent]
+    [profileData?.intent],
   );
 
   /** Gender preference selection */
@@ -90,7 +94,7 @@ export default function Step4({
           if (current.includes(gender)) {
             setProfileField(
               "gender_preference",
-              current.filter((g) => g !== gender)
+              current.filter((g) => g !== gender),
             );
           } else {
             setProfileField("gender_preference", [...current, gender]);
@@ -98,11 +102,11 @@ export default function Step4({
         }
       }
     },
-    [profileData?.gender_preference, setProfileField]
+    [profileData?.gender_preference, setProfileField],
   );
   const isGenderSelected = useCallback(
     (gender: string) => profileData?.gender_preference?.includes(gender),
-    [profileData?.gender_preference]
+    [profileData?.gender_preference],
   );
 
   /** Validity check */
@@ -112,7 +116,7 @@ export default function Step4({
       Array.isArray(profileData?.gender_preference) &&
       profileData.gender_preference.length > 0 &&
       !!profileData?.intent,
-    [profileData]
+    [profileData],
   );
 
   useEffect(() => {
@@ -156,7 +160,9 @@ export default function Step4({
           listMode="SCROLLVIEW"
           style={[
             styles.dropdown,
-            profileData?.sexual_orientation ? { borderColor: SECONDARY, borderWidth: 2 } : undefined,
+            profileData?.sexual_orientation
+              ? { borderColor: SECONDARY, borderWidth: 2 }
+              : undefined,
           ]}
           dropDownContainerStyle={[
             styles.dropdownContainer,
@@ -173,7 +179,9 @@ export default function Step4({
         <View style={styles.intentContainer}>
           {genderOptions.map((gender) => {
             const selected = isGenderSelected(gender);
-            const disabled = profileData?.gender_preference?.includes("All") && gender !== "All";
+            const disabled =
+              profileData?.gender_preference?.includes("All") &&
+              gender !== "All";
 
             return selected && !disabled ? (
               <LinearGradient
@@ -185,7 +193,11 @@ export default function Step4({
               >
                 <TouchableOpacity
                   onPress={() => toggleGenderPreference(gender)}
-                  style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
                 >
                   <Text style={[styles.intentText, styles.intentTextSelected]}>
                     {gender}
@@ -196,10 +208,7 @@ export default function Step4({
               <TouchableOpacity
                 key={gender}
                 onPress={() => toggleGenderPreference(gender)}
-                style={[
-                  styles.intentBox,
-                  disabled && styles.disabled,
-                ]}
+                style={[styles.intentBox, disabled && styles.disabled]}
                 disabled={disabled}
               >
                 <Text
@@ -235,7 +244,11 @@ export default function Step4({
               >
                 <TouchableOpacity
                   onPress={() => toggleIntent(intent)}
-                  style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
                 >
                   <Text style={[styles.intentText, styles.intentTextSelected]}>
                     {intent}
@@ -248,9 +261,7 @@ export default function Step4({
                 onPress={() => toggleIntent(intent)}
                 style={styles.intentBox}
               >
-                <Text style={styles.intentText}>
-                  {intent}
-                </Text>
+                <Text style={styles.intentText}>{intent}</Text>
               </TouchableOpacity>
             );
           })}

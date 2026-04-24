@@ -13,7 +13,7 @@ export const MatchesAPI = {
     const res = await fetch(`${API_BASE}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return handleResponse(res);
+    return handleResponse<{ matches?: any[] }>(res);
   },
 
   /**

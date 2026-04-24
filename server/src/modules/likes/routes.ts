@@ -1,7 +1,7 @@
 import { Router } from "express";
-import * as LikesController from "./controllers"; 
-import { validateLike } from "./validators";
 import * as authMiddleware from "@/middleware/auth/requireAuth";
+import * as LikesController from "./controllers";
+import { validateLike } from "./validators";
 
 const router = Router();
 

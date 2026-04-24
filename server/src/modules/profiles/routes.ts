@@ -1,7 +1,7 @@
 import { Router } from "express";
+import * as authMiddleware from "@/middleware/auth/requireAuth";
 import * as profileControllers from "./controllers";
 import * as profileValidators from "./validators";
-import * as authMiddleware from "@/middleware/auth/requireAuth";
 
 const router = Router();
 
@@ -12,7 +12,7 @@ router.use(authMiddleware.requireAuth);
 router.post(
   "/",
   profileValidators.validateCreateProfile,
-  profileControllers.createProfileController
+  profileControllers.createProfileController,
 );
 
 // Get the authenticated user's profile
@@ -25,7 +25,7 @@ router.get("/:userId", profileControllers.getProfileController);
 router.patch(
   "/:userId",
   profileValidators.validateUpdateProfile,
-  profileControllers.updateProfileController
+  profileControllers.updateProfileController,
 );
 
 // Delete a user's profile by ID
@@ -35,8 +35,7 @@ router.delete("/:userId", profileControllers.deleteProfileController);
 router.post(
   "/domain-map",
   profileValidators.validateDomainMap,
-  profileControllers.domainMapController
+  profileControllers.domainMapController,
 );
-
 
 export default router;

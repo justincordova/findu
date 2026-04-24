@@ -1,4 +1,4 @@
-import { Profile } from "@/types/Profile";
+import type { Profile } from "@/types/Profile";
 
 export function validateProfile(profile: Profile) {
   const errors: string[] = [];
@@ -8,12 +8,19 @@ export function validateProfile(profile: Profile) {
 
   for (const [key, value] of Object.entries(profile)) {
     // Skip validation for optional fields that are null
-    if (optionalFields.includes(key) && (value === null || value === undefined)) {
+    if (
+      optionalFields.includes(key) &&
+      (value === null || value === undefined)
+    ) {
       continue;
     }
 
     // Skip empty objects for optional fields
-    if (optionalFields.includes(key) && typeof value === "object" && Object.keys(value as any).length === 0) {
+    if (
+      optionalFields.includes(key) &&
+      typeof value === "object" &&
+      Object.keys(value as any).length === 0
+    ) {
       continue;
     }
 
@@ -22,7 +29,9 @@ export function validateProfile(profile: Profile) {
     else if (typeof value === "string" && value.trim() === "")
       errors.push(`Field "${key}" cannot be empty (value: "${value}")`);
     else if (Array.isArray(value) && value.length === 0)
-      errors.push(`Field "${key}" must have at least one item (length: ${value.length})`);
+      errors.push(
+        `Field "${key}" must have at least one item (length: ${value.length})`,
+      );
     else if (
       typeof value === "number" &&
       value <= 0 &&
@@ -34,6 +43,6 @@ export function validateProfile(profile: Profile) {
   if (errors.length) {
     console.log("Profile validation errors:", errors);
     console.log("Full profile:", profile);
-    throw new Error("Profile validation failed: " + errors.join(", "));
+    throw new Error(`Profile validation failed: ${errors.join(", ")}`);
   }
 }

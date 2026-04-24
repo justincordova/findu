@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
 import { useRouter } from "expo-router";
-import { useAuthStore } from "@/store/authStore";
-import * as AuthService from "@/services/authService";
+import { useEffect, useRef } from "react";
 import logger from "@/config/logger";
+import * as AuthService from "@/services/authService";
+import { useAuthStore } from "@/store/authStore";
 
 /**
  * Hook for validating token on protected screens

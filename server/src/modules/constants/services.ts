@@ -1,11 +1,11 @@
 import logger from "@/config/logger";
-import { INTENTS } from "@/constants/intents";
-import { MAJORS } from "@/constants/majors";
 import { GENDER_PREFERENCES } from "@/constants/genderPreferences";
-import { SEXUAL_ORIENTATIONS } from "@/constants/sexualOrientations";
-import { PRONOUNS } from "@/constants/pronouns";
+import { INTENTS } from "@/constants/intents";
 import { INTERESTS } from "@/constants/interests";
 import { LIFESTYLE_OPTIONS } from "@/constants/lifestyleOptions";
+import { MAJORS } from "@/constants/majors";
+import { PRONOUNS } from "@/constants/pronouns";
+import { SEXUAL_ORIENTATIONS } from "@/constants/sexualOrientations";
 
 /**
  * Get all profile setup constants.

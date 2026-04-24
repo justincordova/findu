@@ -12,15 +12,24 @@ export const LikesAPI = {
    * @param {boolean} isSuperlike - Whether this is a superlike (default: false)
    * @returns {Promise<{success: boolean; matched: boolean; error?: string}>}
    */
-  createLike: async (token: string, fromUserId: string, toUserId: string, isSuperlike: boolean = false) => {
+  createLike: async (
+    token: string,
+    fromUserId: string,
+    toUserId: string,
+    isSuperlike: boolean = false,
+  ) => {
     const res = await fetch(`${API_BASE}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ from_user: fromUserId, to_user: toUserId, is_superlike: isSuperlike }),
+      body: JSON.stringify({
+        from_user: fromUserId,
+        to_user: toUserId,
+        is_superlike: isSuperlike,
+      }),
     });
-    return handleResponse(res);
+    return handleResponse<{ matched?: boolean }>(res);
   },
 };

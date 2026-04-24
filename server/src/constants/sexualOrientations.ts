@@ -15,5 +15,4 @@ export const SEXUAL_ORIENTATIONS = [
   "Other",
 ] as const;
 
-
-export type SexualOrientation = typeof SEXUAL_ORIENTATIONS[number];
+export type SexualOrientation = (typeof SEXUAL_ORIENTATIONS)[number];

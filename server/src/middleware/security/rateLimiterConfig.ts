@@ -1,6 +1,6 @@
+import type { RequestHandler } from "express";
 import rateLimit from "express-rate-limit";
 import logger from "@/config/logger";
-import { RequestHandler } from "express";
 
 /**
  * Rate Limiting Middleware
@@ -10,7 +10,7 @@ import { RequestHandler } from "express";
  */
 const limiter: RequestHandler = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,                  // Limit each IP to 100 requests per window
+  max: 100, // Limit each IP to 100 requests per window
   message: "Too many requests from this IP, please try again later.",
   handler: (req, res) => {
     logger.warn("RATE_LIMIT_EXCEEDED", {

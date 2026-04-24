@@ -1,6 +1,7 @@
 // React Native
-import { StyleSheet, Text, View } from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
+import { StyleSheet, Text, View } from "react-native";
 
 // Project imports
 import { DARK, PRIMARY, SECONDARY } from "@/constants/theme";
@@ -14,7 +15,9 @@ interface UniversityCardProps {
  * Enhanced university display card with refined modern design
  * Shows selected university with visual hierarchy and icon accent
  */
-export default function UniversityCard({ universityName }: UniversityCardProps) {
+export default function UniversityCard({
+  universityName,
+}: UniversityCardProps) {
   return (
     <View style={styles.container}>
       <View style={styles.card}>

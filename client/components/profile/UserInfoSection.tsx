@@ -1,6 +1,8 @@
 // React core
-import { useCallback, useMemo, useState } from "react";
 
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { useCallback, useMemo, useState } from "react";
 // React Native
 import {
   Alert,
@@ -16,19 +18,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
 import DropDownPicker from "react-native-dropdown-picker";
-import { Ionicons } from "@expo/vector-icons";
-
-// Project imports
-import { profileStyles } from "./shared/profileStyles";
-import { useProfile } from "@/contexts/ProfileContext";
-import { useAuthStore } from "@/store/authStore";
-import { uploadAvatar } from "@/services/uploadService";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
 import { DARK, MUTED, PRIMARY, SECONDARY } from "@/constants/theme";
+import { useProfile } from "@/contexts/ProfileContext";
+import { uploadAvatar } from "@/services/uploadService";
+import { useAuthStore } from "@/store/authStore";
+// Project imports
+import { profileStyles } from "./shared/profileStyles";
 
 /**
  * UserInfoSection Component
@@ -57,7 +56,10 @@ function calculateAge(birthdate: string | undefined): number | null {
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
       age -= 1;
     }
     return age;
@@ -103,7 +105,7 @@ export default function UserInfoSection() {
     return new Date(
       today.getFullYear() - 18,
       today.getMonth(),
-      today.getDate()
+      today.getDate(),
     );
   }, []);
 
@@ -115,7 +117,7 @@ export default function UserInfoSection() {
       { label: "Non-binary", value: "Non-binary" },
       { label: "Other", value: "Other" },
     ],
-    []
+    [],
   );
 
   const pronounsItems = useMemo(
@@ -127,7 +129,7 @@ export default function UserInfoSection() {
       { label: "ze/zir", value: "ze/zir" },
       { label: "other", value: "other" },
     ],
-    []
+    [],
   );
 
   /**
@@ -246,7 +248,15 @@ export default function UserInfoSection() {
     } finally {
       setIsSaving(false);
     }
-  }, [userId, editingName, editingBirthdate, editingGender, editingPronouns, refetch, handleCloseEditModal]);
+  }, [
+    userId,
+    editingName,
+    editingBirthdate,
+    editingGender,
+    editingPronouns,
+    refetch,
+    handleCloseEditModal,
+  ]);
 
   /**
    * Handle avatar upload
@@ -273,7 +283,10 @@ export default function UserInfoSection() {
 
       const imageUri = result.assets[0].uri;
 
-      logger.debug("[UserInfoSection] Avatar image selected", { userId, imageUri });
+      logger.debug("[UserInfoSection] Avatar image selected", {
+        userId,
+        imageUri,
+      });
 
       // Upload avatar
       const newAvatarUrl = await uploadAvatar(userId, imageUri, "update");
@@ -304,12 +317,18 @@ export default function UserInfoSection() {
       });
       Alert.alert(
         "Upload Failed",
-        "Could not update your avatar. Please try again."
+        "Could not update your avatar. Please try again.",
       );
     }
   }, [userId, refetch]);
 
-  const displayName = name ? (age !== null ? `${name}, ${age}` : name) : age !== null ? `${age}` : "";
+  const displayName = name
+    ? age !== null
+      ? `${name}, ${age}`
+      : name
+    : age !== null
+      ? `${age}`
+      : "";
 
   return (
     <View style={styles.container}>
@@ -323,7 +342,11 @@ export default function UserInfoSection() {
           disabled={!isEditable}
         >
           {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} resizeMode="cover" />
+            <Image
+              source={{ uri: avatarUrl }}
+              style={styles.avatar}
+              resizeMode="cover"
+            />
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
               <Ionicons name="camera-outline" size={40} color={MUTED} />
@@ -332,10 +355,13 @@ export default function UserInfoSection() {
         </TouchableOpacity>
 
         {/* Info - Tap to edit */}
-        <TouchableOpacity onPress={handleOpenEditModal} activeOpacity={0.7} style={{ flex: 1 }} disabled={!isEditable}>
-          {displayName ? (
-            <Text style={styles.name}>{displayName}</Text>
-          ) : null}
+        <TouchableOpacity
+          onPress={handleOpenEditModal}
+          activeOpacity={0.7}
+          style={{ flex: 1 }}
+          disabled={!isEditable}
+        >
+          {displayName ? <Text style={styles.name}>{displayName}</Text> : null}
 
           {/* University - Display only */}
           {university && (
@@ -393,7 +419,10 @@ export default function UserInfoSection() {
             {/* Modal Header */}
             <View style={profileStyles.modalHeader}>
               <Text style={profileStyles.modalTitle}>Edit Profile</Text>
-              <TouchableOpacity onPress={handleCloseEditModal} disabled={isSaving}>
+              <TouchableOpacity
+                onPress={handleCloseEditModal}
+                disabled={isSaving}
+              >
                 <Ionicons
                   name="close"
                   size={24}
@@ -433,7 +462,12 @@ export default function UserInfoSection() {
                     onPress={() => setShowDatePicker(true)}
                     disabled={isSaving}
                   >
-                    <Text style={{ fontSize: 16, color: editingBirthdate ? DARK : "#9CA3AF" }}>
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        color: editingBirthdate ? DARK : "#9CA3AF",
+                      }}
+                    >
                       {editingBirthdate
                         ? new Date(editingBirthdate).toLocaleDateString()
                         : "Select your birthdate"}
@@ -445,7 +479,12 @@ export default function UserInfoSection() {
                 </View>
 
                 {/* Gender Dropdown */}
-                <View style={[profileStyles.formField, { zIndex: getZIndex("gender", 2) }]}>
+                <View
+                  style={[
+                    profileStyles.formField,
+                    { zIndex: getZIndex("gender", 2) },
+                  ]}
+                >
                   <Text style={profileStyles.formLabel}>Gender</Text>
                   <DropDownPicker<string>
                     placeholder="Select your gender"
@@ -465,7 +504,10 @@ export default function UserInfoSection() {
                     disabled={isSaving}
                     style={[
                       styles.dropdown,
-                      editingGender && { borderColor: SECONDARY, borderWidth: 2 },
+                      editingGender && {
+                        borderColor: SECONDARY,
+                        borderWidth: 2,
+                      },
                     ]}
                     dropDownContainerStyle={[
                       styles.dropdownContainer,
@@ -475,7 +517,12 @@ export default function UserInfoSection() {
                 </View>
 
                 {/* Pronouns Dropdown */}
-                <View style={[profileStyles.formField, { zIndex: getZIndex("pronouns", 1) }]}>
+                <View
+                  style={[
+                    profileStyles.formField,
+                    { zIndex: getZIndex("pronouns", 1) },
+                  ]}
+                >
                   <Text style={profileStyles.formLabel}>Pronouns</Text>
                   <DropDownPicker<string>
                     placeholder="Select your pronouns"
@@ -495,7 +542,10 @@ export default function UserInfoSection() {
                     disabled={isSaving}
                     style={[
                       styles.dropdown,
-                      editingPronouns && { borderColor: SECONDARY, borderWidth: 2 },
+                      editingPronouns && {
+                        borderColor: SECONDARY,
+                        borderWidth: 2,
+                      },
                     ]}
                     dropDownContainerStyle={[
                       styles.dropdownContainer,
@@ -538,9 +588,7 @@ export default function UserInfoSection() {
               isVisible={showDatePicker}
               mode="date"
               date={
-                editingBirthdate
-                  ? new Date(editingBirthdate)
-                  : maxBirthdate
+                editingBirthdate ? new Date(editingBirthdate) : maxBirthdate
               }
               maximumDate={maxBirthdate}
               onConfirm={handleDateConfirm}

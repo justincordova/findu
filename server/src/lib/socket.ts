@@ -1,5 +1,5 @@
-import { Server as HTTPServer } from "http";
-import { Server as SocketIOServer, Socket } from "socket.io";
+import type { Server as HTTPServer } from "node:http";
+import { type Socket, Server as SocketIOServer } from "socket.io";
 import logger from "@/config/logger";
 
 let io: SocketIOServer | null = null;

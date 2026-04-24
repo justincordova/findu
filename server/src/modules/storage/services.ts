@@ -1,5 +1,5 @@
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import logger from "@/config/logger";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /**
  * Delete all files for a user from the "profiles" bucket.
@@ -9,19 +9,29 @@ import logger from "@/config/logger";
  */
 const deleteAllUserFiles = async (userId: string): Promise<void> => {
   try {
-    const { data: files, error } = await supabaseAdmin.storage.from("profiles").list(userId);
+    const { data: files, error } = await supabaseAdmin.storage
+      .from("profiles")
+      .list(userId);
     if (error) {
-      logger.error("[deleteAllUserFiles] Error listing files", { userId, error });
+      logger.error("[deleteAllUserFiles] Error listing files", {
+        userId,
+        error,
+      });
       throw new Error(error.message);
     }
 
     if (files && files.length > 0) {
-      const paths = files.map(f => `${userId}/${f.name}`);
+      const paths = files.map((f) => `${userId}/${f.name}`);
       logger.info("[deleteAllUserFiles] Deleting files", { userId, paths });
 
-      const { error: removeError } = await supabaseAdmin.storage.from("profiles").remove(paths);
+      const { error: removeError } = await supabaseAdmin.storage
+        .from("profiles")
+        .remove(paths);
       if (removeError) {
-        logger.error("[deleteAllUserFiles] Error removing files", { userId, removeError });
+        logger.error("[deleteAllUserFiles] Error removing files", {
+          userId,
+          removeError,
+        });
         throw new Error(removeError.message);
       }
     }
@@ -43,10 +53,13 @@ const deleteAllUserFiles = async (userId: string): Promise<void> => {
  * @param userId - ID of the user.
  * @param filename - Name of the file to delete (used to extract base name).
  */
-const deleteSingleUserFile = async (userId: string, filename: string): Promise<void> => {
+const deleteSingleUserFile = async (
+  userId: string,
+  filename: string,
+): Promise<void> => {
   try {
     // Extract base filename without extension
-    const baseFilename = filename.split('.')[0];
+    const baseFilename = filename.split(".")[0];
 
     // List all files in user's folder
     const { data: files, error: listError } = await supabaseAdmin.storage
@@ -54,24 +67,40 @@ const deleteSingleUserFile = async (userId: string, filename: string): Promise<v
       .list(userId);
 
     if (listError) {
-      logger.error("[deleteSingleUserFile] Failed to list files", { userId, listError });
+      logger.error("[deleteSingleUserFile] Failed to list files", {
+        userId,
+        listError,
+      });
       return;
     }
 
     // Find any file matching the base filename (handles extension differences)
-    const fileToDelete = files?.find(f => f.name.split('.')[0] === baseFilename);
+    const fileToDelete = files?.find(
+      (f) => f.name.split(".")[0] === baseFilename,
+    );
 
     if (!fileToDelete) {
-      logger.info("[deleteSingleUserFile] No existing file found to delete", { userId, baseFilename });
+      logger.info("[deleteSingleUserFile] No existing file found to delete", {
+        userId,
+        baseFilename,
+      });
       return;
     }
 
     const path = `${userId}/${fileToDelete.name}`;
-    logger.info("[deleteSingleUserFile] Attempting to delete file", { path, baseFilename });
+    logger.info("[deleteSingleUserFile] Attempting to delete file", {
+      path,
+      baseFilename,
+    });
 
-    const { error } = await supabaseAdmin.storage.from("profiles").remove([path]);
+    const { error } = await supabaseAdmin.storage
+      .from("profiles")
+      .remove([path]);
     if (error) {
-      logger.error("[deleteSingleUserFile] Failed to delete file", { path, error });
+      logger.error("[deleteSingleUserFile] Failed to delete file", {
+        path,
+        error,
+      });
       return;
     }
 
@@ -100,7 +129,7 @@ const deleteSingleUserFile = async (userId: string, filename: string): Promise<v
 export const generateSignedUploadUrl = async (
   userId: string,
   filename: string,
-  mode: "setup" | "update"
+  mode: "setup" | "update",
 ): Promise<{ uploadUrl: string; path: string } | { error: string }> => {
   try {
     logger.info("[generateSignedUploadUrl] Start", { userId, filename, mode });

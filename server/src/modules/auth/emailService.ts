@@ -6,8 +6,8 @@ import "dotenv/config";
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_SMTP_USER,   // yourgmail@gmail.com
-    pass: process.env.EMAIL_SMTP_PASS,   // app password
+    user: process.env.EMAIL_SMTP_USER, // yourgmail@gmail.com
+    pass: process.env.EMAIL_SMTP_PASS, // app password
   },
 });
 
@@ -23,7 +23,7 @@ export interface OTPEmailData {
 }
 
 export async function sendVerificationEmail(
-  data: EmailVerificationData
+  data: EmailVerificationData,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const verificationUrl = `${
@@ -116,7 +116,7 @@ export async function sendVerificationEmail(
 }
 
 export async function sendOTPEmail(
-  data: OTPEmailData
+  data: OTPEmailData,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const mailOptions = {

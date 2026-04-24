@@ -1,6 +1,9 @@
 // React core
-import { useCallback, useEffect, useMemo, useState } from "react";
 
+// Third-party
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 // React Native
 import {
   ActivityIndicator,
@@ -12,18 +15,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
-
-// Third-party
-import { LinearGradient } from "expo-linear-gradient";
 
 // Project imports
-import { BACKGROUND, DARK, MUTED, PRIMARY, GRADIENT } from "@/constants/theme";
-import { useProfileSetupStore } from "@/store/profileStore";
+import { BACKGROUND, DARK, GRADIENT, MUTED, PRIMARY } from "@/constants/theme";
 import { useAuthStore } from "@/store/authStore";
+import { useProfileSetupStore } from "@/store/profileStore";
+import type { Lifestyle } from "@/types/Lifestyle";
+import type { Profile } from "@/types/Profile";
 import { handleSubmitProfile } from "./handleSubmitProfile";
-import { Profile } from "@/types/Profile";
-import { Lifestyle } from "@/types/Lifestyle";
 
 // Types
 type ProfileData = Partial<Profile> & {
@@ -62,22 +61,28 @@ function formatLabel(field: string): string {
 }
 
 /** Render lifestyle field value with special handling for arrays */
-function renderLifestyleValue(field: keyof Lifestyle, lifestyle?: Lifestyle | null): string {
-  if (!lifestyle || !lifestyle[field]) return "Not set";
+function renderLifestyleValue(
+  field: keyof Lifestyle,
+  lifestyle?: Lifestyle | null,
+): string {
+  if (!lifestyle?.[field]) return "Not set";
   const value = lifestyle[field];
   if (Array.isArray(value)) return value.join(", ");
   return String(value);
 }
 
 export default function Step10({
-  onNext,
+  onNext: _onNext,
   onValidityChange,
   goToStep,
 }: Step10Props) {
   const router = useRouter();
   const authState = useAuthStore.getState();
   const rawProfileData = useProfileSetupStore((state) => state.data);
-  const profileData: ProfileData = useMemo(() => rawProfileData ?? {}, [rawProfileData]);
+  const profileData: ProfileData = useMemo(
+    () => rawProfileData ?? {},
+    [rawProfileData],
+  );
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -103,19 +108,20 @@ export default function Step10({
     photos: "step9",
   };
 
-
   const renderValue = useCallback(
     (field: keyof ProfileData) => {
       if (field === "birthdate") return formatBirthdate(profileData?.birthdate);
-      if (field === "university_name") return profileData?.university_name || "Not set";
+      if (field === "university_name")
+        return profileData?.university_name || "Not set";
       if (field === "campus_name") return profileData?.campus_name || "Not set";
       const value = profileData?.[field];
       if (Array.isArray(value)) return value.join(", ");
       if (typeof value === "object" && value !== null) return "Not set";
-      if (value === null || value === undefined || value === "") return "Not set";
+      if (value === null || value === undefined || value === "")
+        return "Not set";
       return String(value);
     },
-    [profileData]
+    [profileData],
   );
 
   const isValid = useMemo(() => {
@@ -152,7 +158,6 @@ export default function Step10({
     onValidityChange?.(isValid);
   }, [isValid, onValidityChange]);
 
-
   /** Handle finishing the profile submission */
   const handleFinish = useCallback(async () => {
     setSubmitting(true);
@@ -173,7 +178,7 @@ export default function Step10({
       console.error("Error submitting profile:", err);
       Alert.alert(
         "Submission Failed",
-        "Failed to submit your profile. Please try again."
+        "Failed to submit your profile. Please try again.",
       );
       setSubmitting(false);
     }
@@ -181,7 +186,10 @@ export default function Step10({
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Review your profile</Text>
@@ -198,10 +206,7 @@ export default function Step10({
             {["name", "birthdate", "gender", "pronouns"].map((field, idx) => (
               <TouchableOpacity
                 key={field}
-                style={[
-                  styles.fieldRow,
-                  idx !== 3 && styles.fieldRowBorder,
-                ]}
+                style={[styles.fieldRow, idx !== 3 && styles.fieldRowBorder]}
                 onPress={() => goToStep?.(fieldToStep[field])}
                 activeOpacity={0.6}
               >
@@ -223,26 +228,27 @@ export default function Step10({
             <View style={styles.sectionDivider} />
           </View>
           <View style={styles.sectionContent}>
-            {["university_name", "campus_name", "major", "university_year", "grad_year"].map(
-              (field, idx) => (
-                <TouchableOpacity
-                  key={field}
-                  style={[
-                    styles.fieldRow,
-                    idx !== 4 && styles.fieldRowBorder,
-                  ]}
-                  onPress={() => goToStep?.(fieldToStep[field])}
-                  activeOpacity={0.6}
-                >
-                  <View style={styles.fieldLeft}>
-                    <Text style={styles.fieldLabel}>{formatLabel(field)}</Text>
-                  </View>
-                  <Text style={styles.fieldValue} numberOfLines={2}>
-                    {renderValue(field as keyof ProfileData)}
-                  </Text>
-                </TouchableOpacity>
-              )
-            )}
+            {[
+              "university_name",
+              "campus_name",
+              "major",
+              "university_year",
+              "grad_year",
+            ].map((field, idx) => (
+              <TouchableOpacity
+                key={field}
+                style={[styles.fieldRow, idx !== 4 && styles.fieldRowBorder]}
+                onPress={() => goToStep?.(fieldToStep[field])}
+                activeOpacity={0.6}
+              >
+                <View style={styles.fieldLeft}>
+                  <Text style={styles.fieldLabel}>{formatLabel(field)}</Text>
+                </View>
+                <Text style={styles.fieldValue} numberOfLines={2}>
+                  {renderValue(field as keyof ProfileData)}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -253,72 +259,80 @@ export default function Step10({
             <View style={styles.sectionDivider} />
           </View>
           <View style={styles.sectionContent}>
-            {["sexual_orientation", "gender_preference", "intent", "min_age", "max_age"].map(
-              (field, idx) => (
-                <TouchableOpacity
-                  key={field}
-                  style={[
-                    styles.fieldRow,
-                    idx !== 4 && styles.fieldRowBorder,
-                  ]}
-                  onPress={() => goToStep?.(fieldToStep[field])}
-                  activeOpacity={0.6}
-                >
-                  <View style={styles.fieldLeft}>
-                    <Text style={styles.fieldLabel}>{formatLabel(field)}</Text>
-                  </View>
-                  <Text style={styles.fieldValue} numberOfLines={2}>
-                    {renderValue(field as keyof ProfileData)}
-                  </Text>
-                </TouchableOpacity>
-              )
-            )}
+            {[
+              "sexual_orientation",
+              "gender_preference",
+              "intent",
+              "min_age",
+              "max_age",
+            ].map((field, idx) => (
+              <TouchableOpacity
+                key={field}
+                style={[styles.fieldRow, idx !== 4 && styles.fieldRowBorder]}
+                onPress={() => goToStep?.(fieldToStep[field])}
+                activeOpacity={0.6}
+              >
+                <View style={styles.fieldLeft}>
+                  <Text style={styles.fieldLabel}>{formatLabel(field)}</Text>
+                </View>
+                <Text style={styles.fieldValue} numberOfLines={2}>
+                  {renderValue(field as keyof ProfileData)}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
         {/* Lifestyle Section */}
-        {profileData?.lifestyle && Object.keys(profileData.lifestyle).length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Lifestyle</Text>
-              <View style={styles.sectionDivider} />
+        {profileData?.lifestyle &&
+          Object.keys(profileData.lifestyle).length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Lifestyle</Text>
+                <View style={styles.sectionDivider} />
+              </View>
+              <View style={styles.sectionContent}>
+                {[
+                  { key: "drinking", label: "Drinking" },
+                  { key: "smoking", label: "Smoking" },
+                  { key: "cannabis", label: "Cannabis" },
+                  { key: "sleep_habits", label: "Sleep Habits" },
+                  { key: "pets", label: "Pets" },
+                  { key: "dietary_preferences", label: "Dietary Preferences" },
+                  { key: "study_style", label: "Study Style" },
+                  { key: "cleanliness", label: "Cleanliness" },
+                  { key: "caffeine", label: "Caffeine" },
+                  { key: "living_situation", label: "Living Situation" },
+                  { key: "fitness", label: "Fitness" },
+                ]
+                  .filter(
+                    ({ key }) =>
+                      (profileData.lifestyle as any)?.[key] !== undefined,
+                  )
+                  .map(({ key, label }, idx, filtered) => (
+                    <TouchableOpacity
+                      key={key}
+                      style={[
+                        styles.fieldRow,
+                        idx !== filtered.length - 1 && styles.fieldRowBorder,
+                      ]}
+                      onPress={() => goToStep?.("step8")}
+                      activeOpacity={0.6}
+                    >
+                      <View style={styles.fieldLeft}>
+                        <Text style={styles.fieldLabel}>{label}</Text>
+                      </View>
+                      <Text style={styles.fieldValue} numberOfLines={2}>
+                        {renderLifestyleValue(
+                          key as keyof Lifestyle,
+                          profileData?.lifestyle,
+                        )}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+              </View>
             </View>
-            <View style={styles.sectionContent}>
-              {[
-                { key: "drinking", label: "Drinking" },
-                { key: "smoking", label: "Smoking" },
-                { key: "cannabis", label: "Cannabis" },
-                { key: "sleep_habits", label: "Sleep Habits" },
-                { key: "pets", label: "Pets" },
-                { key: "dietary_preferences", label: "Dietary Preferences" },
-                { key: "study_style", label: "Study Style" },
-                { key: "cleanliness", label: "Cleanliness" },
-                { key: "caffeine", label: "Caffeine" },
-                { key: "living_situation", label: "Living Situation" },
-                { key: "fitness", label: "Fitness" },
-              ]
-                .filter(({ key }) => (profileData.lifestyle as any)?.[key] !== undefined)
-                .map(({ key, label }, idx, filtered) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={[
-                      styles.fieldRow,
-                      idx !== filtered.length - 1 && styles.fieldRowBorder,
-                    ]}
-                    onPress={() => goToStep?.("step8")}
-                    activeOpacity={0.6}
-                  >
-                    <View style={styles.fieldLeft}>
-                      <Text style={styles.fieldLabel}>{label}</Text>
-                    </View>
-                    <Text style={styles.fieldValue} numberOfLines={2}>
-                      {renderLifestyleValue(key as keyof Lifestyle, profileData?.lifestyle)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-            </View>
-          </View>
-        )}
+          )}
 
         {/* Visual Content Section */}
         <View style={styles.section}>
@@ -357,7 +371,9 @@ export default function Step10({
             {/* Photos */}
             {profileData?.photos && profileData.photos.length > 0 && (
               <View style={styles.photosSection}>
-                <Text style={styles.photosLabel}>Photos ({profileData.photos.length})</Text>
+                <Text style={styles.photosLabel}>
+                  Photos ({profileData.photos.length})
+                </Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -403,7 +419,11 @@ export default function Step10({
             <TouchableOpacity
               onPress={handleFinish}
               disabled={submitting}
-              style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
               activeOpacity={0.8}
             >
               {submitting ? (

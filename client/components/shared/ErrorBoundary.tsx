@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
-import { theme } from '@/constants/theme';
+import React from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { theme } from "@/constants/theme";
 
 interface Props {
   children: React.ReactNode;
@@ -28,7 +28,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: { componentStack: string }) {
     this.setState({ errorInfo });
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   handleReset = () => {
@@ -54,9 +54,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
             {__DEV__ && this.state.error && (
               <View style={styles.debugSection}>
                 <Text style={styles.debugTitle}>Error Details (Dev Only)</Text>
-                <Text style={styles.debugText}>{this.state.error.toString()}</Text>
+                <Text style={styles.debugText}>
+                  {this.state.error.toString()}
+                </Text>
                 {this.state.errorInfo?.componentStack && (
-                  <Text style={styles.debugText}>{this.state.errorInfo.componentStack}</Text>
+                  <Text style={styles.debugText}>
+                    {this.state.errorInfo.componentStack}
+                  </Text>
                 )}
               </View>
             )}
@@ -83,30 +87,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
   },
   title: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   message: {
     fontSize: 16,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
   },
   debugSection: {
@@ -114,19 +118,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 20,
-    maxWidth: '100%',
+    maxWidth: "100%",
   },
   debugTitle: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
     marginBottom: 8,
   },
   debugText: {
     fontSize: 11,
-    color: '#fff',
+    color: "#fff",
     marginBottom: 4,
-    fontFamily: 'Courier New',
+    fontFamily: "Courier New",
   },
   button: {
     backgroundColor: theme.colors.primary,
@@ -134,11 +138,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     minWidth: 120,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

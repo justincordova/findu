@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
-import { Modal, StyleSheet, Text, View, Pressable, ViewStyle } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { DANGER, DARK } from '@/constants/theme';
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type ViewStyle,
+} from "react-native";
+import { DANGER, DARK } from "@/constants/theme";
 
 interface ActionOption {
   label: string;
@@ -24,7 +31,7 @@ interface ActionMenuProps {
 export default function ActionMenu({
   options,
   style,
-  iconColor = '#000',
+  iconColor = "#000",
   iconSize = 24,
 }: ActionMenuProps) {
   const [showMenu, setShowMenu] = useState(false);
@@ -41,7 +48,7 @@ export default function ActionMenu({
         accessible={true}
         accessibilityRole="button"
         accessibilityLabel="More options"
-        android_ripple={{ radius: 22, color: 'rgba(0, 0, 0, 0.1)' }}
+        android_ripple={{ radius: 22, color: "rgba(0, 0, 0, 0.1)" }}
       >
         <Ionicons name="ellipsis-vertical" size={iconSize} color={iconColor} />
       </Pressable>
@@ -52,10 +59,7 @@ export default function ActionMenu({
         animationType="fade"
         onRequestClose={() => setShowMenu(false)}
       >
-        <Pressable
-          style={styles.overlay}
-          onPress={() => setShowMenu(false)}
-        >
+        <Pressable style={styles.overlay} onPress={() => setShowMenu(false)}>
           <View
             style={styles.menuContainer}
             onStartShouldSetResponder={() => true}
@@ -107,25 +111,25 @@ export default function ActionMenu({
 const styles = StyleSheet.create({
   menuButton: {
     padding: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     minWidth: 44,
     minHeight: 44,
     borderRadius: 22,
   },
   menuButtonPressed: {
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   menuContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -136,28 +140,28 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: "#F3F4F6",
   },
   lastOption: {
     borderBottomWidth: 0,
   },
   optionPressed: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
   },
   optionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   optionIcon: {
     marginRight: 12,
   },
   optionLabel: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     color: DARK,
   },
   destructiveLabel: {
     color: DANGER,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

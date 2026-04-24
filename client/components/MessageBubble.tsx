@@ -1,18 +1,18 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  Pressable,
-  Animated,
-  Alert,
-  Platform,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import {
+  Alert,
+  Animated,
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { theme } from "@/constants/theme";
-import { ChatMessage } from "@/types/chat";
 import { useAuthStore } from "@/store/authStore";
+import type { ChatMessage } from "@/types/chat";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -91,7 +91,11 @@ export function MessageBubble({
       >
         {!isOwnMessage && showAvatar && (
           <View style={styles.avatarPlaceholder}>
-            <Ionicons name="person" size={16} color={theme.colors.textSecondary} />
+            <Ionicons
+              name="person"
+              size={16}
+              color={theme.colors.textSecondary}
+            />
           </View>
         )}
 
@@ -112,10 +116,7 @@ export function MessageBubble({
             ]}
           >
             {message.media_url && (
-              <Image
-                source={{ uri: message.media_url }}
-                style={styles.media}
-              />
+              <Image source={{ uri: message.media_url }} style={styles.media} />
             )}
 
             <View style={styles.messageContent}>

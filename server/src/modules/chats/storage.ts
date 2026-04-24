@@ -1,6 +1,6 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { supabase } from "@/lib/supabaseStorage";
-import * as fs from "fs";
-import * as path from "path";
 
 const CHAT_BUCKET = "chat-media";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -28,7 +28,7 @@ function getMimeType(fileName: string): string {
 export async function uploadChatMedia(
   matchId: string,
   filePath: string,
-  fileName: string
+  fileName: string,
 ): Promise<string> {
   try {
     // Validate file exists and size
@@ -38,7 +38,9 @@ export async function uploadChatMedia(
 
     const fileSize = fs.statSync(filePath).size;
     if (fileSize > MAX_FILE_SIZE) {
-      throw new Error(`File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`);
+      throw new Error(
+        `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`,
+      );
     }
 
     // Read file
@@ -68,7 +70,7 @@ export async function uploadChatMedia(
     return publicUrl.publicUrl;
   } catch (err) {
     throw new Error(
-      `Failed to upload chat media: ${err instanceof Error ? err.message : "Unknown error"}`
+      `Failed to upload chat media: ${err instanceof Error ? err.message : "Unknown error"}`,
     );
   }
 }
@@ -92,7 +94,7 @@ export async function deleteChatMedia(fileUrl: string): Promise<void> {
     }
   } catch (err) {
     throw new Error(
-      `Failed to delete chat media: ${err instanceof Error ? err.message : "Unknown error"}`
+      `Failed to delete chat media: ${err instanceof Error ? err.message : "Unknown error"}`,
     );
   }
 }

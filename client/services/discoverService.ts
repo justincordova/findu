@@ -1,6 +1,6 @@
 import { DiscoverAPI } from "@/api/discover";
-import { useAuthStore } from "@/store/authStore";
 import logger from "@/config/logger";
+import { useAuthStore } from "@/store/authStore";
 
 /**
  * Fetch discover feed with paginated profiles
@@ -11,7 +11,7 @@ import logger from "@/config/logger";
  */
 export async function getDiscoverFeed(
   limit: number = 10,
-  offset: number = 0
+  offset: number = 0,
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   const { token } = useAuthStore.getState();
   if (!token) {
@@ -21,7 +21,11 @@ export async function getDiscoverFeed(
 
   try {
     const data = await DiscoverAPI.getFeed(token, limit, offset);
-    logger.info("Discover feed fetched", { limit, offset, count: data?.profiles?.length });
+    logger.info("Discover feed fetched", {
+      limit,
+      offset,
+      count: data?.profiles?.length,
+    });
     return { success: true, data };
   } catch (err) {
     logger.error("Failed to fetch discover feed", { err });

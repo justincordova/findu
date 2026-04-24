@@ -1,11 +1,10 @@
 // React core
-import { useEffect } from "react";
 
 // Expo & Navigation
 import { Tabs, useNavigation } from "expo-router";
-
 // Icons
 import { Compass, MessageCircle, User, Users } from "lucide-react-native";
+import { useEffect } from "react";
 
 // Project imports
 import CustomTabBar from "@/components/shared/CustomTabBar";

@@ -1,15 +1,13 @@
 // React core
-import React, { useMemo } from "react";
-
-// React Native
-import { Alert, StyleSheet, Text, TouchableOpacity } from "react-native";
 
 // Navigation
 import { useLocalSearchParams, useRouter } from "expo-router";
-
+import { useMemo } from "react";
+// React Native
+import { Alert, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { DANGER } from "@/constants/theme";
 // Project imports
 import { useAuth } from "@/hooks/useAuth";
-import { DANGER } from "@/constants/theme";
 import { useAuthStore } from "@/store/authStore";
 
 // Constants
@@ -81,7 +79,10 @@ export default function DevButton({ route }: DevButtonProps) {
                 router.replace("/" as any);
                 Alert.alert("Logout", "Successfully logged out.");
               } else {
-                Alert.alert("Logout", result?.error || "Logout failed. Check logs.");
+                Alert.alert(
+                  "Logout",
+                  result?.error || "Logout failed. Check logs.",
+                );
               }
             } catch (err) {
               console.error("DevButton: Logout failed", err);
@@ -90,7 +91,7 @@ export default function DevButton({ route }: DevButtonProps) {
           },
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 

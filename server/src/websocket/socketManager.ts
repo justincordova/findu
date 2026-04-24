@@ -1,8 +1,8 @@
-import { Server as HTTPServer } from "http";
-import { Server as SocketIOServer, Socket } from "socket.io";
-import { markMessagesAsRead, createMessage } from "@/modules/chats/services";
-import { AuthService } from "@/modules/auth/services";
+import type { Server as HTTPServer } from "node:http";
+import { type Socket, Server as SocketIOServer } from "socket.io";
 import logger from "@/config/logger";
+import { AuthService } from "@/modules/auth/services";
+import { createMessage, markMessagesAsRead } from "@/modules/chats/services";
 
 interface SocketUser {
   userId: string;
@@ -82,7 +82,11 @@ export function initializeSocket(httpServer: HTTPServer) {
           user.matchIds.push(matchId);
         }
 
-        logger.info("USER_JOINED_CONVERSATION", { userId, matchId, socketId: socket.id });
+        logger.info("USER_JOINED_CONVERSATION", {
+          userId,
+          matchId,
+          socketId: socket.id,
+        });
 
         // Notify other user in conversation that this user is online
         socket.to(`match_${matchId}`).emit("user_online", { matchId, userId });
@@ -101,7 +105,11 @@ export function initializeSocket(httpServer: HTTPServer) {
           user.matchIds = user.matchIds.filter((id) => id !== matchId);
         }
 
-        logger.info("USER_LEFT_CONVERSATION", { userId, matchId, socketId: socket.id });
+        logger.info("USER_LEFT_CONVERSATION", {
+          userId,
+          matchId,
+          socketId: socket.id,
+        });
 
         // Notify other user that this user is offline
         socket.to(`match_${matchId}`).emit("user_offline", { matchId, userId });
@@ -115,7 +123,11 @@ export function initializeSocket(httpServer: HTTPServer) {
       try {
         const { matchId, message, media_url, message_type } = data;
 
-        logger.info("MESSAGE_SEND", { userId, matchId, messageType: message_type });
+        logger.info("MESSAGE_SEND", {
+          userId,
+          matchId,
+          messageType: message_type,
+        });
 
         // Persist message to database
         const savedMessage = await createMessage({
@@ -160,7 +172,9 @@ export function initializeSocket(httpServer: HTTPServer) {
       try {
         const { matchId } = data;
         logger.info("USER_STOP_TYPING", { userId, matchId });
-        socket.to(`match_${matchId}`).emit("user_stop_typing", { matchId, userId });
+        socket
+          .to(`match_${matchId}`)
+          .emit("user_stop_typing", { matchId, userId });
       } catch (err) {
         logger.error("Error in stop_typing handler", err);
       }
@@ -173,7 +187,9 @@ export function initializeSocket(httpServer: HTTPServer) {
         logger.info("MARK_READ_REQUEST", { userId, matchId });
 
         await markMessagesAsRead(matchId, userId);
-        socket.to(`match_${matchId}`).emit("messages_read", { matchId, userId });
+        socket
+          .to(`match_${matchId}`)
+          .emit("messages_read", { matchId, userId });
       } catch (err) {
         logger.error("Error marking messages as read", err);
       }
@@ -185,7 +201,9 @@ export function initializeSocket(httpServer: HTTPServer) {
         const user = userSockets.get(socket.id);
         if (user) {
           user.matchIds.forEach((matchId) => {
-            socket.to(`match_${matchId}`).emit("user_offline", { matchId, userId });
+            socket
+              .to(`match_${matchId}`)
+              .emit("user_offline", { matchId, userId });
           });
         }
         userSockets.delete(socket.id);

@@ -1,10 +1,10 @@
-import { useProfileSetupStore } from "@/store/profileStore";
-import { useAuthStore } from "@/store/authStore";
 import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
-import { validateProfile } from "@/utils/profile/validation";
 import { uploadAvatar, uploadPhotos } from "@/services/uploadService";
-import { Profile } from "@/types/Profile";
+import { useAuthStore } from "@/store/authStore";
+import { useProfileSetupStore } from "@/store/profileStore";
+import type { Profile } from "@/types/Profile";
+import { validateProfile } from "@/utils/profile/validation";
 
 /**
  * Submit profile for the currently authenticated user
@@ -16,10 +16,13 @@ export async function handleSubmitProfile(userId?: string) {
 
     const currentUserId = userId ?? authState.userId;
     if (!currentUserId) {
-      logger.error("[handleSubmitProfile] No userId found in store or argument", {
-        userId,
-        authState,
-      });
+      logger.error(
+        "[handleSubmitProfile] No userId found in store or argument",
+        {
+          userId,
+          authState,
+        },
+      );
       throw new Error("User not authenticated");
     }
 
@@ -74,7 +77,9 @@ export async function handleSubmitProfile(userId?: string) {
     // Reset local store
     useProfileSetupStore.getState().reset();
   } catch (err: any) {
-    logger.error("[handleSubmitProfile] Failed to submit profile", { error: err });
+    logger.error("[handleSubmitProfile] Failed to submit profile", {
+      error: err,
+    });
     throw err;
   }
 }
