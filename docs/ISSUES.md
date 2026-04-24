@@ -10,11 +10,47 @@ cd server && npm run build && npm run lint && npm test
 cd client && npm run lint
 ```
 
-**Safety note for coding agents:** Items marked "Low risk" are mechanical;
-Sonnet 4.6 (or equivalent) can execute them reliably given the exact
-file/line references below. Items marked "Needs judgment" require
-deciding API contracts or touch auth/test interactions and benefit
-from a stronger model or human review.
+## Execution Assignments
+
+Each issue is labeled **SONNET**, **OPUS**, or **HUMAN**. Execute in
+this order for the smallest risk:
+
+| # | Issue | Assigned to | Why |
+|---|---|---|---|
+| 4 | Missing `handleValidationErrors` middleware | **SONNET** | Pure middleware insertion, 4 routes, no behavior logic |
+| 5 | Matches validator field name mismatch | **SONNET** | Rename two fields; mechanical |
+| 6 | Discover validator dead rule | **SONNET** | Remove unused validator rule; mechanical |
+| 8 | `generateOTP` uses `Math.random()` | **SONNET** | Single-line swap to `crypto.randomInt` |
+| 9 | Duplicate supabase client | **SONNET** | Delete one file, redirect one import |
+| 1 | Storage upload authZ bypass | **OPUS** | Security-critical; needs API-contract decision on whether to reject `userId` in body or silently drop it; also check client usage |
+| 2 | Likes authZ bypass | **OPUS** | Security-critical; touches validator + controller + client expectations |
+| 3 | Profiles create authZ bypass | **OPUS** | Security-critical AND needs judgment on field validation gaps (interests/university_id/etc. unvalidated) |
+| 7 | `createAccountWithPassword` not transactional | **OPUS** | Test assertions must be removed carefully; Sonnet has a known failure mode of weakening tests to make them pass |
+| 10 | Dev security bypass in `app.ts` | **HUMAN** | Intent is ambiguous — may be deliberate for Expo LAN dev. Needs product context, not code reasoning |
+| 11 | Chats storage blocking I/O and unsafe path | **OPUS** | Touches multer upload contract + content-type semantics; more surface area |
+| 12 | `(req as any).user` repeated 25 times | **OPUS** | Cross-cutting refactor across 25+ files; declare augmentation once, verify nothing breaks globally |
+
+**Rules when using SONNET:**
+
+1. After Sonnet's fix, always review the *test diff*, not just the
+   "tests pass" result. Sonnet's known failure mode is weakening
+   assertions to make suites green.
+2. Run `git diff` before commit and check no unrelated files were
+   touched.
+3. Verify the commit message matches the project's git conventions
+   (lowercase, type(scope), no Claude attribution).
+
+**Rules when using OPUS or HUMAN:**
+
+1. Read the "Needs judgment" notes in each issue carefully.
+2. Prefer splitting into separate commits when one issue touches
+   multiple concerns (e.g. #3 has both authZ fix AND validator gaps).
+
+**Safety note for any agent:** Items marked "Low risk" are mechanical;
+items marked "Needs judgment" require deciding API contracts or touch
+auth/test interactions and benefit from a stronger model or human
+review. Never commit if `npm run build`, `npm test`, or `npm run lint`
+fails.
 
 ---
 
@@ -22,6 +58,7 @@ from a stronger model or human review.
 
 **File:** `server/src/modules/storage/controllers.ts:16`
 **Route:** `POST /api/storage/url`
+**Execute with:** **OPUS** (security-critical + API contract decision)
 **Risk:** Low once the change is obvious. **Needs judgment** on whether the
 client still sends `userId` (backward compat) or we reject requests that do.
 
@@ -103,6 +140,7 @@ still uploads to the auth session user's folder.
 
 **File:** `server/src/modules/likes/controllers.ts:10-12`
 **Route:** `POST /api/likes`
+**Execute with:** **OPUS** (security-critical; touches validator + controller + client expectations)
 **Risk:** Low. Mechanical change.
 
 ### Problem
@@ -180,6 +218,7 @@ the controller, so it should keep passing unchanged.
 
 **File:** `server/src/modules/profiles/controllers.ts:8-19`
 **Route:** `POST /api/profiles`
+**Execute with:** **OPUS** (security-critical AND validator gaps to fill)
 **Risk:** **Needs judgment**. The validator does not even require
 `user_id`. The service blindly spreads `profileData` into
 `prisma.profiles.create`. Need to decide: does the client send
@@ -234,6 +273,7 @@ max_age, sexual_orientation) are not validated at all.
 - `server/src/modules/profiles/routes.ts:12,26,35`
 - `server/src/modules/blocks/routes.ts:21,24` (no validators at all on unblock/get)
 
+**Execute with:** **SONNET** (pure middleware insertion)
 **Risk:** Low. Mechanical change.
 
 ### Problem
@@ -272,6 +312,7 @@ least validate the UUID format).
 - `server/src/modules/matches/validators.ts:3-6`
 - `server/src/modules/matches/controllers.ts:52`
 
+**Execute with:** **SONNET** (rename two fields)
 **Risk:** Low. Mechanical.
 
 ### Problem
@@ -312,7 +353,7 @@ export const validateCreateMatch = [
 
 **File:** `server/src/modules/discover/validators.ts:6-21`
 **Route:** `POST /api/discover/compatibility`
-
+**Execute with:** **SONNET** (remove unused validator rule)
 **Risk:** Low.
 
 ### Problem
@@ -360,7 +401,8 @@ Verify `client/api/discover.ts` does not rely on sending `userId`.
 ## 7. [Important] `createAccountWithPassword` not transactional
 
 **File:** `server/src/modules/auth/services.ts:370-434`
-**Risk:** Low.
+**Execute with:** **OPUS** (test assertions must be removed carefully; Sonnet may weaken assertions to pass tests)
+**Risk:** Low code change; medium test-update risk.
 
 ### Problem
 
@@ -445,6 +487,7 @@ because the transaction auto-rolls back (same pattern as the earlier
 ## 8. [Important] `generateOTP` uses `Math.random()`
 
 **File:** `server/src/utils/auth.ts:16-18`
+**Execute with:** **SONNET** (single-line swap to `crypto.randomInt`)
 **Risk:** Low.
 
 ### Problem
@@ -483,6 +526,7 @@ export const generateOTP = (): string => {
 - `server/src/lib/supabaseAdmin.ts`
 - `server/src/lib/supabaseStorage.ts`
 
+**Execute with:** **SONNET** (delete one file, redirect one import)
 **Risk:** Low.
 
 ### Problem
@@ -512,6 +556,7 @@ import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 ## 10. [Nit — Needs judgment] Dev security bypass in app.ts
 
 **File:** `server/src/app.ts:36-52`
+**Execute with:** **HUMAN** (ambiguous intent — may be deliberate for Expo LAN dev; needs product context, not code reasoning)
 **Risk:** **Needs judgment** — the current behavior may be intentional
 for Expo LAN testing.
 
@@ -553,6 +598,7 @@ Confirm with product owner before changing.
 ## 11. [Nit] Chats storage blocking I/O and unsafe path
 
 **File:** `server/src/modules/chats/storage.ts:47,51`
+**Execute with:** **OPUS** (touches multer upload contract + content-type semantics; needs passing mimetype through the controller)
 **Risk:** Low (for readFileSync swap); Medium for path sanitization
 (changes storage layout).
 
@@ -599,6 +645,7 @@ controller to this helper rather than sniffing the extension.
 
 ## 12. [Nit] `(req as any).user` repeated 25 times
 
+**Execute with:** **OPUS** (cross-cutting refactor across 25+ files; verify nothing breaks globally)
 **Risk:** Low, quality only.
 
 Declare a global Express Request augmentation once, e.g.
