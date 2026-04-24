@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import logger from "@/config/logger";
 import prisma from "@/lib/prismaClient";
 import { redis } from "@/lib/redis";
