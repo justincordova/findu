@@ -108,7 +108,6 @@ export default function ChatDetailScreen() {
       leaveMatch(matchId);
       initializedRef.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     matchId, // Set as current match
     setCurrentMatch,
