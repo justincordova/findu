@@ -8,11 +8,21 @@ import * as LikesService from "./services";
  */
 export const createLike = async (req: Request, res: Response) => {
   try {
-    const { from_user, to_user, is_superlike } = req.body;
-    const result = await LikesService.createLike(req.body);
+    const authenticatedUserId = (req as any).user?.id;
+    if (!authenticatedUserId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { to_user, is_superlike } = req.body;
+
+    const result = await LikesService.createLike({
+      from_user: authenticatedUserId,
+      to_user,
+      is_superlike,
+    });
 
     logger.info("Like created successfully", {
-      fromUser: from_user,
+      fromUser: authenticatedUserId,
       toUser: to_user,
       isSuperlike: is_superlike,
       matched: result.matched,
