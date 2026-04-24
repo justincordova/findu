@@ -3,11 +3,21 @@ import logger from "@/config/logger";
 import * as profileService from "./services";
 
 /**
- * Create a new profile
+ * Create a new profile for the authenticated user.
+ *
+ * The `user_id` is always derived from the auth session — any value
+ * sent in the request body is ignored to prevent users from creating
+ * profiles on behalf of someone else.
  */
 export const createProfileController = async (req: Request, res: Response) => {
   try {
-    const profileData = req.body;
+    const authenticatedUserId = (req as any).user?.id;
+    if (!authenticatedUserId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Force user_id to the session user; ignore any client-supplied value
+    const profileData = { ...req.body, user_id: authenticatedUserId };
     const profile = await profileService.createProfile(profileData);
     res.status(201).json(profile);
   } catch (error) {
