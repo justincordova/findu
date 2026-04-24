@@ -387,25 +387,29 @@ export const AuthService = {
       const ctx = await auth.$context;
       const hashedPassword = await ctx.password.hash(password);
 
-      const user = await prisma.user.create({
-        data: {
-          email,
-          name: email.split("@")[0],
-        },
-      });
+      // Wrap user and account creation in a transaction for atomicity.
+      // If account.create fails, user.create is rolled back automatically.
+      await prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email,
+            name: email.split("@")[0],
+          },
+        });
 
-      await prisma.account.create({
-        data: {
-          userId: user.id,
-          providerId: "credential",
-          accountId: email,
-          password: hashedPassword,
-        },
+        await tx.account.create({
+          data: {
+            userId: user.id,
+            providerId: "credential",
+            accountId: email,
+            password: hashedPassword,
+          },
+        });
       });
 
       // Clean up OTP from Redis
       await redis.del(`otp:${email}`);
-      logger.info("ACCOUNT_CREATED_SUCCESSFULLY", { email, userId: user.id });
+      logger.info("ACCOUNT_CREATED_SUCCESSFULLY", { email });
 
       // Sign in the user and return token
       return await AuthService.signIn(email, password);
@@ -421,11 +425,6 @@ export const AuthService = {
         stack: errorStack,
         email,
       });
-      // Clean up partially created user if something went wrong
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (user) {
-        await prisma.user.delete({ where: { id: user.id } });
-      }
       return {
         success: false,
         error: errorMessage || "Failed to create account",
