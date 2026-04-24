@@ -3,9 +3,13 @@ import logger from "@/config/logger";
 import * as uploadsService from "./services";
 
 /**
- * Generate a signed upload URL for a user's personal folder
+ * Generate a signed upload URL for a user's personal folder.
  *
- * @param req - Express request object containing `userId`, `filename`, `mimeType`, `fileSize`, and `mode` in body
+ * The user id is always derived from the authenticated session — any
+ * `userId` in the request body is ignored to prevent users from writing
+ * into another user's storage folder.
+ *
+ * @param req - Express request object containing `filename`, `mimeType`, `fileSize`, and `mode` in body
  * @param res - Express response object used to return the upload URL or an error
  */
 export const generateUploadUrlController = async (
@@ -13,13 +17,16 @@ export const generateUploadUrlController = async (
   res: Response,
 ) => {
   try {
-    const { userId, filename, mode } = req.body;
+    const userId = (req as any).user?.id;
+    const { filename, mode } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
     // Validate required fields
-    if (!userId || !filename || !mode) {
-      return res
-        .status(400)
-        .json({ error: "Missing userId, filename, or mode" });
+    if (!filename || !mode) {
+      return res.status(400).json({ error: "Missing filename or mode" });
     }
 
     // Validate mode

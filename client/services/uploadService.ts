@@ -27,8 +27,8 @@ async function compressImage(uri: string): Promise<Blob> {
 }
 
 /**
- * Upload a file using signed URL and return the full public URL
- * @param {string} userId - User ID for upload path
+ * Upload a file using signed URL and return the full public URL.
+ * The uploading user is derived from the auth token server-side.
  * @param {string} fileName - Name of file to upload
  * @param {Blob} fileData - File blob to upload
  * @param {"setup" | "update"} mode - Upload mode (setup during profile creation, update for existing profile)
@@ -36,7 +36,6 @@ async function compressImage(uri: string): Promise<Blob> {
  * @throws {Error} If upload fails
  */
 async function uploadViaSignedUrl(
-  userId: string,
   fileName: string,
   fileData: Blob,
   mode: "setup" | "update",
@@ -47,12 +46,8 @@ async function uploadViaSignedUrl(
     mode,
   });
 
-  // Request signed URL from backend
-  const { uploadUrl, path } = await storageApi.getUploadUrl(
-    userId,
-    fileName,
-    mode,
-  );
+  // Request signed URL from backend (server derives user from auth token)
+  const { uploadUrl, path } = await storageApi.getUploadUrl(fileName, mode);
 
   // Use fetch PUT for mobile (React Native)
   const res = await fetch(uploadUrl, {
@@ -90,12 +85,7 @@ export async function uploadAvatar(
   const avatarName = `avatar.${ext}`; // Fixed filename
   const avatarBlob = await compressImage(avatarUri);
 
-  const publicUrl = await uploadViaSignedUrl(
-    userId,
-    avatarName,
-    avatarBlob,
-    mode,
-  );
+  const publicUrl = await uploadViaSignedUrl(avatarName, avatarBlob, mode);
 
   useProfileSetupStore.getState().setProfileField("avatar_url", publicUrl);
   logger.info("Avatar uploaded", { userId, url: publicUrl });
@@ -132,12 +122,7 @@ export async function uploadPhotos(
       const photoName = `photo_${startIndex + i}.${ext}`; // Use correct index to append
       const photoBlob = await compressImage(uri);
 
-      const publicUrl = await uploadViaSignedUrl(
-        userId,
-        photoName,
-        photoBlob,
-        mode,
-      );
+      const publicUrl = await uploadViaSignedUrl(photoName, photoBlob, mode);
       logger.info("Photo uploaded", { userId, url: publicUrl });
 
       return publicUrl;
@@ -194,7 +179,6 @@ export async function updatePhoto(
     });
 
     const publicUrl = await uploadViaSignedUrl(
-      userId,
       photoName,
       photoBlob,
       "update",
