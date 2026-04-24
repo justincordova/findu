@@ -22,8 +22,28 @@ export const validateCreateProfile = [
   body("gender").isString().optional(),
   body("pronouns").isString().optional(),
   body("university").isString().optional(),
+  body("university_id").isUUID().optional(),
+  body("campus_id").isUUID().optional({ nullable: true }),
   body("university_year").isInt().optional(),
   body("major").isString().optional(),
+  body("grad_year").isInt({ min: 1900, max: 2100 }).optional(),
+  body("intent").isString().optional(),
+  body("interests").isArray().optional().withMessage("Interests must be an array"),
+  body("interests.*").isString().withMessage("Each interest must be a string"),
+  body("gender_preference")
+    .isArray()
+    .optional()
+    .withMessage("gender_preference must be an array"),
+  body("gender_preference.*")
+    .isString()
+    .withMessage("Each gender_preference entry must be a string"),
+  body("sexual_orientation").isString().optional(),
+  body("min_age").isInt({ min: 18, max: 120 }).optional(),
+  body("max_age").isInt({ min: 18, max: 120 }).optional(),
+  body("photos").isArray().optional().withMessage("Photos must be an array"),
+  body("photos.*").isURL().withMessage("Each photo must be a URL"),
+  body("spotify_url").isURL().optional(),
+  body("instagram_url").isURL().optional(),
   // Lifestyle validations (all optional)
   body("lifestyle")
     .optional()
@@ -93,8 +113,28 @@ export const validateUpdateProfile = [
   body("gender").isString().optional(),
   body("pronouns").isString().optional(),
   body("university").isString().optional(),
+  body("university_id").isUUID().optional(),
+  body("campus_id").isUUID().optional({ nullable: true }),
   body("university_year").isInt().optional(),
   body("major").isString().optional(),
+  body("grad_year").isInt({ min: 1900, max: 2100 }).optional(),
+  body("intent").isString().optional(),
+  body("interests").isArray().optional().withMessage("Interests must be an array"),
+  body("interests.*").isString().withMessage("Each interest must be a string"),
+  body("gender_preference")
+    .isArray()
+    .optional()
+    .withMessage("gender_preference must be an array"),
+  body("gender_preference.*")
+    .isString()
+    .withMessage("Each gender_preference entry must be a string"),
+  body("sexual_orientation").isString().optional(),
+  body("min_age").isInt({ min: 18, max: 120 }).optional(),
+  body("max_age").isInt({ min: 18, max: 120 }).optional(),
+  body("photos").isArray().optional().withMessage("Photos must be an array"),
+  body("photos.*").isURL().withMessage("Each photo must be a URL"),
+  body("spotify_url").isURL().optional(),
+  body("instagram_url").isURL().optional(),
   // Lifestyle validations (all optional)
   body("lifestyle")
     .optional()
