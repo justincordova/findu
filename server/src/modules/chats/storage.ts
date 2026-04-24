@@ -1,60 +1,57 @@
-import * as fs from "node:fs";
+import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { supabase } from "@/lib/supabaseStorage";
 
 const CHAT_BUCKET = "chat-media";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const FALLBACK_MIME = "application/octet-stream";
 
 /**
- * Get MIME type from filename
- */
-function getMimeType(fileName: string): string {
-  const ext = path.extname(fileName).toLowerCase();
-  const mimeTypes: Record<string, string> = {
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".png": "image/png",
-    ".gif": "image/gif",
-    ".mp4": "video/mp4",
-    ".webm": "video/webm",
-  };
-  return mimeTypes[ext] || "application/octet-stream";
-}
-
-/**
- * Upload media file to Supabase storage in match-specific folder
+ * Upload media file to Supabase storage in match-specific folder.
  * Path: chat-media/match/{matchId}/{timestamp}-{filename}
+ *
+ * The filename is reduced to its basename to prevent path traversal
+ * inside the storage bucket. The content type is taken from the value
+ * the caller has already validated (e.g. multer's detected mimetype)
+ * rather than sniffing the extension here.
  */
 export async function uploadChatMedia(
   matchId: string,
   filePath: string,
   fileName: string,
+  mimeType: string = FALLBACK_MIME,
 ): Promise<string> {
   try {
-    // Validate file exists and size
-    if (!fs.existsSync(filePath)) {
+    // Strip any directory components from the user-supplied filename
+    const safeName = path.basename(fileName);
+
+    // Validate file exists and size (also serves as existence check)
+    let fileSize: number;
+    try {
+      const stats = await fs.stat(filePath);
+      fileSize = stats.size;
+    } catch {
       throw new Error("File not found");
     }
 
-    const fileSize = fs.statSync(filePath).size;
     if (fileSize > MAX_FILE_SIZE) {
       throw new Error(
         `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`,
       );
     }
 
-    // Read file
-    const fileBuffer = fs.readFileSync(filePath);
+    // Read file asynchronously to avoid blocking the event loop
+    const fileBuffer = await fs.readFile(filePath);
 
     // Generate unique path
     const timestamp = Date.now();
-    const storagePath = `match/${matchId}/${timestamp}-${fileName}`;
+    const storagePath = `match/${matchId}/${timestamp}-${safeName}`;
 
     // Upload to Supabase
     const { data, error } = await supabase.storage
       .from(CHAT_BUCKET)
       .upload(storagePath, fileBuffer, {
-        contentType: getMimeType(fileName),
+        contentType: mimeType || FALLBACK_MIME,
         cacheControl: "3600",
       });
 

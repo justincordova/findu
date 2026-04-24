@@ -182,6 +182,7 @@ export async function uploadMedia(
       match_id,
       file.path,
       file.originalname,
+      file.mimetype,
     );
 
     res.json({ media_url: publicUrl });
