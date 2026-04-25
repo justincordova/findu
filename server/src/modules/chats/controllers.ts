@@ -20,7 +20,10 @@ export async function sendMessage(
   next: NextFunction,
 ) {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { match_id, message, media_url, message_type } = req.body;
 
     const result = await createMessage({
@@ -96,7 +99,10 @@ export async function markAsRead(
   next: NextFunction,
 ) {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { match_id } = req.params;
 
     const count = await markMessagesAsRead(match_id, userId);
@@ -117,7 +123,10 @@ export async function editMessageHandler(
   next: NextFunction,
 ) {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { message_id } = req.params;
     const { message } = req.body;
 
@@ -139,7 +148,10 @@ export async function deleteMessageHandler(
   next: NextFunction,
 ) {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { message_id } = req.params;
 
     const result = await deleteMessage(message_id, userId);
@@ -161,7 +173,10 @@ export async function uploadMedia(
   next: NextFunction,
 ) {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { match_id } = req.params;
     const file = (req as any).file;
 

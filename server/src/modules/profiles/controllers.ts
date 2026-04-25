@@ -11,7 +11,7 @@ import * as profileService from "./services";
  */
 export const createProfileController = async (req: Request, res: Response) => {
   try {
-    const authenticatedUserId = (req as any).user?.id;
+    const authenticatedUserId = req.user?.id;
     if (!authenticatedUserId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
@@ -34,7 +34,7 @@ export const createProfileController = async (req: Request, res: Response) => {
 export const updateProfileController = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const authenticatedUserId = (req as any).user?.id;
+    const authenticatedUserId = req.user?.id;
 
     // Authorization check: user can only update their own profile
     if (authenticatedUserId !== userId) {
@@ -83,7 +83,7 @@ export const getProfileController = async (req: Request, res: Response) => {
 export const deleteProfileController = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const authenticatedUserId = (req as any).user?.id;
+    const authenticatedUserId = req.user?.id;
 
     // Authorization check: user can only delete their own profile
     if (authenticatedUserId !== userId) {
@@ -107,7 +107,10 @@ export const deleteProfileController = async (req: Request, res: Response) => {
  */
 export const getMyProfileController = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
     const profile = await profileService.getProfileByUserId(userId);
 
@@ -127,7 +130,7 @@ export const getMyProfileController = async (req: Request, res: Response) => {
 
 export const domainMapController = async (req: Request, res: Response) => {
   try {
-    const email = (req as any).user?.email || req.body.email;
+    const email = req.user?.email || req.body.email;
 
     if (!email) return res.status(400).json({ error: "Email is required" });
 

@@ -8,7 +8,7 @@ export const createBlock = async (
 ) => {
   try {
     const { blockedId } = req.body;
-    const blockerId = (req as any).user?.id; // Assuming auth middleware populates req.user
+    const blockerId = req.user?.id;
 
     if (!blockerId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -32,7 +32,7 @@ export const unblockUser = async (
 ) => {
   try {
     const { blockedId } = req.params;
-    const blockerId = (req as any).user?.id;
+    const blockerId = req.user?.id;
 
     if (!blockerId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -55,7 +55,7 @@ export const getBlockedUsers = async (
   next: NextFunction,
 ) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });

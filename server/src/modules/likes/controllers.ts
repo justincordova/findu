@@ -8,7 +8,7 @@ import * as LikesService from "./services";
  */
 export const createLike = async (req: Request, res: Response) => {
   try {
-    const authenticatedUserId = (req as any).user?.id;
+    const authenticatedUserId = req.user?.id;
     if (!authenticatedUserId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -55,7 +55,7 @@ export const createLike = async (req: Request, res: Response) => {
  */
 export const getSentLikes = async (req: Request, res: Response) => {
   const { userId } = req.params;
-  const authenticatedUserId = (req as any).user?.id;
+  const authenticatedUserId = req.user?.id;
 
   // Authorization check: user can only view their own sent likes
   if (authenticatedUserId !== userId) {
@@ -78,7 +78,7 @@ export const getSentLikes = async (req: Request, res: Response) => {
  */
 export const getReceivedLikes = async (req: Request, res: Response) => {
   const { userId } = req.params;
-  const authenticatedUserId = (req as any).user?.id;
+  const authenticatedUserId = req.user?.id;
 
   // Authorization check: user can only view their own received likes
   if (authenticatedUserId !== userId) {
@@ -101,7 +101,10 @@ export const getReceivedLikes = async (req: Request, res: Response) => {
  */
 export const deleteLike = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const authenticatedUserId = (req as any).user?.id; // Use authenticated user, not body parameter
+  const authenticatedUserId = req.user?.id;
+  if (!authenticatedUserId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   try {
     await LikesService.removeLike(id, authenticatedUserId);
     return res.status(204).send();

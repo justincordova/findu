@@ -7,7 +7,10 @@ import * as DiscoverService from "./services";
  * GET /discover?limit=10&offset=0
  */
 export const getDiscoverFeed = async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   const limit = parseInt(req.query.limit as string, 10) || 10;
   const offset = parseInt(req.query.offset as string, 10) || 0;
 
@@ -42,7 +45,10 @@ export const getDiscoverFeed = async (req: Request, res: Response) => {
  * GET /discover/candidates
  */
 export const getEligibleCandidates = async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
   try {
     // First get user profile
@@ -80,7 +86,10 @@ export const getEligibleCandidates = async (req: Request, res: Response) => {
  * Body: { candidateId: string }
  */
 export const calculateCompatibility = async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   const { candidateId } = req.body;
 
   if (!candidateId) {
@@ -168,7 +177,10 @@ export const calculateCompatibility = async (req: Request, res: Response) => {
  * POST /discover/refresh
  */
 export const refreshDiscoverFeed = async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
   try {
     await DiscoverService.refreshDiscoverFeed(userId);

@@ -11,7 +11,7 @@ export async function requireAuth(
 ) {
   if (!enableAuth) {
     // Auth disabled → attach mock user for dev/test convenience
-    (req as any).user = {
+    req.user = {
       id: "dev-user",
       email: "dev@example.com",
       role: "developer",
@@ -51,7 +51,7 @@ export async function requireAuth(
     }
 
     // Attach user to request
-    (req as any).user = user;
+    req.user = user;
 
     logger.info("AUTH_SUCCESS", {
       userId: user.id,
