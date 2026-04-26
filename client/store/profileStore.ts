@@ -1,6 +1,6 @@
 import { create } from "zustand";
+import type { Profile } from "@/types/Profile";
 import logger from "../config/logger";
-import { Profile } from "@/types/Profile";
 
 /**
  * State shape for profile setup store
@@ -8,13 +8,22 @@ import { Profile } from "@/types/Profile";
  * Manages profile form data and available campus options during setup
  */
 interface ProfileSetupState {
-  data: Partial<Profile> & { university_name?: string; campus_name?: string } | null;
+  data:
+    | (Partial<Profile> & { university_name?: string; campus_name?: string })
+    | null;
   campuses: { label: string; value: string }[];
-  setProfileField: <K extends keyof (Profile & { university_name?: string; campus_name?: string })>(
+  setProfileField: <
+    K extends keyof (Profile & {
+      university_name?: string;
+      campus_name?: string;
+    }),
+  >(
     key: K,
-    value: (Profile & { university_name?: string; campus_name?: string })[K]
+    value: (Profile & { university_name?: string; campus_name?: string })[K],
   ) => void;
-  setProfileData: (data: Partial<Profile & { university_name?: string; campus_name?: string }>) => void;
+  setProfileData: (
+    data: Partial<Profile & { university_name?: string; campus_name?: string }>,
+  ) => void;
   setCampuses: (campuses: { label: string; value: string }[]) => void;
   reset: () => void;
 }

@@ -1,6 +1,4 @@
-import { PrismaClient } from "@/generated/prisma";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prismaClient";
 
 async function main() {
   console.log("Setting up universities and domains...");

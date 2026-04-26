@@ -1,11 +1,11 @@
 import prisma from "@/lib/prismaClient";
 import {
   createMessage,
-  getChatHistory,
-  markMessagesAsRead,
   deleteMessage,
   editMessage,
+  getChatHistory,
   getLatestMessage,
+  markMessagesAsRead,
 } from "@/modules/chats/services";
 
 // Mock Prisma
@@ -37,7 +37,11 @@ describe("Chat Services", () => {
 
   describe("createMessage", () => {
     it("should create a message for valid match", async () => {
-      const mockMatch = { id: mockMatchId, user1: mockUserId1, user2: mockUserId2 };
+      const mockMatch = {
+        id: mockMatchId,
+        user1: mockUserId1,
+        user2: mockUserId2,
+      };
       const mockMessage = {
         id: mockMessageId,
         match_id: mockMatchId,
@@ -68,7 +72,11 @@ describe("Chat Services", () => {
     });
 
     it("should create a message with media and message type", async () => {
-      const mockMatch = { id: mockMatchId, user1: mockUserId1, user2: mockUserId2 };
+      const mockMatch = {
+        id: mockMatchId,
+        user1: mockUserId1,
+        user2: mockUserId2,
+      };
       const mockMessage = {
         id: mockMessageId,
         match_id: mockMatchId,
@@ -98,7 +106,11 @@ describe("Chat Services", () => {
     });
 
     it("should reject if user not in match", async () => {
-      const mockMatch = { id: mockMatchId, user1: mockUserId1, user2: mockUserId2 };
+      const mockMatch = {
+        id: mockMatchId,
+        user1: mockUserId1,
+        user2: mockUserId2,
+      };
       (prisma.matches.findUnique as jest.Mock).mockResolvedValue(mockMatch);
 
       await expect(
@@ -106,7 +118,7 @@ describe("Chat Services", () => {
           match_id: mockMatchId,
           sender_id: "unauthorized-user",
           message: "Hello",
-        })
+        }),
       ).rejects.toThrow("User not part of this match");
     });
 
@@ -118,12 +130,16 @@ describe("Chat Services", () => {
           match_id: "nonexistent",
           sender_id: mockUserId1,
           message: "Hello",
-        })
+        }),
       ).rejects.toThrow("User not part of this match");
     });
 
     it("should verify Prisma create was called with correct data", async () => {
-      const mockMatch = { id: mockMatchId, user1: mockUserId1, user2: mockUserId2 };
+      const mockMatch = {
+        id: mockMatchId,
+        user1: mockUserId1,
+        user2: mockUserId2,
+      };
       const mockMessage = {
         id: mockMessageId,
         match_id: mockMatchId,
@@ -164,7 +180,7 @@ describe("Chat Services", () => {
             sent_at: true,
             edited_at: true,
           }),
-        })
+        }),
       );
     });
   });
@@ -191,7 +207,7 @@ describe("Chat Services", () => {
             sender_id: { not: mockUserId1 },
             is_read: false,
           }),
-        })
+        }),
       );
     });
 
@@ -206,7 +222,7 @@ describe("Chat Services", () => {
             is_read: true,
             read_at: expect.any(Date),
           }),
-        })
+        }),
       );
     });
 
@@ -250,7 +266,7 @@ describe("Chat Services", () => {
       (prisma.chats.findUnique as jest.Mock).mockResolvedValue(mockMessage);
 
       await expect(deleteMessage(mockMessageId, mockUserId2)).rejects.toThrow(
-        "Unauthorized: can only delete own messages"
+        "Unauthorized: can only delete own messages",
       );
     });
 
@@ -258,7 +274,7 @@ describe("Chat Services", () => {
       (prisma.chats.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(deleteMessage(mockMessageId, mockUserId1)).rejects.toThrow(
-        "Unauthorized: can only delete own messages"
+        "Unauthorized: can only delete own messages",
       );
     });
 
@@ -314,7 +330,9 @@ describe("Chat Services", () => {
       (prisma.chats.findUnique as jest.Mock).mockResolvedValue(mockMessage);
       (prisma.chats.update as jest.Mock).mockResolvedValue(editedMessage);
 
-      const result = await editMessage(mockMessageId, mockUserId1, { message: "Updated" });
+      const result = await editMessage(mockMessageId, mockUserId1, {
+        message: "Updated",
+      });
 
       expect(result.message).toBe("Updated");
       expect(result.edited_at).not.toBeNull();
@@ -326,7 +344,7 @@ describe("Chat Services", () => {
       (prisma.chats.findUnique as jest.Mock).mockResolvedValue(mockMessage);
 
       await expect(
-        editMessage(mockMessageId, mockUserId2, { message: "Updated" })
+        editMessage(mockMessageId, mockUserId2, { message: "Updated" }),
       ).rejects.toThrow("Unauthorized: can only edit own messages");
     });
 
@@ -334,7 +352,7 @@ describe("Chat Services", () => {
       (prisma.chats.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(
-        editMessage(mockMessageId, mockUserId1, { message: "Updated" })
+        editMessage(mockMessageId, mockUserId1, { message: "Updated" }),
       ).rejects.toThrow("Unauthorized: can only edit own messages");
     });
 
@@ -366,7 +384,7 @@ describe("Chat Services", () => {
             message: "Original",
             edited_at: expect.any(Date),
           },
-        })
+        }),
       );
     });
 
@@ -399,7 +417,7 @@ describe("Chat Services", () => {
           data: expect.objectContaining({
             edited_at: expect.any(Date),
           }),
-        })
+        }),
       );
     });
   });
@@ -449,7 +467,7 @@ describe("Chat Services", () => {
       expect(prisma.chats.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           orderBy: { sent_at: "desc" },
-        })
+        }),
       );
     });
 
@@ -461,7 +479,7 @@ describe("Chat Services", () => {
       expect(prisma.chats.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           take: 50,
-        })
+        }),
       );
     });
 
@@ -473,7 +491,7 @@ describe("Chat Services", () => {
       expect(prisma.chats.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           take: 25,
-        })
+        }),
       );
     });
 
@@ -487,7 +505,7 @@ describe("Chat Services", () => {
         expect.objectContaining({
           cursor: { id: cursor },
           skip: 1,
-        })
+        }),
       );
     });
 
@@ -618,7 +636,7 @@ describe("Chat Services", () => {
       expect(prisma.chats.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           orderBy: { sent_at: "desc" },
-        })
+        }),
       );
     });
 

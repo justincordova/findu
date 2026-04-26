@@ -1,5 +1,5 @@
 // React core
-import React, { useCallback } from "react";
+import { useCallback } from "react";
 
 // React Native
 import { StyleSheet, Text, View } from "react-native";
@@ -43,8 +43,14 @@ export default function AgeRangeSlider({
   onAgeRangeChange,
 }: AgeRangeSliderProps) {
   const renderThumb = useCallback(() => <View style={styles.thumb} />, []);
-  const renderRail = useCallback(() => <View style={styles.railBackground} />, []);
-  const renderRailSelected = useCallback(() => <View style={styles.railSelected} />, []);
+  const renderRail = useCallback(
+    () => <View style={styles.railBackground} />,
+    [],
+  );
+  const renderRailSelected = useCallback(
+    () => <View style={styles.railSelected} />,
+    [],
+  );
 
   return (
     <View style={styles.ageRangeContainer}>

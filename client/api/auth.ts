@@ -57,7 +57,7 @@ export const AuthAPI = {
   signup: async (
     email: string,
     password: string,
-    otp: string
+    otp: string,
   ): Promise<SignupResponse> => {
     const res = await fetch(`${API_BASE}/signup`, {
       method: "POST",

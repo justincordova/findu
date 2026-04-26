@@ -1,8 +1,8 @@
 // React Native
-import { StyleSheet, View } from "react-native";
 
 // Navigation
 import { useRouter } from "expo-router";
+import { StyleSheet, View } from "react-native";
 
 // Project imports
 import Button from "@/components/shared/Button";

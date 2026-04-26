@@ -1,6 +1,9 @@
 // React core
-import { useCallback, useEffect, useMemo } from "react";
 
+import { Ionicons } from "@expo/vector-icons";
+// Third-party
+import * as ImagePicker from "expo-image-picker";
+import { useCallback, useEffect, useMemo } from "react";
 // React Native
 import {
   Dimensions,
@@ -10,10 +13,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-// Third-party
-import * as ImagePicker from "expo-image-picker";
-import { Ionicons } from "@expo/vector-icons";
 
 // Project imports
 import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
@@ -31,11 +30,11 @@ interface Step9Props {
 /**
  * Step 9: Photos - upload up to 6 profile photos
  */
-export default function Step9({
-  onValidityChange,
-}: Step9Props) {
+export default function Step9({ onValidityChange }: Step9Props) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
+  const setProfileField = useProfileSetupStore(
+    (state) => state.setProfileField,
+  );
 
   /** Pick multiple photos up to 6 */
   const pickImages = useCallback(async () => {
@@ -43,7 +42,6 @@ export default function Step9({
     if (remaining <= 0) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      // @ts-ignore
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 0.7,
@@ -52,7 +50,10 @@ export default function Step9({
 
     if (!result.canceled && result.assets?.length) {
       const uris = result.assets.map((asset) => asset.uri);
-      setProfileField("photos", [...(profileData?.photos || []), ...uris].slice(0, 6));
+      setProfileField(
+        "photos",
+        [...(profileData?.photos || []), ...uris].slice(0, 6),
+      );
     }
   }, [profileData?.photos, setProfileField]);
 
@@ -63,13 +64,13 @@ export default function Step9({
       updatedPhotos.splice(index, 1);
       setProfileField("photos", updatedPhotos);
     },
-    [profileData?.photos, setProfileField]
+    [profileData?.photos, setProfileField],
   );
 
   /** Step validity: at least 2 photos required */
   const isValid = useMemo(
     () => (profileData?.photos?.length || 0) >= 2,
-    [profileData?.photos]
+    [profileData?.photos],
   );
 
   useEffect(() => {
@@ -85,7 +86,7 @@ export default function Step9({
       <View style={styles.gridContainer}>
         {Array.from({ length: 6 }).map((_, idx) => {
           const photo = (profileData?.photos || [])[idx];
-          
+
           if (photo) {
             // Show photo with remove button
             return (
@@ -113,9 +114,7 @@ export default function Step9({
             );
           } else {
             // Show empty placeholder
-            return (
-              <View key={idx} style={styles.emptySlot} />
-            );
+            return <View key={idx} style={styles.emptySlot} />;
           }
         })}
       </View>

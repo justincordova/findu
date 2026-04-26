@@ -1,6 +1,9 @@
 // React core
-import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { Ionicons } from "@expo/vector-icons";
+// Third-party
+import * as ImagePicker from "expo-image-picker";
+import { useCallback, useEffect, useMemo, useState } from "react";
 // React Native
 import {
   StyleSheet,
@@ -9,10 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-// Third-party
-import * as ImagePicker from "expo-image-picker";
-import { Ionicons } from "@expo/vector-icons";
 
 // Project imports
 import {
@@ -33,11 +32,11 @@ interface Step6Props {
 /**
  * Step 6: Bio and interests - write bio and select interests
  */
-export default function Step6({
-  onValidityChange,
-}: Step6Props) {
+export default function Step6({ onValidityChange }: Step6Props) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
+  const setProfileField = useProfileSetupStore(
+    (state) => state.setProfileField,
+  );
 
   const [photoUploaded, setPhotoUploaded] = useState(false);
 
@@ -64,10 +63,8 @@ export default function Step6({
 
   /** Step validity: require profile picture, bio */
   const isValid = useMemo(
-    () =>
-      !!profileData?.avatar_url &&
-      !!profileData?.bio?.trim(),
-    [profileData?.avatar_url, profileData?.bio]
+    () => !!profileData?.avatar_url && !!profileData?.bio?.trim(),
+    [profileData?.avatar_url, profileData?.bio],
   );
 
   useEffect(() => {
@@ -77,53 +74,49 @@ export default function Step6({
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Profile Details</Text>
-      <Text style={styles.subtitle}>
-        Add a bio and profile picture
-      </Text>
+      <Text style={styles.subtitle}>Add a bio and profile picture</Text>
 
-        {/* Profile Picture */}
-        <View style={styles.fieldContainer}>
-          <View style={styles.labelWithCheckmark}>
-            <Text style={styles.label}>Profile Picture</Text>
-            {profileData?.avatar_url && (
-              <View style={styles.checkmarkBadge}>
-                <Ionicons name="checkmark-circle" size={18} color={SUCCESS} />
-              </View>
-            )}
-          </View>
-          <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-            <Ionicons name="camera" size={20} color="white" />
-            <Text style={styles.uploadButtonText}>
-              {profileData?.avatar_url ? "Change Photo" : "Upload Photo"}
-            </Text>
-          </TouchableOpacity>
-          {photoUploaded && (
-            <Text style={styles.uploadSuccess}>Uploaded ✓</Text>
+      {/* Profile Picture */}
+      <View style={styles.fieldContainer}>
+        <View style={styles.labelWithCheckmark}>
+          <Text style={styles.label}>Profile Picture</Text>
+          {profileData?.avatar_url && (
+            <View style={styles.checkmarkBadge}>
+              <Ionicons name="checkmark-circle" size={18} color={SUCCESS} />
+            </View>
           )}
         </View>
-
-        {/* Bio */}
-        <View style={styles.fieldContainer}>
-          <View style={styles.labelWithCheckmark}>
-            <Text style={styles.label}>Bio</Text>
-          </View>
-          <TextInput
-            style={[
-              styles.bioInput,
-              profileData?.bio?.trim() && styles.bioInputCompleted,
-            ]}
-            placeholder="Tell us about yourself..."
-            value={profileData?.bio ?? ""}
-            onChangeText={(text) => setProfileField("bio", text)}
-            multiline
-            maxLength={500}
-            placeholderTextColor={MUTED}
-            returnKeyType="default"
-          />
-          <Text style={styles.characterCount}>
-            {(profileData?.bio ?? "").length}/500
+        <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
+          <Ionicons name="camera" size={20} color="white" />
+          <Text style={styles.uploadButtonText}>
+            {profileData?.avatar_url ? "Change Photo" : "Upload Photo"}
           </Text>
+        </TouchableOpacity>
+        {photoUploaded && <Text style={styles.uploadSuccess}>Uploaded ✓</Text>}
+      </View>
+
+      {/* Bio */}
+      <View style={styles.fieldContainer}>
+        <View style={styles.labelWithCheckmark}>
+          <Text style={styles.label}>Bio</Text>
         </View>
+        <TextInput
+          style={[
+            styles.bioInput,
+            profileData?.bio?.trim() && styles.bioInputCompleted,
+          ]}
+          placeholder="Tell us about yourself..."
+          value={profileData?.bio ?? ""}
+          onChangeText={(text) => setProfileField("bio", text)}
+          multiline
+          maxLength={500}
+          placeholderTextColor={MUTED}
+          returnKeyType="default"
+        />
+        <Text style={styles.characterCount}>
+          {(profileData?.bio ?? "").length}/500
+        </Text>
+      </View>
     </View>
   );
 }

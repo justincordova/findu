@@ -1,6 +1,8 @@
 // React core
-import { useCallback, useEffect, useMemo, useState } from "react";
 
+// Third-party
+import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useEffect, useMemo, useState } from "react";
 // React Native
 import {
   Keyboard,
@@ -11,16 +13,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-// Third-party
-import { Ionicons } from "@expo/vector-icons";
-import { ItemType } from "react-native-dropdown-picker";
-
+import type { ItemType } from "react-native-dropdown-picker";
+import SearchableModal from "@/components/shared/SearchableModal";
 // Project imports
 import { BACKGROUND, DARK, MUTED, PRIMARY, SECONDARY } from "@/constants/theme";
-import { useProfileSetupStore } from "@/store/profileStore";
 import { useConstantsStore } from "@/store/constantsStore";
-import SearchableModal from "@/components/shared/SearchableModal";
+import { useProfileSetupStore } from "@/store/profileStore";
 
 // Types
 interface Step7Props {
@@ -58,7 +56,7 @@ const POPULAR_INTERESTS_UNBIASED = [
 export default function Step7({ onValidityChange }: Step7Props) {
   const profileData = useProfileSetupStore((state) => state.data);
   const setProfileField = useProfileSetupStore(
-    (state) => state.setProfileField
+    (state) => state.setProfileField,
   );
   const constants = useConstantsStore((state) => state.constants);
 
@@ -67,7 +65,7 @@ export default function Step7({ onValidityChange }: Step7Props) {
   const [expandedCategories, setExpandedCategories] =
     useState<ExpandedCategories>({});
   const [categoryPages, setCategoryPages] = useState<Record<string, number>>(
-    {}
+    {},
   );
 
   const ITEMS_PER_PAGE = 6;
@@ -94,7 +92,7 @@ export default function Step7({ onValidityChange }: Step7Props) {
       });
     });
     return allInterests.sort((a, b) =>
-      (a.label || "").localeCompare(b.label || "")
+      (a.label || "").localeCompare(b.label || ""),
     );
   }, [organizedInterests]);
 
@@ -106,7 +104,7 @@ export default function Step7({ onValidityChange }: Step7Props) {
       const startIdx = page * ITEMS_PER_PAGE;
       return allInterests.slice(startIdx, startIdx + ITEMS_PER_PAGE);
     },
-    [organizedInterests, categoryPages]
+    [organizedInterests, categoryPages],
   );
 
   const getTotalPages = useCallback(
@@ -114,7 +112,7 @@ export default function Step7({ onValidityChange }: Step7Props) {
       const allInterests = organizedInterests[category] || [];
       return Math.ceil(allInterests.length / ITEMS_PER_PAGE);
     },
-    [organizedInterests]
+    [organizedInterests],
   );
 
   const toggleCategory = useCallback(
@@ -128,7 +126,7 @@ export default function Step7({ onValidityChange }: Step7Props) {
         setCategoryPages((prev) => ({ ...prev, [category]: 0 }));
       }
     },
-    [expandedCategories]
+    [expandedCategories],
   );
 
   const nextPage = useCallback(
@@ -139,7 +137,7 @@ export default function Step7({ onValidityChange }: Step7Props) {
         setCategoryPages((prev) => ({ ...prev, [category]: currentPage + 1 }));
       }
     },
-    [categoryPages, getTotalPages]
+    [categoryPages, getTotalPages],
   );
 
   const prevPage = useCallback(
@@ -149,7 +147,7 @@ export default function Step7({ onValidityChange }: Step7Props) {
         setCategoryPages((prev) => ({ ...prev, [category]: currentPage - 1 }));
       }
     },
-    [categoryPages]
+    [categoryPages],
   );
 
   const addInterest = useCallback(
@@ -166,27 +164,27 @@ export default function Step7({ onValidityChange }: Step7Props) {
       setInterestInput("");
       Keyboard.dismiss();
     },
-    [profileData?.interests, setProfileField]
+    [profileData?.interests, setProfileField],
   );
 
   const removeInterest = useCallback(
     (item: string) => {
       setProfileField(
         "interests",
-        (profileData?.interests || []).filter((i) => i !== item)
+        (profileData?.interests || []).filter((i) => i !== item),
       );
     },
-    [profileData?.interests, setProfileField]
+    [profileData?.interests, setProfileField],
   );
 
   const isInterestSelected = useCallback(
     (interest: string) => profileData?.interests?.includes(interest),
-    [profileData?.interests]
+    [profileData?.interests],
   );
 
   const isValid = useMemo(
     () => (profileData?.interests?.length || 0) > 0,
-    [profileData?.interests]
+    [profileData?.interests],
   );
 
   useEffect(() => {
@@ -234,9 +232,7 @@ export default function Step7({ onValidityChange }: Step7Props) {
               <TouchableOpacity
                 key={interest}
                 onPress={() =>
-                  isSelected
-                    ? removeInterest(interest)
-                    : addInterest(interest)
+                  isSelected ? removeInterest(interest) : addInterest(interest)
                 }
                 style={[
                   styles.pill,
@@ -326,35 +322,34 @@ export default function Step7({ onValidityChange }: Step7Props) {
                   <View style={styles.expandedItemsContainer}>
                     {paginatedInterests.map((interest) => {
                       const isSelected = isInterestSelected(interest);
-                      const isAtLimit = (profileData?.interests?.length || 0) >= 10;
+                      const isAtLimit =
+                        (profileData?.interests?.length || 0) >= 10;
                       const isDisabled = !isSelected && isAtLimit;
                       return (
-                      <TouchableOpacity
-                        key={interest}
-                        onPress={() =>
-                          isSelected
-                            ? removeInterest(interest)
-                            : addInterest(interest)
-                        }
-                        disabled={isDisabled}
-                        style={[
-                          styles.categoryItem,
-                          isSelected &&
-                            styles.categoryItemSelected,
-                          isDisabled && styles.categoryItemDisabled,
-                        ]}
-                      >
-                        <Text
+                        <TouchableOpacity
+                          key={interest}
+                          onPress={() =>
+                            isSelected
+                              ? removeInterest(interest)
+                              : addInterest(interest)
+                          }
+                          disabled={isDisabled}
                           style={[
-                            styles.categoryItemText,
-                            isSelected &&
-                              styles.categoryItemTextSelected,
-                            isDisabled && styles.categoryItemTextDisabled,
+                            styles.categoryItem,
+                            isSelected && styles.categoryItemSelected,
+                            isDisabled && styles.categoryItemDisabled,
                           ]}
                         >
-                          {interest}
-                        </Text>
-                      </TouchableOpacity>
+                          <Text
+                            style={[
+                              styles.categoryItemText,
+                              isSelected && styles.categoryItemTextSelected,
+                              isDisabled && styles.categoryItemTextDisabled,
+                            ]}
+                          >
+                            {interest}
+                          </Text>
+                        </TouchableOpacity>
                       );
                     })}
 
@@ -404,7 +399,9 @@ export default function Step7({ onValidityChange }: Step7Props) {
                             name="chevron-forward"
                             size={16}
                             color={
-                              currentPage >= totalPages - 1 ? "#d1d5db" : PRIMARY
+                              currentPage >= totalPages - 1
+                                ? "#d1d5db"
+                                : PRIMARY
                             }
                           />
                         </Pressable>

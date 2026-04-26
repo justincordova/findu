@@ -1,11 +1,16 @@
 // React core
-import React from "react";
-
-// React Native
-import { DimensionValue, StyleSheet, Text, TextStyle, TouchableOpacity, ViewStyle } from "react-native";
 
 // Expo
 import { LinearGradient } from "expo-linear-gradient";
+// React Native
+import {
+  type DimensionValue,
+  StyleSheet,
+  Text,
+  type TextStyle,
+  TouchableOpacity,
+  type ViewStyle,
+} from "react-native";
 
 // Project imports
 import { GRADIENT, MUTED, PRIMARY } from "@/constants/theme";
@@ -52,12 +57,21 @@ export default function Button({
   if (type === "gradient") {
     return (
       <TouchableOpacity
-        style={[styles.gradientWrapper, buttonStyle, style, disabled && styles.disabledWrapper]}
+        style={[
+          styles.gradientWrapper,
+          buttonStyle,
+          style,
+          disabled && styles.disabledWrapper,
+        ]}
         onPress={onPress}
         disabled={disabled} // prevent press
       >
         <LinearGradient
-          colors={disabled ? [MUTED, MUTED] : ([...GRADIENT] as [string, string, ...string[]])}
+          colors={
+            disabled
+              ? [MUTED, MUTED]
+              : ([...GRADIENT] as [string, string, ...string[]])
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[styles.gradientBtn, buttonStyle]}
@@ -79,7 +93,13 @@ export default function Button({
       onPress={onPress}
       disabled={disabled}
     >
-      <Text style={[styles.outlineText, { color: disabled ? MUTED : outlineColor }, textStyle]}>
+      <Text
+        style={[
+          styles.outlineText,
+          { color: disabled ? MUTED : outlineColor },
+          textStyle,
+        ]}
+      >
         {label}
       </Text>
     </TouchableOpacity>

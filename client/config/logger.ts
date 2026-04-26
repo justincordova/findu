@@ -1,5 +1,9 @@
-import { logger as createLoggerFn, consoleTransport, fileAsyncTransport } from "react-native-logs";
 import * as FileSystem from "expo-file-system";
+import {
+  consoleTransport,
+  logger as createLoggerFn,
+  fileAsyncTransport,
+} from "react-native-logs";
 
 const consoleColors = {
   debug: "cyanBright",
@@ -13,16 +17,14 @@ const consoleColors = {
 const documentDir = FileSystem.Paths.document.uri;
 
 // Simple transport: use console in dev, file in production
-const transport = __DEV__
-  ? consoleTransport
-  : fileAsyncTransport;
+const transport = __DEV__ ? consoleTransport : fileAsyncTransport;
 
 const baseLogger = createLoggerFn.createLogger({
   levels: {
     debug: 0,
     info: 1,
     warn: 2,
-    error: 3
+    error: 3,
   },
   severity: __DEV__ ? "debug" : "error",
   transport,

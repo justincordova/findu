@@ -12,4 +12,4 @@ export const GENDER_PREFERENCES = [
   "All",
 ] as const;
 
-export type GenderPreference = typeof GENDER_PREFERENCES[number];
+export type GenderPreference = (typeof GENDER_PREFERENCES)[number];

@@ -5,7 +5,7 @@ export interface User {
 }
 
 export interface AuthState {
-  userId: string | null; 
+  userId: string | null;
   email: string | null;
   token: string | null;
   isLoading: boolean;
@@ -17,5 +17,3 @@ export interface AuthState {
   setLoggedIn: (isLoggedIn: boolean) => void;
   reset: () => void;
 }
-
-

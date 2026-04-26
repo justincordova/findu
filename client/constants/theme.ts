@@ -6,15 +6,15 @@ const GRADIENT = [
   "#B56DFF", // pinkish violet for balance
 ] as const;
 
-const PRIMARY = "#A855F7";      // Main Purple (matches your button color)
-const SECONDARY = "#E9D5FF";    // Soft Lavender (for borders, secondary UI)
-const ACCENT = "#9333EA";       // Deeper Violet (strong CTA / highlights)
-const DARK = "#1E1E1E";         // Neutral dark for text
-const MUTED = "#6B7280";        // Muted gray for secondary text
-const BACKGROUND = "#F5F3FF";   // Very light lavender background
-const SUCCESS = "#4ADE80";      // Fresh green
-const WARNING = "#FACC15";      // Warm yellow
-const DANGER = "#EF4444";       // Softer red
+const PRIMARY = "#A855F7"; // Main Purple (matches your button color)
+const SECONDARY = "#E9D5FF"; // Soft Lavender (for borders, secondary UI)
+const ACCENT = "#9333EA"; // Deeper Violet (strong CTA / highlights)
+const DARK = "#1E1E1E"; // Neutral dark for text
+const MUTED = "#6B7280"; // Muted gray for secondary text
+const BACKGROUND = "#F5F3FF"; // Very light lavender background
+const SUCCESS = "#4ADE80"; // Fresh green
+const WARNING = "#FACC15"; // Warm yellow
+const DANGER = "#EF4444"; // Softer red
 
 export const theme = {
   colors: {
@@ -37,7 +37,18 @@ export const theme = {
 };
 
 // Export individual colors for backward compatibility
-export { PRIMARY, SECONDARY, ACCENT as ACCENT, DARK, MUTED, BACKGROUND, SUCCESS, WARNING, DANGER, GRADIENT };
+export {
+  ACCENT,
+  BACKGROUND,
+  DANGER,
+  DARK,
+  GRADIENT,
+  MUTED,
+  PRIMARY,
+  SECONDARY,
+  SUCCESS,
+  WARNING,
+};
 
 // Additional backward-compatible exports
 export const TEXT_PRIMARY = DARK;

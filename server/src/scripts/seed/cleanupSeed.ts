@@ -1,7 +1,5 @@
-import { PrismaClient } from "@/generated/prisma";
+import prisma from "@/lib/prismaClient";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-
-const prisma = new PrismaClient();
 
 async function main() {
   console.log("Start cleanup...");
@@ -32,12 +30,19 @@ async function main() {
   await Promise.all(
     users.map(async (user) => {
       try {
-        const { data: files } = await supabaseAdmin.storage.from("profiles").list(user.id);
+        const { data: files } = await supabaseAdmin.storage
+          .from("profiles")
+          .list(user.id);
         if (files && files.length > 0) {
           const paths = files.map((f) => `${user.id}/${f.name}`);
-          const { error: storageError } = await supabaseAdmin.storage.from("profiles").remove(paths);
+          const { error: storageError } = await supabaseAdmin.storage
+            .from("profiles")
+            .remove(paths);
           if (storageError) {
-            console.error(`Failed to delete storage for ${user.email}:`, storageError);
+            console.error(
+              `Failed to delete storage for ${user.email}:`,
+              storageError,
+            );
           } else {
             console.log(`Deleted storage for ${user.email}`);
           }
@@ -45,7 +50,7 @@ async function main() {
       } catch (e) {
         console.error(`Error deleting storage for ${user.email}:`, e);
       }
-    })
+    }),
   );
 
   // Step 2: Bulk delete from Prisma

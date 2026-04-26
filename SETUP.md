@@ -4,7 +4,7 @@
 
 ### **Prerequisites**
 
-- Node.js 18+
+- Node.js 22+
 - Expo CLI
 - Supabase account
 - Stripe account (for payments)

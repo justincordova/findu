@@ -12,4 +12,4 @@ export const PRONOUNS = [
   "other",
 ] as const;
 
-export type Pronoun = typeof PRONOUNS[number];
+export type Pronoun = (typeof PRONOUNS)[number];

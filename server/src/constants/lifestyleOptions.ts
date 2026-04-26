@@ -11,7 +11,7 @@ export const DRINKING = [
   "On occasion",
   "Socially",
   "On weekends",
-  "Most nights"
+  "Most nights",
 ] as const;
 
 export const SMOKING = [
@@ -19,21 +19,16 @@ export const SMOKING = [
   "Smokes when drinking",
   "Social smoker",
   "Smoker",
-  "Trying to quit"
+  "Trying to quit",
 ] as const;
 
-export const CANNABIS = [
-  "Never",
-  "Socially",
-  "Occasionally",
-  "Yes"
-] as const;
+export const CANNABIS = ["Never", "Socially", "Occasionally", "Yes"] as const;
 
 export const SLEEP_HABITS = [
   "Early bird",
   "Night owl",
   "Irregular / random",
-  "Depends on workload"
+  "Depends on workload",
 ] as const;
 
 export const PETS = [
@@ -49,7 +44,7 @@ export const PETS = [
   "Don't have but love pets",
   "Allergic",
   "Don't like pets",
-  "Want a pet"
+  "Want a pet",
 ] as const;
 
 export const DIETARY_PREFERENCES = [
@@ -60,7 +55,7 @@ export const DIETARY_PREFERENCES = [
   "Pescatarian",
   "Kosher",
   "Halal",
-  "Other"
+  "Other",
 ] as const;
 
 export const STUDY_STYLE = [
@@ -70,7 +65,7 @@ export const STUDY_STYLE = [
   "Solo",
   "Last-minute crammer",
   "Consistent planner",
-  "I don't study"
+  "I don't study",
 ] as const;
 
 export const CLEANLINESS = [
@@ -78,14 +73,14 @@ export const CLEANLINESS = [
   "Pretty tidy",
   "Average",
   "A bit messy",
-  "Chaotic but functional"
+  "Chaotic but functional",
 ] as const;
 
 export const CAFFEINE = [
   "No caffeine",
   "Occasional caffeine",
   "Daily coffee/tea",
-  "I run on caffeine"
+  "I run on caffeine",
 ] as const;
 
 export const LIVING_SITUATION = [
@@ -95,7 +90,7 @@ export const LIVING_SITUATION = [
   "With roommates",
   "Living alone",
   "Commuter student",
-  "With family"
+  "With family",
 ] as const;
 
 export const FITNESS = [
@@ -104,7 +99,7 @@ export const FITNESS = [
   "Casual gym-goer",
   "Active lifestyle",
   "Gym regular",
-  "Athlete"
+  "Athlete",
 ] as const;
 
 /**
@@ -121,18 +116,18 @@ export const LIFESTYLE_OPTIONS = {
   cleanliness: CLEANLINESS,
   caffeine: CAFFEINE,
   livingSituation: LIVING_SITUATION,
-  fitness: FITNESS
+  fitness: FITNESS,
 } as const;
 
 // TypeScript types
-export type DrinkingOption = typeof DRINKING[number];
-export type SmokingOption = typeof SMOKING[number];
-export type CannabisOption = typeof CANNABIS[number];
-export type SleepHabitsOption = typeof SLEEP_HABITS[number];
-export type PetsOption = typeof PETS[number];
-export type DietaryPreferencesOption = typeof DIETARY_PREFERENCES[number];
-export type StudyStyleOption = typeof STUDY_STYLE[number];
-export type CleanlinessOption = typeof CLEANLINESS[number];
-export type CaffeineOption = typeof CAFFEINE[number];
-export type LivingSituationOption = typeof LIVING_SITUATION[number];
-export type FitnessOption = typeof FITNESS[number];
+export type DrinkingOption = (typeof DRINKING)[number];
+export type SmokingOption = (typeof SMOKING)[number];
+export type CannabisOption = (typeof CANNABIS)[number];
+export type SleepHabitsOption = (typeof SLEEP_HABITS)[number];
+export type PetsOption = (typeof PETS)[number];
+export type DietaryPreferencesOption = (typeof DIETARY_PREFERENCES)[number];
+export type StudyStyleOption = (typeof STUDY_STYLE)[number];
+export type CleanlinessOption = (typeof CLEANLINESS)[number];
+export type CaffeineOption = (typeof CAFFEINE)[number];
+export type LivingSituationOption = (typeof LIVING_SITUATION)[number];
+export type FitnessOption = (typeof FITNESS)[number];

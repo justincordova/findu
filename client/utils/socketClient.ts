@@ -1,7 +1,7 @@
-import { io, Socket } from "socket.io-client";
+import { io, type Socket } from "socket.io-client";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
-import { ChatMessage } from "@/types/chat";
+import type { ChatMessage } from "@/types/chat";
 
 let socket: Socket | null = null;
 
@@ -53,7 +53,18 @@ export function initializeSocket(): Socket | null {
     socket.off("message_received");
     socket.on("message_received", (data: any) => {
       try {
-        const { match_id, sender_id, message, media_url, message_type, sent_at, id, is_read, read_at, edited_at } = data;
+        const {
+          match_id,
+          sender_id,
+          message,
+          media_url,
+          message_type,
+          sent_at,
+          id,
+          is_read,
+          read_at,
+          edited_at,
+        } = data;
         console.log("Socket received message:", { id, match_id });
 
         const chatMessage: ChatMessage = {
@@ -199,7 +210,7 @@ export function sendMessageSocket(
   matchId: string,
   message: string,
   mediaUrl?: string,
-  messageType: "TEXT" | "IMAGE" | "VIDEO" = "TEXT"
+  messageType: "TEXT" | "IMAGE" | "VIDEO" = "TEXT",
 ): void {
   if (!socket) {
     console.error("Socket not initialized");
@@ -227,7 +238,10 @@ export function sendMessageSocket(
   }
 
   try {
-    console.log("Sending message via socket:", { matchId, messagePreview: message?.substring(0, 20) });
+    console.log("Sending message via socket:", {
+      matchId,
+      messagePreview: message?.substring(0, 20),
+    });
     socket.emit("message_send", {
       matchId,
       message,

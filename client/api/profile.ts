@@ -1,7 +1,6 @@
 import axios from "axios";
-import { Profile } from "@/types/Profile";
 import { useAuthStore } from "@/store/authStore";
-import { getErrorMessage } from "./utils";
+import type { Profile } from "@/types/Profile";
 
 const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/profiles`;
 
@@ -47,9 +46,13 @@ export const profileApi = {
    */
   update: async (userId: string, data: Partial<Profile>) => {
     const headers = getAuthHeaders();
-    const { data: profileData } = await axios.patch(`${API_BASE}/${userId}`, data, {
-      headers,
-    });
+    const { data: profileData } = await axios.patch(
+      `${API_BASE}/${userId}`,
+      data,
+      {
+        headers,
+      },
+    );
     return profileData;
   },
 
@@ -60,7 +63,9 @@ export const profileApi = {
    */
   get: async (userId: string) => {
     const headers = getAuthHeaders();
-    const { data: profileData } = await axios.get(`${API_BASE}/${userId}`, { headers });
+    const { data: profileData } = await axios.get(`${API_BASE}/${userId}`, {
+      headers,
+    });
     return profileData;
   },
 
@@ -71,7 +76,9 @@ export const profileApi = {
    */
   delete: async (userId: string) => {
     const headers = getAuthHeaders();
-    const { data: profileData } = await axios.delete(`${API_BASE}/${userId}`, { headers });
+    const { data: profileData } = await axios.delete(`${API_BASE}/${userId}`, {
+      headers,
+    });
     return profileData;
   },
 
@@ -81,7 +88,9 @@ export const profileApi = {
    */
   me: async () => {
     const headers = getAuthHeaders();
-    const { data: profileData } = await axios.get(`${API_BASE}/me`, { headers });
+    const { data: profileData } = await axios.get(`${API_BASE}/me`, {
+      headers,
+    });
     return profileData;
   },
 
@@ -96,7 +105,7 @@ export const profileApi = {
     const { data: domainData } = await axios.post<DomainMapResponse>(
       `${API_BASE}/domain-map`,
       { email },
-      { headers }
+      { headers },
     );
     return domainData;
   },

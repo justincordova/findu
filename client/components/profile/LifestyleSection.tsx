@@ -1,6 +1,8 @@
 // React core
-import { useCallback, useMemo, useState } from "react";
 
+// Third-party
+import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useMemo, useState } from "react";
 // React Native
 import {
   Alert,
@@ -13,19 +15,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-// Third-party
-import { Ionicons } from "@expo/vector-icons";
-
-// Project imports
-import { profileStyles } from "./shared/profileStyles";
-import { useProfile } from "@/contexts/ProfileContext";
-import { useAuthStore } from "@/store/authStore";
-import { useConstantsStore } from "@/store/constantsStore";
 import { profileApi } from "@/api/profile";
 import logger from "@/config/logger";
 import { PRIMARY } from "@/constants/theme";
-import { Lifestyle } from "@/types/Lifestyle";
+import { useProfile } from "@/contexts/ProfileContext";
+import { useAuthStore } from "@/store/authStore";
+import { useConstantsStore } from "@/store/constantsStore";
+import type { Lifestyle } from "@/types/Lifestyle";
+// Project imports
+import { profileStyles } from "./shared/profileStyles";
 
 /**
  * LifestyleSection Component
@@ -48,12 +46,14 @@ export default function LifestyleSection() {
   // Display lifestyle data
   const lifestyle = useMemo(
     () => (profile?.lifestyle as Lifestyle | undefined) || {},
-    [profile?.lifestyle]
+    [profile?.lifestyle],
   );
 
   // Modal and dropdown state
   const [mainModalVisible, setMainModalVisible] = useState(false);
-  const [activeDropdowns, setActiveDropdowns] = useState<Record<string, boolean>>({});
+  const [activeDropdowns, setActiveDropdowns] = useState<
+    Record<string, boolean>
+  >({});
   const [editingLifestyle, setEditingLifestyle] = useState<Lifestyle>({});
   const [isSaving, setIsSaving] = useState(false);
 
@@ -80,7 +80,7 @@ export default function LifestyleSection() {
       },
       { key: "fitness" as const, label: "Fitness", type: "single" },
     ],
-    []
+    [],
   );
 
   // Get options for a field from constants
@@ -102,9 +102,13 @@ export default function LifestyleSection() {
 
       const constantKey = fieldToConstant[field];
       if (!constantKey || !constants?.lifestyleOptions) return [];
-      return ((constants.lifestyleOptions as Record<string, readonly string[]>)[constantKey] as string[]) || [];
+      return (
+        ((constants.lifestyleOptions as Record<string, readonly string[]>)[
+          constantKey
+        ] as string[]) || []
+      );
     },
-    [constants]
+    [constants],
   );
 
   // Open modal and initialize editing state
@@ -128,13 +132,16 @@ export default function LifestyleSection() {
   }, []);
 
   // Handle single-select field change
-  const handleSelectField = useCallback((field: keyof Lifestyle, value: string) => {
-    setEditingLifestyle((prev) => ({
-      ...prev,
-      [field]: value.length > 0 ? value : undefined,
-    }));
-    setActiveDropdowns((prev) => ({ ...prev, [field]: false }));
-  }, []);
+  const handleSelectField = useCallback(
+    (field: keyof Lifestyle, value: string) => {
+      setEditingLifestyle((prev) => ({
+        ...prev,
+        [field]: value.length > 0 ? value : undefined,
+      }));
+      setActiveDropdowns((prev) => ({ ...prev, [field]: false }));
+    },
+    [],
+  );
 
   // Handle multi-select field change
   const handleToggleMultiField = useCallback(
@@ -154,7 +161,7 @@ export default function LifestyleSection() {
         };
       });
     },
-    []
+    [],
   );
 
   /**
@@ -172,7 +179,10 @@ export default function LifestyleSection() {
       logger.debug("Saving lifestyle", { userId, lifestyle: editingLifestyle });
 
       await profileApi.update(userId, {
-        lifestyle: Object.keys(editingLifestyle).length > 0 ? editingLifestyle : undefined,
+        lifestyle:
+          Object.keys(editingLifestyle).length > 0
+            ? editingLifestyle
+            : undefined,
       });
 
       logger.info("Lifestyle updated successfully", {
@@ -212,7 +222,8 @@ export default function LifestyleSection() {
 
         {/* Info Grid - Display only filled fields, or N/A if none */}
         <View style={profileStyles.infoGrid}>
-          {lifestyleFields.filter((field) => lifestyle[field.key] !== undefined).length > 0 ? (
+          {lifestyleFields.filter((field) => lifestyle[field.key] !== undefined)
+            .length > 0 ? (
             lifestyleFields
               .filter((field) => lifestyle[field.key] !== undefined)
               .map((field) => {
@@ -223,20 +234,34 @@ export default function LifestyleSection() {
 
                 return (
                   <View key={field.key} style={profileStyles.infoItem}>
-                    <Ionicons name="ellipsis-horizontal-outline" size={20} color={PRIMARY} style={{ opacity: 1 }} />
+                    <Ionicons
+                      name="ellipsis-horizontal-outline"
+                      size={20}
+                      color={PRIMARY}
+                      style={{ opacity: 1 }}
+                    />
                     <View style={profileStyles.infoTextContainer}>
                       <Text style={profileStyles.infoLabel}>{field.label}</Text>
-                      <Text style={profileStyles.infoValue}>{displayValue}</Text>
+                      <Text style={profileStyles.infoValue}>
+                        {displayValue}
+                      </Text>
                     </View>
                   </View>
                 );
               })
           ) : (
             <View style={profileStyles.infoItem}>
-              <Ionicons name="ellipsis-horizontal-outline" size={20} color={PRIMARY} style={{ opacity: 1 }} />
+              <Ionicons
+                name="ellipsis-horizontal-outline"
+                size={20}
+                color={PRIMARY}
+                style={{ opacity: 1 }}
+              />
               <View style={profileStyles.infoTextContainer}>
                 <Text style={profileStyles.infoLabel}>Lifestyle</Text>
-                <Text style={[profileStyles.infoValue, { color: "#999" }]}>N/A</Text>
+                <Text style={[profileStyles.infoValue, { color: "#999" }]}>
+                  N/A
+                </Text>
               </View>
             </View>
           )}
@@ -284,7 +309,9 @@ export default function LifestyleSection() {
 
                   return (
                     <View key={fieldConfig.key} style={profileStyles.formField}>
-                      <Text style={profileStyles.formLabel}>{fieldConfig.label}</Text>
+                      <Text style={profileStyles.formLabel}>
+                        {fieldConfig.label}
+                      </Text>
 
                       {/* Unified dropdown for all field types */}
                       <TouchableOpacity
@@ -326,13 +353,19 @@ export default function LifestyleSection() {
                                 style={profileStyles.dropdownOption}
                                 onPress={() => {
                                   if (isMultiSelect) {
-                                    handleToggleMultiField(fieldConfig.key, option);
+                                    handleToggleMultiField(
+                                      fieldConfig.key,
+                                      option,
+                                    );
                                   } else {
                                     // For single-select: click again to deselect
                                     if (isSelected) {
                                       handleSelectField(fieldConfig.key, "");
                                     } else {
-                                      handleSelectField(fieldConfig.key, option);
+                                      handleSelectField(
+                                        fieldConfig.key,
+                                        option,
+                                      );
                                     }
                                     setActiveDropdowns((prev) => ({
                                       ...prev,

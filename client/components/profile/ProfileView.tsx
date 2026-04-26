@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -9,15 +9,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { profileApi } from "@/api/profile";
-import { ProfileContext } from "@/contexts/ProfileContext";
-import UserInfoSection from "@/components/profile/UserInfoSection";
-import PhotosSection from "@/components/profile/PhotosSection";
+import AcademicSection from "@/components/profile/AcademicSection";
 import BioSection from "@/components/profile/BioSection";
 import InterestsSection from "@/components/profile/InterestsSection";
-import AcademicSection from "@/components/profile/AcademicSection";
-import PreferencesSection from "@/components/profile/PreferencesSection";
 import LifestyleSection from "@/components/profile/LifestyleSection";
+import PhotosSection from "@/components/profile/PhotosSection";
+import PreferencesSection from "@/components/profile/PreferencesSection";
+import UserInfoSection from "@/components/profile/UserInfoSection";
 import logger from "@/config/logger";
+import { ProfileContext } from "@/contexts/ProfileContext";
 
 interface ProfileViewProps {
   userId: string;
@@ -76,7 +76,7 @@ export default function ProfileView({
   // Reset hasLoaded when userId changes to allow re-fetching for different users
   useEffect(() => {
     hasLoadedRef.current = false;
-  }, [userId]);
+  }, []);
 
   if (loading && !profileData) {
     return (

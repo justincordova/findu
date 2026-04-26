@@ -1,10 +1,10 @@
-import { Profile } from "@/types/Profile";
 import logger from "@/config/logger";
 import prisma from "@/lib/prismaClient";
+import type { Profile } from "@/types/Profile";
 
 const sanitizeData = <T extends object>(data: T): Partial<T> => {
   return Object.fromEntries(
-    Object.entries(data).filter(([_, v]) => v !== undefined)
+    Object.entries(data).filter(([_, v]) => v !== undefined),
   ) as Partial<T>;
 };
 
@@ -17,7 +17,11 @@ const sanitizeData = <T extends object>(data: T): Partial<T> => {
  */
 export const createProfile = async (profileData: Profile): Promise<Profile> => {
   try {
-    const { created_at: _created, updated_at: _updated, ...inputData } = profileData;
+    const {
+      created_at: _created,
+      updated_at: _updated,
+      ...inputData
+    } = profileData;
     const profile = await prisma.profiles.create({
       data: {
         ...inputData,
@@ -44,7 +48,7 @@ export const createProfile = async (profileData: Profile): Promise<Profile> => {
  */
 export const updateProfile = async (
   userId: string,
-  profileData: Partial<Profile> = {}
+  profileData: Partial<Profile> = {},
 ): Promise<Profile | null> => {
   try {
     return await prisma.$transaction(async (tx) => {
@@ -86,8 +90,10 @@ export const updateProfile = async (
  * @throws If the database operation fails.
  */
 export const getProfileByUserId = async (
-  userId: string
-): Promise<(Profile & { university_name?: string; campus_name?: string }) | null> => {
+  userId: string,
+): Promise<
+  (Profile & { university_name?: string; campus_name?: string }) | null
+> => {
   try {
     const profile = await prisma.profiles.findUnique({
       where: { user_id: userId },
@@ -144,7 +150,6 @@ export const deleteProfile = async (userId: string): Promise<void> => {
   }
 };
 
-
 /**
  * Given a user email, resolve the university and campuses.
  *
@@ -160,9 +165,9 @@ export const resolveUniversityAndCampuses = async (email: string) => {
       where: { domain },
       include: {
         universities: {
-          include: { campuses: true }
-        }
-      }
+          include: { campuses: true },
+        },
+      },
     });
 
     if (!uniDomain?.universities) return null;
@@ -170,13 +175,13 @@ export const resolveUniversityAndCampuses = async (email: string) => {
     const university = {
       id: uniDomain.universities.id,
       name: uniDomain.universities.name,
-      slug: uniDomain.universities.slug
+      slug: uniDomain.universities.slug,
     };
 
     const campuses = uniDomain.universities.campuses.map((c) => ({
       id: c.id,
       name: c.name,
-      slug: c.slug
+      slug: c.slug,
     }));
 
     return { university, campuses };

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import logger from "@/config/logger";
-import { AuthState } from "@/types/Auth";
+import type { AuthState } from "@/types/Auth";
 
 /**
  * Authentication state management store
@@ -15,7 +15,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
    */
   const logAndSet = (partial: Partial<AuthState>) => {
     const nextState = { ...get(), ...partial };
-    const sanitized = { ...nextState, token: nextState.token ? "[REDACTED]" : null };
+    const sanitized = {
+      ...nextState,
+      token: nextState.token ? "[REDACTED]" : null,
+    };
     logger.debug("AuthStore: update", sanitized);
     set(partial);
   };
@@ -44,6 +47,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
     setLoggedIn: (isLoggedIn: boolean) => logAndSet({ isLoggedIn }),
 
     // Action: Reset all auth state (logout)
-    reset: () => logAndSet({ userId: null, email: null, token: null, isLoggedIn: false }),
+    reset: () =>
+      logAndSet({ userId: null, email: null, token: null, isLoggedIn: false }),
   };
 });

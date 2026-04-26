@@ -1,8 +1,8 @@
-import * as DiscoverService from "@/modules/discover/services";
-import { Profile } from "@/types/Profile";
-import { ProfileWithScore } from "@/types/Discover";
+import { subYears } from "date-fns";
 import prisma from "@/lib/prismaClient";
-import { subYears } from 'date-fns';
+import * as DiscoverService from "@/modules/discover/services";
+import type { ProfileWithScore } from "@/types/Discover";
+import type { Profile } from "@/types/Profile";
 
 // Mock prisma
 jest.mock("@/lib/prismaClient", () => ({
@@ -16,16 +16,16 @@ jest.mock("@/lib/prismaClient", () => ({
 jest.mock("@/constants/interests", () => ({
   getInterestCategory: jest.fn((interest: string) => {
     const categoryMap: Record<string, string> = {
-      "Coding": "Technology",
-      "Programming": "Technology",
+      Coding: "Technology",
+      Programming: "Technology",
       "Web Development": "Technology",
-      "Hiking": "Outdoor",
-      "Music": "Music",
-      "Reading": "Intellectual",
-      "Fitness": "Sports",
-      "Gaming": "Gaming",
-      "Photography": "Creative",
-      "Travel": "Lifestyle",
+      Hiking: "Outdoor",
+      Music: "Music",
+      Reading: "Intellectual",
+      Fitness: "Sports",
+      Gaming: "Gaming",
+      Photography: "Creative",
+      Travel: "Lifestyle",
     };
     return categoryMap[interest] || null;
   }),
@@ -34,26 +34,26 @@ jest.mock("@/constants/interests", () => ({
 // Mock gender mapping
 jest.mock("@/utils/genderMapping", () => ({
   genderPreferencesToIdentities: jest.fn((prefs: string[]) => {
-    if (prefs.includes('All')) return ['Male', 'Female', 'Non-binary', 'Other'];
+    if (prefs.includes("All")) return ["Male", "Female", "Non-binary", "Other"];
     const map: Record<string, string> = {
-      'Men': 'Male',
-      'Women': 'Female',
-      'Non-binary': 'Non-binary',
-      'Other': 'Other',
+      Men: "Male",
+      Women: "Female",
+      "Non-binary": "Non-binary",
+      Other: "Other",
     };
-    return prefs.map(p => map[p] || p);
+    return prefs.map((p) => map[p] || p);
   }),
 }));
 
 // Mock date-fns
-jest.mock('date-fns', () => ({
+jest.mock("date-fns", () => ({
   differenceInYears: jest.fn(),
   subYears: jest.fn(),
   addDays: jest.fn(),
 }));
 
-const mockToday = new Date('2024-01-15T12:00:00Z');
-const mockBirthdate = new Date('2000-06-15T12:00:00Z'); // 23 years old
+const mockToday = new Date("2024-01-15T12:00:00Z");
+const mockBirthdate = new Date("2000-06-15T12:00:00Z"); // 23 years old
 
 const sampleUserProfile: Profile = {
   user_id: "user1-id",
@@ -124,13 +124,14 @@ const sampleCandidateProfile2: Profile = {
 describe("Discover API - Interest Scoring", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Date, 'now').mockReturnValue(mockToday.getTime());
-    (require('date-fns').differenceInYears as jest.Mock).mockReturnValue(23);
-    (require('date-fns').subYears as jest.Mock).mockImplementation(
-      (date, years) => new Date(date.getFullYear() - years, date.getMonth(), date.getDate())
+    jest.spyOn(Date, "now").mockReturnValue(mockToday.getTime());
+    (require("date-fns").differenceInYears as jest.Mock).mockReturnValue(23);
+    (require("date-fns").subYears as jest.Mock).mockImplementation(
+      (date, years) =>
+        new Date(date.getFullYear() - years, date.getMonth(), date.getDate()),
     );
-    (require('date-fns').addDays as jest.Mock).mockImplementation(
-      (date, days) => new Date(date.getTime() + days * 24 * 60 * 60 * 1000)
+    (require("date-fns").addDays as jest.Mock).mockImplementation(
+      (date, days) => new Date(date.getTime() + days * 24 * 60 * 60 * 1000),
     );
   });
 
@@ -140,7 +141,7 @@ describe("Discover API - Interest Scoring", () => {
     // Both have "Hiking" and "Music"
     const score = DiscoverService.calculateSharedInterestsScore(
       ["Coding", "Hiking", "Music"],
-      ["Hiking", "Music", "Reading"]
+      ["Hiking", "Music", "Reading"],
     );
     // 2 exact matches / max(3, min(3,3)) = 2/3 ≈ 0.667
     expect(score).toBeGreaterThan(0.6);
@@ -151,7 +152,7 @@ describe("Discover API - Interest Scoring", () => {
     // "Coding" (Technology) matches with "Web Development" (Technology) = 0.5 points
     const score = DiscoverService.calculateSharedInterestsScore(
       ["Coding"],
-      ["Web Development"]
+      ["Web Development"],
     );
     // 0.5 / max(3, min(1,1)) = 0.5 / 3 ≈ 0.167
     expect(score).toBeGreaterThan(0.1);
@@ -162,7 +163,7 @@ describe("Discover API - Interest Scoring", () => {
     // User with 5 interests vs user with 2 interests
     const score = DiscoverService.calculateSharedInterestsScore(
       ["Coding", "Hiking", "Music", "Fitness", "Photography"],
-      ["Coding", "Hiking"]
+      ["Coding", "Hiking"],
     );
     // 2 exact / max(3, min(5,2)) = 2/3 ≈ 0.667
     expect(score).toBeGreaterThan(0.6);
@@ -172,7 +173,7 @@ describe("Discover API - Interest Scoring", () => {
   it("should return 0 for no shared interests", () => {
     const score = DiscoverService.calculateSharedInterestsScore(
       ["Coding", "Web Development"],
-      ["Fitness", "Hiking"]
+      ["Fitness", "Hiking"],
     );
     expect(score).toBe(0);
   });
@@ -180,22 +181,34 @@ describe("Discover API - Interest Scoring", () => {
 
 describe("Discover API - Intent Compatibility Matrix", () => {
   it("should score same intent as 1.0", () => {
-    const score = DiscoverService.calculateIntentCompatibilityScore("Dating", "Dating");
+    const score = DiscoverService.calculateIntentCompatibilityScore(
+      "Dating",
+      "Dating",
+    );
     expect(score).toBe(1.0);
   });
 
   it("should allow cross-intent matching at 0.5-0.8", () => {
-    const score = DiscoverService.calculateIntentCompatibilityScore("Dating", "Study Buddy");
+    const score = DiscoverService.calculateIntentCompatibilityScore(
+      "Dating",
+      "Study Buddy",
+    );
     expect(score).toBe(0.5); // Cross-intent but possible
   });
 
   it("should score incompatible intents lower", () => {
-    const score = DiscoverService.calculateIntentCompatibilityScore("Hookup", "Networking");
+    const score = DiscoverService.calculateIntentCompatibilityScore(
+      "Hookup",
+      "Networking",
+    );
     expect(score).toBe(0.2); // Incompatible
   });
 
   it("should handle Unsure intent", () => {
-    const score = DiscoverService.calculateIntentCompatibilityScore("Unsure", "Dating");
+    const score = DiscoverService.calculateIntentCompatibilityScore(
+      "Unsure",
+      "Dating",
+    );
     expect(score).toBe(0.6); // Moderate compatibility
   });
 });
@@ -217,7 +230,9 @@ describe("Discover API - Age Scoring", () => {
     // 10 year diff: 1.0 - (10 - 5) * 0.02 = 0.9
     expect(DiscoverService.calculateAgeScore(25, 35)).toBe(0.9);
     // Should still be >= 0.6 floor
-    expect(DiscoverService.calculateAgeScore(25, 31)).toBeGreaterThanOrEqual(0.6);
+    expect(DiscoverService.calculateAgeScore(25, 31)).toBeGreaterThanOrEqual(
+      0.6,
+    );
   });
 
   it("should maintain minimum score of 0.6", () => {
@@ -227,37 +242,53 @@ describe("Discover API - Age Scoring", () => {
 
 describe("Discover API - Major Compatibility", () => {
   it("should score same major as 1.0", () => {
-    const score = DiscoverService.calculateMajorCompatibilityScore("Computer Science", "Computer Science");
+    const score = DiscoverService.calculateMajorCompatibilityScore(
+      "Computer Science",
+      "Computer Science",
+    );
     expect(score).toBe(1.0);
   });
 
   it("should score different major as 0.0", () => {
-    const score = DiscoverService.calculateMajorCompatibilityScore("Computer Science", "Business");
+    const score = DiscoverService.calculateMajorCompatibilityScore(
+      "Computer Science",
+      "Business",
+    );
     expect(score).toBe(0.0);
   });
 
   it("should be case-insensitive", () => {
-    const score = DiscoverService.calculateMajorCompatibilityScore("computer science", "COMPUTER SCIENCE");
+    const score = DiscoverService.calculateMajorCompatibilityScore(
+      "computer science",
+      "COMPUTER SCIENCE",
+    );
     expect(score).toBe(1.0);
   });
 
   it("should return 0 if either major is missing", () => {
-    expect(DiscoverService.calculateMajorCompatibilityScore(undefined, "Business")).toBe(0);
-    expect(DiscoverService.calculateMajorCompatibilityScore("CS", undefined)).toBe(0);
+    expect(
+      DiscoverService.calculateMajorCompatibilityScore(undefined, "Business"),
+    ).toBe(0);
+    expect(
+      DiscoverService.calculateMajorCompatibilityScore("CS", undefined),
+    ).toBe(0);
   });
 });
 
 describe("Discover API - Overall Compatibility Score", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Date, 'now').mockReturnValue(mockToday.getTime());
-    (require('date-fns').differenceInYears as jest.Mock).mockReturnValue(23);
+    jest.spyOn(Date, "now").mockReturnValue(mockToday.getTime());
+    (require("date-fns").differenceInYears as jest.Mock).mockReturnValue(23);
   });
 
   afterEach(() => jest.restoreAllMocks());
 
   it("should calculate overall compatibility score with new weights", () => {
-    const score = DiscoverService.calculateCompatibilityScore(sampleUserProfile, sampleCandidateProfile);
+    const score = DiscoverService.calculateCompatibilityScore(
+      sampleUserProfile,
+      sampleCandidateProfile,
+    );
     expect(score).toBeGreaterThan(0);
     expect(score).toBeLessThanOrEqual(100);
     expect(Number.isInteger(score)).toBe(true);
@@ -290,15 +321,18 @@ describe("Discover API - Overall Compatibility Score", () => {
   it("should include age penalty in final score", () => {
     const closeAgeUser: Profile = {
       ...sampleUserProfile,
-      birthdate: new Date('2001-01-15'), // 23 years old
+      birthdate: new Date("2001-01-15"), // 23 years old
     };
 
     const farAgeCandidate: Profile = {
       ...sampleCandidateProfile,
-      birthdate: new Date('1995-01-15'), // 29 years old (6 year difference)
+      birthdate: new Date("1995-01-15"), // 29 years old (6 year difference)
     };
 
-    const score = DiscoverService.calculateCompatibilityScore(closeAgeUser, farAgeCandidate);
+    const score = DiscoverService.calculateCompatibilityScore(
+      closeAgeUser,
+      farAgeCandidate,
+    );
     expect(score).toBeLessThanOrEqual(100);
   });
 });
@@ -335,20 +369,23 @@ describe("Discover API - Mutual Like Detection", () => {
 describe("Discover API - Priority Ranking", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Date, 'now').mockReturnValue(mockToday.getTime());
-    (require('date-fns').differenceInYears as jest.Mock).mockReturnValue(23);
-    (require('date-fns').subYears as jest.Mock).mockImplementation(
-      (date, years) => new Date(date.getFullYear() - years, date.getMonth(), date.getDate())
+    jest.spyOn(Date, "now").mockReturnValue(mockToday.getTime());
+    (require("date-fns").differenceInYears as jest.Mock).mockReturnValue(23);
+    (require("date-fns").subYears as jest.Mock).mockImplementation(
+      (date, years) =>
+        new Date(date.getFullYear() - years, date.getMonth(), date.getDate()),
     );
-    (require('date-fns').addDays as jest.Mock).mockImplementation(
-      (date, days) => new Date(date.getTime() + days * 24 * 60 * 60 * 1000)
+    (require("date-fns").addDays as jest.Mock).mockImplementation(
+      (date, days) => new Date(date.getTime() + days * 24 * 60 * 60 * 1000),
     );
   });
 
   afterEach(() => jest.restoreAllMocks());
 
   it("should prioritize mutual likes (TIER 1) above compatibility score (TIER 2+)", async () => {
-    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleUserProfile);
+    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(
+      sampleUserProfile,
+    );
     (prisma.likes.findMany as jest.Mock).mockResolvedValue([
       { from_user: "candidate2-id" }, // Candidate 2 already liked user1
     ]);
@@ -357,7 +394,10 @@ describe("Discover API - Priority Ranking", () => {
 
     // candidate1 has higher compatibility but didn't like user
     // candidate2 has lower compatibility but already liked user
-    (prisma.profiles.findMany as jest.Mock).mockResolvedValue([sampleCandidateProfile, sampleCandidateProfile2]);
+    (prisma.profiles.findMany as jest.Mock).mockResolvedValue([
+      sampleCandidateProfile,
+      sampleCandidateProfile2,
+    ]);
 
     const spy = jest.spyOn(DiscoverService, "calculateCompatibilityScore");
     spy.mockReturnValueOnce(85).mockReturnValueOnce(60); // candidate1 score, candidate2 score
@@ -372,29 +412,39 @@ describe("Discover API - Priority Ranking", () => {
   });
 
   it("should include likedByUser flag in results", async () => {
-    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleUserProfile);
+    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(
+      sampleUserProfile,
+    );
     (prisma.likes.findMany as jest.Mock).mockResolvedValue([
       { from_user: "candidate1-id" },
     ]);
     (prisma.matches.findMany as jest.Mock).mockResolvedValue([]);
     (prisma.blocks.findMany as jest.Mock).mockResolvedValue([]);
-    (prisma.profiles.findMany as jest.Mock).mockResolvedValue([sampleCandidateProfile]);
+    (prisma.profiles.findMany as jest.Mock).mockResolvedValue([
+      sampleCandidateProfile,
+    ]);
 
-    const result: ProfileWithScore[] = await DiscoverService.getDiscoverProfiles("user1-id", 10, 0);
+    const result: ProfileWithScore[] =
+      await DiscoverService.getDiscoverProfiles("user1-id", 10, 0);
 
-    expect(result[0]).toHaveProperty('likedByUser');
+    expect(result[0]).toHaveProperty("likedByUser");
     expect(result[0].likedByUser).toBe(true);
   });
 
   it("should maintain score-based ranking within same tier", async () => {
-    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(sampleUserProfile);
+    (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(
+      sampleUserProfile,
+    );
     (prisma.likes.findMany as jest.Mock).mockResolvedValue([]); // No mutual likes
     (prisma.matches.findMany as jest.Mock).mockResolvedValue([]);
     (prisma.blocks.findMany as jest.Mock).mockResolvedValue([]);
 
     const candidate1 = { ...sampleCandidateProfile, user_id: "user-a" };
     const candidate2 = { ...sampleCandidateProfile, user_id: "user-b" };
-    (prisma.profiles.findMany as jest.Mock).mockResolvedValue([candidate1, candidate2]);
+    (prisma.profiles.findMany as jest.Mock).mockResolvedValue([
+      candidate1,
+      candidate2,
+    ]);
 
     const spy = jest.spyOn(DiscoverService, "calculateCompatibilityScore");
     spy.mockReturnValueOnce(75).mockReturnValueOnce(85); // user-a has 75, user-b has 85
@@ -412,13 +462,14 @@ describe("Discover API - Priority Ranking", () => {
 describe("getEligibleCandidates", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Date, 'now').mockReturnValue(mockToday.getTime());
-    (require('date-fns').differenceInYears as jest.Mock).mockReturnValue(23);
-    (require('date-fns').subYears as jest.Mock).mockImplementation(
-      (date, years) => new Date(date.getFullYear() - years, date.getMonth(), date.getDate())
+    jest.spyOn(Date, "now").mockReturnValue(mockToday.getTime());
+    (require("date-fns").differenceInYears as jest.Mock).mockReturnValue(23);
+    (require("date-fns").subYears as jest.Mock).mockImplementation(
+      (date, years) =>
+        new Date(date.getFullYear() - years, date.getMonth(), date.getDate()),
     );
-    (require('date-fns').addDays as jest.Mock).mockImplementation(
-      (date, days) => new Date(date.getTime() + days * 24 * 60 * 60 * 1000)
+    (require("date-fns").addDays as jest.Mock).mockImplementation(
+      (date, days) => new Date(date.getTime() + days * 24 * 60 * 60 * 1000),
     );
   });
 
@@ -439,9 +490,9 @@ describe("getEligibleCandidates", () => {
     expect(prisma.profiles.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          gender: { in: ["Female"] },  // Mapped from "Women" -> "Female"
+          gender: { in: ["Female"] }, // Mapped from "Women" -> "Female"
         }),
-      })
+      }),
     );
   });
 
@@ -459,7 +510,7 @@ describe("getEligibleCandidates", () => {
           university_id: "uni-123",
           campus_id: "campus-1",
         }),
-      })
+      }),
     );
   });
 });
@@ -467,25 +518,32 @@ describe("getEligibleCandidates", () => {
 describe("Discover API - Error Handling", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Date, 'now').mockReturnValue(mockToday.getTime());
-    (require('date-fns').differenceInYears as jest.Mock).mockReturnValue(23);
+    jest.spyOn(Date, "now").mockReturnValue(mockToday.getTime());
+    (require("date-fns").differenceInYears as jest.Mock).mockReturnValue(23);
   });
 
   afterEach(() => jest.restoreAllMocks());
 
   it("should throw error if user has no gender preferences", async () => {
     await expect(
-      DiscoverService.getEligibleCandidates("user1-id", { ...sampleUserProfile, gender_preference: [] })
+      DiscoverService.getEligibleCandidates("user1-id", {
+        ...sampleUserProfile,
+        gender_preference: [],
+      }),
     ).rejects.toThrow("User must have at least one gender preference set");
   });
 
   it("should throw error if user profile not found", async () => {
     (prisma.profiles.findUnique as jest.Mock).mockResolvedValue(null);
-    await expect(DiscoverService.getDiscoverProfiles("nonexistent-user", 10, 0)).rejects.toThrow("User profile not found");
+    await expect(
+      DiscoverService.getDiscoverProfiles("nonexistent-user", 10, 0),
+    ).rejects.toThrow("User profile not found");
   });
 
   it("should throw error if user ID is missing for getDiscoverProfiles", async () => {
-    await expect(DiscoverService.getDiscoverProfiles("", 10, 0)).rejects.toThrow("User ID is required");
+    await expect(
+      DiscoverService.getDiscoverProfiles("", 10, 0),
+    ).rejects.toThrow("User ID is required");
   });
 });
 
@@ -493,8 +551,14 @@ describe("Discover API - Error Handling", () => {
 
 describe("Discover API - Lifestyle Compatibility", () => {
   it("should return 0 when either lifestyle is missing", () => {
-    const score1 = DiscoverService.calculateLifestyleCompatibilityScore(undefined, { drinking: "Socially" } as any);
-    const score2 = DiscoverService.calculateLifestyleCompatibilityScore({ drinking: "Socially" } as any, undefined);
+    const score1 = DiscoverService.calculateLifestyleCompatibilityScore(
+      undefined,
+      { drinking: "Socially" } as any,
+    );
+    const score2 = DiscoverService.calculateLifestyleCompatibilityScore(
+      { drinking: "Socially" } as any,
+      undefined,
+    );
     expect(score1).toBe(0);
     expect(score2).toBe(0);
   });
@@ -513,15 +577,15 @@ describe("Discover API - Lifestyle Compatibility", () => {
     } as any;
 
     const l2 = {
-      drinking: "Socially",           // match
-      smoking: "Smoker",               // no match
-      cannabis: "Never",               // match
-      sleep_habits: "Night owl",       // no match
-      study_style: "Solo",             // match
-      cleanliness: "Very clean",       // match
-      caffeine: "Daily coffee/tea",    // match
+      drinking: "Socially", // match
+      smoking: "Smoker", // no match
+      cannabis: "Never", // match
+      sleep_habits: "Night owl", // no match
+      study_style: "Solo", // match
+      cleanliness: "Very clean", // match
+      caffeine: "Daily coffee/tea", // match
       living_situation: "Off-campus apartment", // no match
-      fitness: "Athlete",              // no match
+      fitness: "Athlete", // no match
     } as any;
 
     // Matches: drinking, cannabis, study_style, cleanliness, caffeine = 5
@@ -577,8 +641,14 @@ describe("Discover API - Lifestyle Compatibility", () => {
       lifestyle: user.lifestyle,
     };
 
-    const baseScore = DiscoverService.calculateCompatibilityScore(user, candidateNoLifestyle);
-    const boostedScore = DiscoverService.calculateCompatibilityScore(user, candidateFullMatch);
+    const baseScore = DiscoverService.calculateCompatibilityScore(
+      user,
+      candidateNoLifestyle,
+    );
+    const boostedScore = DiscoverService.calculateCompatibilityScore(
+      user,
+      candidateFullMatch,
+    );
 
     // Full lifestyle match should add roughly 10 points (10% of 100)
     expect(boostedScore).toBeGreaterThan(baseScore);
@@ -590,16 +660,16 @@ describe("Discover API - Lifestyle Compatibility", () => {
 describe("Discover API - Utility Functions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Date, 'now').mockReturnValue(mockToday.getTime());
-    (require('date-fns').differenceInYears as jest.Mock).mockReturnValue(23);
+    jest.spyOn(Date, "now").mockReturnValue(mockToday.getTime());
+    (require("date-fns").differenceInYears as jest.Mock).mockReturnValue(23);
   });
 
   afterEach(() => jest.restoreAllMocks());
 
   describe("calculateAge", () => {
     it("should calculate exact age from birthdate", () => {
-      (require('date-fns').differenceInYears as jest.Mock).mockReturnValue(25);
-      const age = DiscoverService.calculateAge(new Date('1999-06-15'));
+      (require("date-fns").differenceInYears as jest.Mock).mockReturnValue(25);
+      const age = DiscoverService.calculateAge(new Date("1999-06-15"));
       expect(age).toBe(25);
     });
 
@@ -609,8 +679,8 @@ describe("Discover API - Utility Functions", () => {
     });
 
     it("should handle recent births (age 18+)", () => {
-      (require('date-fns').differenceInYears as jest.Mock).mockReturnValue(18);
-      const age = DiscoverService.calculateAge(new Date('2006-01-15'));
+      (require("date-fns").differenceInYears as jest.Mock).mockReturnValue(18);
+      const age = DiscoverService.calculateAge(new Date("2006-01-15"));
       expect(age).toBe(18);
     });
   });
@@ -643,7 +713,10 @@ describe("Discover API - Utility Functions", () => {
     });
 
     it("should handle empty arrays", () => {
-      const shared1 = DiscoverService.getSharedInterests([], ["Music", "Hiking"]);
+      const shared1 = DiscoverService.getSharedInterests(
+        [],
+        ["Music", "Hiking"],
+      );
       const shared2 = DiscoverService.getSharedInterests(["Music"], []);
 
       expect(shared1).toEqual([]);
@@ -651,8 +724,13 @@ describe("Discover API - Utility Functions", () => {
     });
 
     it("should handle undefined interests", () => {
-      const shared1 = DiscoverService.getSharedInterests(undefined as any, ["Music"]);
-      const shared2 = DiscoverService.getSharedInterests(["Music"], undefined as any);
+      const shared1 = DiscoverService.getSharedInterests(undefined as any, [
+        "Music",
+      ]);
+      const shared2 = DiscoverService.getSharedInterests(
+        ["Music"],
+        undefined as any,
+      );
 
       expect(shared1 || []).toEqual([]);
       expect(shared2 || []).toEqual([]);

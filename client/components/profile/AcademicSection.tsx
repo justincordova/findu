@@ -1,6 +1,8 @@
 // React core
-import { useCallback, useMemo, useState } from "react";
 
+// Third-party
+import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useMemo, useState } from "react";
 // React Native
 import {
   Alert,
@@ -13,20 +15,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-// Third-party
-import { Ionicons } from "@expo/vector-icons";
-import { ItemType } from "react-native-dropdown-picker";
-
-// Project imports
-import { profileStyles } from "./shared/profileStyles";
-import { useProfile } from "@/contexts/ProfileContext";
-import { useAuthStore } from "@/store/authStore";
-import { useConstantsStore } from "@/store/constantsStore";
+import type { ItemType } from "react-native-dropdown-picker";
 import { profileApi } from "@/api/profile";
 import SearchableModal from "@/components/shared/SearchableModal";
 import logger from "@/config/logger";
 import { PRIMARY } from "@/constants/theme";
+import { useProfile } from "@/contexts/ProfileContext";
+import { useAuthStore } from "@/store/authStore";
+import { useConstantsStore } from "@/store/constantsStore";
+// Project imports
+import { profileStyles } from "./shared/profileStyles";
 
 /**
  * AcademicSection Component
@@ -63,9 +61,9 @@ export default function AcademicSection() {
 
   // Major options from constants store
   const majorItems: ItemType<string>[] = useMemo(() => {
-    return (constants?.majors ?? []).map((major) => ({
-      label: major,
-      value: major,
+    return (constants?.majors ?? []).map((majorName) => ({
+      label: majorName,
+      value: majorName,
     }));
   }, [constants?.majors]);
 
@@ -97,7 +95,9 @@ export default function AcademicSection() {
   // Editing state
   const [editingMajor, setEditingMajor] = useState(major);
   const [editingYear, setEditingYear] = useState(universityYear);
-  const [editingGradYear, setEditingGradYear] = useState<number | null>(gradYear);
+  const [editingGradYear, setEditingGradYear] = useState<number | null>(
+    gradYear,
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   // Open main edit modal
@@ -131,7 +131,7 @@ export default function AcademicSection() {
     }
 
     // Validate inputs
-    if (!editingMajor || !editingMajor.trim()) {
+    if (!editingMajor?.trim()) {
       Alert.alert("Error", "Please select a major");
       return;
     }
@@ -178,14 +178,18 @@ export default function AcademicSection() {
         userId,
         error: error instanceof Error ? error.message : String(error),
       });
-      Alert.alert(
-        "Error",
-        "Failed to update academic info. Please try again."
-      );
+      Alert.alert("Error", "Failed to update academic info. Please try again.");
     } finally {
       setIsSaving(false);
     }
-  }, [userId, editingMajor, editingYear, editingGradYear, refetch, handleCloseModal]);
+  }, [
+    userId,
+    editingMajor,
+    editingYear,
+    editingGradYear,
+    refetch,
+    handleCloseModal,
+  ]);
 
   const getYearText = (): string => {
     if (universityYear == null) return "Not set";
@@ -277,9 +281,13 @@ export default function AcademicSection() {
                   label="Major"
                   value={editingMajor}
                   items={majorItems}
-                  onValueChange={(value) => setEditingMajor(Array.isArray(value) ? value[0] : value)}
+                  onValueChange={(value) =>
+                    setEditingMajor(Array.isArray(value) ? value[0] : value)
+                  }
                   open={activeMajorDropdown}
-                  onOpenChange={() => setActiveMajorDropdown(!activeMajorDropdown)}
+                  onOpenChange={() =>
+                    setActiveMajorDropdown(!activeMajorDropdown)
+                  }
                   placeholder="Select your major..."
                   searchPlaceholder="Search majors..."
                   noResultsText="No majors found"
@@ -301,16 +309,17 @@ export default function AcademicSection() {
                     <Text style={profileStyles.dropdownText}>
                       {editingYear ? YEAR_MAP[editingYear] : "Select year"}
                     </Text>
-                    <Ionicons
-                      name="chevron-down"
-                      size={20}
-                      color="#9CA3AF"
-                    />
+                    <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
                   </TouchableOpacity>
 
                   {/* Inline Year Dropdown */}
                   {activeYearDropdown && (
-                    <View style={[profileStyles.dropdownModalContent, { marginTop: 4, maxHeight: 250 }]}>
+                    <View
+                      style={[
+                        profileStyles.dropdownModalContent,
+                        { marginTop: 4, maxHeight: 250 },
+                      ]}
+                    >
                       {yearOptions.map((option) => (
                         <TouchableOpacity
                           key={option.value}
@@ -350,18 +359,21 @@ export default function AcademicSection() {
                     disabled={isSaving}
                   >
                     <Text style={profileStyles.dropdownText}>
-                      {editingGradYear ? String(editingGradYear) : "Select year"}
+                      {editingGradYear
+                        ? String(editingGradYear)
+                        : "Select year"}
                     </Text>
-                    <Ionicons
-                      name="chevron-down"
-                      size={20}
-                      color="#9CA3AF"
-                    />
+                    <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
                   </TouchableOpacity>
 
                   {/* Inline Graduation Year Dropdown */}
                   {activeGradYearDropdown && (
-                    <View style={[profileStyles.dropdownModalContent, { marginTop: 4, maxHeight: 250 }]}>
+                    <View
+                      style={[
+                        profileStyles.dropdownModalContent,
+                        { marginTop: 4, maxHeight: 250 },
+                      ]}
+                    >
                       {gradYearOptions.map((option) => (
                         <TouchableOpacity
                           key={option.value}
@@ -417,7 +429,6 @@ export default function AcademicSection() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-
     </View>
   );
 }

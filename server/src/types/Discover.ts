@@ -1,4 +1,4 @@
-import { Profile } from "./Profile";
+import type { Profile } from "./Profile";
 
 export interface ProfileWithScore extends Profile {
   compatibilityScore: number;
@@ -26,6 +26,6 @@ export interface DiscoverFilters {
 
 export interface IntentCompatibilityMatrix {
   [key: string]: {
-    [key: string]: number;
+    [innerKey: string]: number;
   };
 }

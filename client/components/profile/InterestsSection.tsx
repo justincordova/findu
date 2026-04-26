@@ -1,6 +1,9 @@
 // React core
-import { useCallback, useMemo, useState } from "react";
 
+// Third-party
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useCallback, useMemo, useState } from "react";
 // React Native
 import {
   Alert,
@@ -14,21 +17,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-// Third-party
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { ItemType } from "react-native-dropdown-picker";
-
-// Project imports
-import { profileStyles } from "./shared/profileStyles";
-import { useProfile } from "@/contexts/ProfileContext";
-import { useAuthStore } from "@/store/authStore";
-import { useConstantsStore } from "@/store/constantsStore";
+import type { ItemType } from "react-native-dropdown-picker";
 import { profileApi } from "@/api/profile";
 import SearchableModal from "@/components/shared/SearchableModal";
 import logger from "@/config/logger";
-import { DARK, MUTED, PRIMARY, GRADIENT } from "@/constants/theme";
+import { DARK, GRADIENT, MUTED, PRIMARY } from "@/constants/theme";
+import { useProfile } from "@/contexts/ProfileContext";
+import { useAuthStore } from "@/store/authStore";
+import { useConstantsStore } from "@/store/constantsStore";
+// Project imports
+import { profileStyles } from "./shared/profileStyles";
 
 /**
  * InterestsSection Component
@@ -61,7 +59,6 @@ const POPULAR_INTERESTS_UNBIASED = [
   "Socializing",
 ];
 
-
 export default function InterestsSection() {
   const { profile, refetch, isEditable = true } = useProfile();
   const userId = useAuthStore((state) => state.userId);
@@ -70,7 +67,7 @@ export default function InterestsSection() {
   // Display data
   const interests = useMemo(
     () => (Array.isArray(profile?.interests) ? profile.interests : []),
-    [profile?.interests]
+    [profile?.interests],
   );
 
   // Organized interests from constants
@@ -90,7 +87,7 @@ export default function InterestsSection() {
       });
     });
     return allInterests.sort((a, b) =>
-      (a.label || "").localeCompare(b.label || "")
+      (a.label || "").localeCompare(b.label || ""),
     );
   }, [organizedInterests]);
 
@@ -101,11 +98,10 @@ export default function InterestsSection() {
   const [customInput, setCustomInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-
   // Check if interest is selected
   const isInterestSelected = useCallback(
     (interest: string) => editingInterests.includes(interest),
-    [editingInterests]
+    [editingInterests],
   );
 
   // Add interest
@@ -130,7 +126,7 @@ export default function InterestsSection() {
       logger.debug("Interest added", { interest: trimmed });
       setCustomInput("");
     },
-    [editingInterests]
+    [editingInterests],
   );
 
   // Remove interest
@@ -261,19 +257,27 @@ export default function InterestsSection() {
                 value={editingInterests}
                 items={allInterestsFlat}
                 onValueChange={(values) => {
-                  const interestArray = Array.isArray(values) ? values : [values];
+                  const interestArray = Array.isArray(values)
+                    ? values
+                    : [values];
 
                   // Handle "All" selection logic
                   if (interestArray.includes("All")) {
                     // If "All" is selected, only keep "All"
                     setEditingInterests(["All"]);
-                  } else if (editingInterests.includes("All") && interestArray.length === 0) {
+                  } else if (
+                    editingInterests.includes("All") &&
+                    interestArray.length === 0
+                  ) {
                     // If user deselects "All", clear interests
                     setEditingInterests([]);
-// sourcery skip: merge-else-if
+                    // sourcery skip: merge-else-if
                   } else if (editingInterests.includes("All")) {
                     // If "All" was previously selected and user tries to select something else, reject it
-                    Alert.alert("Info", "Deselect 'All' to choose specific interests");
+                    Alert.alert(
+                      "Info",
+                      "Deselect 'All' to choose specific interests",
+                    );
                   } else {
                     // Normal multi-select behavior
                     if (interestArray.length <= 10) {
@@ -376,9 +380,7 @@ export default function InterestsSection() {
                         end={{ x: 1, y: 0 }}
                         style={styles.selectedBadge}
                       >
-                        <Text style={styles.selectedBadgeText}>
-                          {interest}
-                        </Text>
+                        <Text style={styles.selectedBadgeText}>{interest}</Text>
                         <TouchableOpacity
                           onPress={() => removeInterest(interest)}
                           disabled={isSaving}

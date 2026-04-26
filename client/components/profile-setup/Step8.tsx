@@ -1,6 +1,8 @@
 // React core
-import { useCallback, useEffect, useMemo, useState } from "react";
 
+// Third-party
+import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useEffect, useMemo, useState } from "react";
 // React Native
 import {
   ScrollView,
@@ -10,20 +12,11 @@ import {
   View,
 } from "react-native";
 
-// Third-party
-import { Ionicons } from "@expo/vector-icons";
-
 // Project imports
-import {
-  BACKGROUND,
-  DARK,
-  MUTED,
-  PRIMARY,
-  SECONDARY,
-} from "@/constants/theme";
-import { useProfileSetupStore } from "@/store/profileStore";
+import { BACKGROUND, DARK, MUTED, PRIMARY, SECONDARY } from "@/constants/theme";
 import { useConstantsStore } from "@/store/constantsStore";
-import { Lifestyle } from "@/types/Lifestyle";
+import { useProfileSetupStore } from "@/store/profileStore";
+import type { Lifestyle } from "@/types/Lifestyle";
 
 // Types
 interface Step8Props {
@@ -35,19 +28,21 @@ interface Step8Props {
  * Users can select 0-11 lifestyle fields from predefined options.
  * This step has no validation required - users can proceed without selecting any fields.
  */
-export default function Step8({
-  onValidityChange,
-}: Step8Props) {
+export default function Step8({ onValidityChange }: Step8Props) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
+  const setProfileField = useProfileSetupStore(
+    (state) => state.setProfileField,
+  );
   const constants = useConstantsStore((state) => state.constants);
-  const [activeDropdowns, setActiveDropdowns] = useState<Record<string, boolean>>({});
+  const [activeDropdowns, setActiveDropdowns] = useState<
+    Record<string, boolean>
+  >({});
 
   const lifestyleOptions = constants?.lifestyleOptions;
 
   const currentLifestyle = useMemo(
     () => (profileData?.lifestyle || {}) as Lifestyle,
-    [profileData?.lifestyle]
+    [profileData?.lifestyle],
   );
 
   // Field metadata for all 11 lifestyle fields
@@ -73,7 +68,7 @@ export default function Step8({
       },
       { key: "fitness" as const, label: "Fitness", type: "single" },
     ],
-    []
+    [],
   );
 
   // Get options for a field from constants
@@ -95,9 +90,13 @@ export default function Step8({
 
       const constantKey = fieldToConstant[field];
       if (!constantKey || !lifestyleOptions) return [];
-      return ((lifestyleOptions as Record<string, readonly string[]>)[constantKey] as string[]) || [];
+      return (
+        ((lifestyleOptions as Record<string, readonly string[]>)[
+          constantKey
+        ] as string[]) || []
+      );
     },
-    [lifestyleOptions]
+    [lifestyleOptions],
   );
 
   // Toggle dropdown visibility
@@ -111,11 +110,14 @@ export default function Step8({
   /** Handle single-select field change */
   const handleSelectField = useCallback(
     (field: keyof Lifestyle, value: string) => {
-      const updated = { ...currentLifestyle, [field]: value.length > 0 ? value : undefined };
+      const updated = {
+        ...currentLifestyle,
+        [field]: value.length > 0 ? value : undefined,
+      };
       setProfileField("lifestyle", updated);
       setActiveDropdowns((prev) => ({ ...prev, [field]: false }));
     },
-    [currentLifestyle, setProfileField]
+    [currentLifestyle, setProfileField],
   );
 
   /** Handle multi-select field (pets, dietary_preferences) */
@@ -130,7 +132,7 @@ export default function Step8({
         [field]: updated.length > 0 ? updated : undefined,
       });
     },
-    [currentLifestyle, setProfileField]
+    [currentLifestyle, setProfileField],
   );
 
   /** Step is always valid (optional step) */
@@ -178,14 +180,8 @@ export default function Step8({
                 ]}
                 onPress={() => toggleDropdown(fieldConfig.key)}
               >
-                <Text style={styles.dropdownText}>
-                  {displayValue}
-                </Text>
-                <Ionicons
-                  name="chevron-down"
-                  size={20}
-                  color="#9CA3AF"
-                />
+                <Text style={styles.dropdownText}>{displayValue}</Text>
+                <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
               </TouchableOpacity>
 
               {/* Inline Dropdown */}
@@ -242,7 +238,6 @@ export default function Step8({
           );
         })}
       </View>
-
     </ScrollView>
   );
 }

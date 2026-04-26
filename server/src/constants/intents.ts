@@ -14,4 +14,4 @@ export const INTENTS = [
   "Unsure",
 ] as const;
 
-export type Intent = typeof INTENTS[number];
+export type Intent = (typeof INTENTS)[number];

@@ -1,8 +1,8 @@
-import { storageApi } from "@/api/storage";
-import { useProfileSetupStore } from "@/store/profileStore";
-import logger from "@/config/logger";
-import { getImageType } from "@/utils/profile/image";
 import * as ImageManipulator from "expo-image-manipulator";
+import { storageApi } from "@/api/storage";
+import logger from "@/config/logger";
+import { useProfileSetupStore } from "@/store/profileStore";
+import { getImageType } from "@/utils/profile/image";
 
 /**
  * Compress image using Expo ImageManipulator
@@ -15,7 +15,7 @@ async function compressImage(uri: string): Promise<Blob> {
   const result = await ImageManipulator.manipulateAsync(
     uri,
     [{ resize: { width: 1920 } }],
-    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
   );
 
   // Fetch returns a proper Blob for RN
@@ -27,8 +27,8 @@ async function compressImage(uri: string): Promise<Blob> {
 }
 
 /**
- * Upload a file using signed URL and return the full public URL
- * @param {string} userId - User ID for upload path
+ * Upload a file using signed URL and return the full public URL.
+ * The uploading user is derived from the auth token server-side.
  * @param {string} fileName - Name of file to upload
  * @param {Blob} fileData - File blob to upload
  * @param {"setup" | "update"} mode - Upload mode (setup during profile creation, update for existing profile)
@@ -36,10 +36,9 @@ async function compressImage(uri: string): Promise<Blob> {
  * @throws {Error} If upload fails
  */
 async function uploadViaSignedUrl(
-  userId: string,
   fileName: string,
   fileData: Blob,
-  mode: "setup" | "update"
+  mode: "setup" | "update",
 ): Promise<string> {
   logger.debug("Uploading via signed URL", {
     fileName,
@@ -47,8 +46,8 @@ async function uploadViaSignedUrl(
     mode,
   });
 
-  // Request signed URL from backend
-  const { uploadUrl, path } = await storageApi.getUploadUrl(userId, fileName, mode);
+  // Request signed URL from backend (server derives user from auth token)
+  const { uploadUrl, path } = await storageApi.getUploadUrl(fileName, mode);
 
   // Use fetch PUT for mobile (React Native)
   const res = await fetch(uploadUrl, {
@@ -78,7 +77,7 @@ async function uploadViaSignedUrl(
 export async function uploadAvatar(
   userId: string,
   avatarUri: string | undefined,
-  mode: "setup" | "update"
+  mode: "setup" | "update",
 ): Promise<string> {
   if (!avatarUri || avatarUri.startsWith("https://")) return avatarUri ?? "";
 
@@ -86,7 +85,7 @@ export async function uploadAvatar(
   const avatarName = `avatar.${ext}`; // Fixed filename
   const avatarBlob = await compressImage(avatarUri);
 
-  const publicUrl = await uploadViaSignedUrl(userId, avatarName, avatarBlob, mode);
+  const publicUrl = await uploadViaSignedUrl(avatarName, avatarBlob, mode);
 
   useProfileSetupStore.getState().setProfileField("avatar_url", publicUrl);
   logger.info("Avatar uploaded", { userId, url: publicUrl });
@@ -105,12 +104,13 @@ export async function uploadAvatar(
 export async function uploadPhotos(
   userId: string,
   photoUris: string[],
-  mode: "setup" | "update"
+  mode: "setup" | "update",
 ): Promise<string[]> {
   // Get existing photos from the store
-  const existingPhotos = mode === "update"
-    ? (useProfileSetupStore.getState().data?.photos ?? [])
-    : [];
+  const existingPhotos =
+    mode === "update"
+      ? (useProfileSetupStore.getState().data?.photos ?? [])
+      : [];
 
   const startIndex = existingPhotos.length;
 
@@ -122,11 +122,11 @@ export async function uploadPhotos(
       const photoName = `photo_${startIndex + i}.${ext}`; // Use correct index to append
       const photoBlob = await compressImage(uri);
 
-      const publicUrl = await uploadViaSignedUrl(userId, photoName, photoBlob, mode);
+      const publicUrl = await uploadViaSignedUrl(photoName, photoBlob, mode);
       logger.info("Photo uploaded", { userId, url: publicUrl });
 
       return publicUrl;
-    })
+    }),
   );
 
   // Combine existing and new photos
@@ -146,19 +146,19 @@ export async function uploadPhotos(
 export async function updatePhoto(
   userId: string,
   photoUri: string,
-  photoIndex: number
+  photoIndex: number,
 ): Promise<string> {
   if (photoUri.startsWith("https://")) {
     logger.debug("Photo already uploaded, skipping", {
       photoIndex,
-      url: photoUri
+      url: photoUri,
     });
     return photoUri;
   }
 
   logger.debug("Starting photo update", {
     photoIndex,
-    uri: photoUri
+    uri: photoUri,
   });
 
   try {
@@ -167,7 +167,7 @@ export async function updatePhoto(
 
     logger.debug("Compressing photo", {
       photoIndex,
-      targetFilename: photoName
+      targetFilename: photoName,
     });
 
     const photoBlob = await compressImage(photoUri);
@@ -175,14 +175,18 @@ export async function updatePhoto(
     logger.debug("Requesting signed URL", {
       photoIndex,
       fileName: photoName,
-      compressedSize: photoBlob.size
+      compressedSize: photoBlob.size,
     });
 
-    const publicUrl = await uploadViaSignedUrl(userId, photoName, photoBlob, "update");
+    const publicUrl = await uploadViaSignedUrl(
+      photoName,
+      photoBlob,
+      "update",
+    );
 
     logger.info("Photo updated", {
       photoIndex,
-      url: publicUrl
+      url: publicUrl,
     });
 
     return publicUrl;
@@ -190,7 +194,7 @@ export async function updatePhoto(
     logger.error("[upload] Failed to update photo", {
       userId,
       photoIndex,
-      error: error?.message || String(error)
+      error: error?.message || String(error),
     });
     throw error;
   }

@@ -1,6 +1,6 @@
 import { MatchesAPI } from "@/api/matches";
-import { useAuthStore } from "@/store/authStore";
 import logger from "@/config/logger";
+import { useAuthStore } from "@/store/authStore";
 
 /**
  * Fetch all mutual matches for current user

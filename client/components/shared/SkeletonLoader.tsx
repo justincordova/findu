@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Animated, ViewStyle } from "react-native";
+import { useEffect, useRef } from "react";
+import { Animated, StyleSheet, View, type ViewStyle } from "react-native";
 import { MUTED } from "@/constants/theme";
 
 interface SkeletonLoaderProps {
@@ -38,7 +38,7 @@ export default function SkeletonLoader({
           duration: 500,
           useNativeDriver: false,
         }),
-      ])
+      ]),
     );
 
     animation.start();
@@ -63,11 +63,7 @@ export default function SkeletonLoader({
     animatedStyle.width = width;
   }
 
-  return (
-    <Animated.View
-      style={[styles.skeleton, animatedStyle, style]}
-    />
-  );
+  return <Animated.View style={[styles.skeleton, animatedStyle, style]} />;
 }
 
 /**

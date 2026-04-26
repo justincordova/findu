@@ -17,7 +17,7 @@ interface MatchesState {
   isLoading: boolean;
   error: string | null;
   lastFetched: number | null;
-  pollingIntervalId: number | null;
+  pollingIntervalId: ReturnType<typeof setInterval> | null;
 
   // Actions
   fetchMatches: () => Promise<void>;

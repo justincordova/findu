@@ -18,7 +18,9 @@ export const getProfileDeeplink = (userId: string): string => {
  * @param url - Deeplink URL
  * @returns Parsed deeplink object or null if invalid
  */
-export const parseDeeplink = (url: string): { route: string; params: Record<string, string> } | null => {
+export const parseDeeplink = (
+  url: string,
+): { route: string; params: Record<string, string> } | null => {
   if (!url.startsWith(SCHEME)) {
     return null;
   }

@@ -30,7 +30,7 @@ interface DiscoverPreferencesState {
   initializeHardFilters: (
     minAge: number,
     maxAge: number,
-    genderPreference: string[]
+    genderPreference: string[],
   ) => void;
 
   /**
@@ -43,7 +43,7 @@ interface DiscoverPreferencesState {
   updateHardFilters: (
     minAge: number,
     maxAge: number,
-    genderPreference: string[]
+    genderPreference: string[],
   ) => void;
 
   /**
@@ -57,7 +57,7 @@ interface DiscoverPreferencesState {
   hardFiltersChanged: (
     minAge: number,
     maxAge: number,
-    genderPreference: string[]
+    genderPreference: string[],
   ) => boolean;
 }
 
@@ -65,7 +65,10 @@ interface DiscoverPreferencesState {
  * Helper: Compare gender preference arrays for equality
  * Order-independent comparison (e.g., ["Male", "Female"] === ["Female", "Male"])
  */
-const genderPrefsEqual = (prefs1: string[] | null, prefs2: string[]): boolean => {
+const genderPrefsEqual = (
+  prefs1: string[] | null,
+  prefs2: string[],
+): boolean => {
   if (!prefs1) return false;
   if (prefs1.length !== prefs2.length) return false;
 
@@ -74,79 +77,81 @@ const genderPrefsEqual = (prefs1: string[] | null, prefs2: string[]): boolean =>
   return JSON.stringify(sorted1) === JSON.stringify(sorted2);
 };
 
-export const useDiscoverPreferencesStore = create<DiscoverPreferencesState>((set, get) => ({
-  lastKnownMinAge: null,
-  lastKnownMaxAge: null,
-  lastKnownGenderPreference: null,
+export const useDiscoverPreferencesStore = create<DiscoverPreferencesState>(
+  (set, get) => ({
+    lastKnownMinAge: null,
+    lastKnownMaxAge: null,
+    lastKnownGenderPreference: null,
 
-  initializeHardFilters: (minAge, maxAge, genderPreference) => {
-    logger.debug("[discoverPreferences] Initializing hard filters", {
-      minAge,
-      maxAge,
-      genderPreference,
-    });
-
-    set({
-      lastKnownMinAge: minAge,
-      lastKnownMaxAge: maxAge,
-      lastKnownGenderPreference: genderPreference,
-    });
-  },
-
-  updateHardFilters: (minAge, maxAge, genderPreference) => {
-    const state = get();
-
-    const changed =
-      state.lastKnownMinAge !== minAge ||
-      state.lastKnownMaxAge !== maxAge ||
-      !genderPrefsEqual(state.lastKnownGenderPreference, genderPreference);
-
-    if (changed) {
-      logger.debug("[discoverPreferences] Filters updated", {
-        previousMinAge: state.lastKnownMinAge,
-        previousMaxAge: state.lastKnownMaxAge,
-        previousGenderPreference: state.lastKnownGenderPreference,
-        newMinAge: minAge,
-        newMaxAge: maxAge,
-        newGenderPreference: genderPreference,
+    initializeHardFilters: (minAge, maxAge, genderPreference) => {
+      logger.debug("[discoverPreferences] Initializing hard filters", {
+        minAge,
+        maxAge,
+        genderPreference,
       });
-    } else {
-      logger.debug("[discoverPreferences] Filters unchanged");
-    }
 
-    set({
-      lastKnownMinAge: minAge,
-      lastKnownMaxAge: maxAge,
-      lastKnownGenderPreference: genderPreference,
-    });
-  },
-
-  hardFiltersChanged: (minAge, maxAge, genderPreference) => {
-    const state = get();
-
-    const minAgeChanged = state.lastKnownMinAge !== minAge;
-    const maxAgeChanged = state.lastKnownMaxAge !== maxAge;
-    const genderPrefChanged = !genderPrefsEqual(
-      state.lastKnownGenderPreference,
-      genderPreference
-    );
-
-    const hasChanged = minAgeChanged || maxAgeChanged || genderPrefChanged;
-
-    if (hasChanged) {
-      logger.debug("[discoverPreferences] Hard filter change detected", {
-        minAgeChanged,
-        maxAgeChanged,
-        genderPrefChanged,
-        previousMinAge: state.lastKnownMinAge,
-        previousMaxAge: state.lastKnownMaxAge,
-        previousGenderPreference: state.lastKnownGenderPreference,
-        currentMinAge: minAge,
-        currentMaxAge: maxAge,
-        currentGenderPreference: genderPreference,
+      set({
+        lastKnownMinAge: minAge,
+        lastKnownMaxAge: maxAge,
+        lastKnownGenderPreference: genderPreference,
       });
-    }
+    },
 
-    return hasChanged;
-  },
-}));
+    updateHardFilters: (minAge, maxAge, genderPreference) => {
+      const state = get();
+
+      const changed =
+        state.lastKnownMinAge !== minAge ||
+        state.lastKnownMaxAge !== maxAge ||
+        !genderPrefsEqual(state.lastKnownGenderPreference, genderPreference);
+
+      if (changed) {
+        logger.debug("[discoverPreferences] Filters updated", {
+          previousMinAge: state.lastKnownMinAge,
+          previousMaxAge: state.lastKnownMaxAge,
+          previousGenderPreference: state.lastKnownGenderPreference,
+          newMinAge: minAge,
+          newMaxAge: maxAge,
+          newGenderPreference: genderPreference,
+        });
+      } else {
+        logger.debug("[discoverPreferences] Filters unchanged");
+      }
+
+      set({
+        lastKnownMinAge: minAge,
+        lastKnownMaxAge: maxAge,
+        lastKnownGenderPreference: genderPreference,
+      });
+    },
+
+    hardFiltersChanged: (minAge, maxAge, genderPreference) => {
+      const state = get();
+
+      const minAgeChanged = state.lastKnownMinAge !== minAge;
+      const maxAgeChanged = state.lastKnownMaxAge !== maxAge;
+      const genderPrefChanged = !genderPrefsEqual(
+        state.lastKnownGenderPreference,
+        genderPreference,
+      );
+
+      const hasChanged = minAgeChanged || maxAgeChanged || genderPrefChanged;
+
+      if (hasChanged) {
+        logger.debug("[discoverPreferences] Hard filter change detected", {
+          minAgeChanged,
+          maxAgeChanged,
+          genderPrefChanged,
+          previousMinAge: state.lastKnownMinAge,
+          previousMaxAge: state.lastKnownMaxAge,
+          previousGenderPreference: state.lastKnownGenderPreference,
+          currentMinAge: minAge,
+          currentMaxAge: maxAge,
+          currentGenderPreference: genderPreference,
+        });
+      }
+
+      return hasChanged;
+    },
+  }),
+);

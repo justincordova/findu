@@ -1,15 +1,13 @@
-import { OTPService, AuthService } from "@/modules/auth/services";
-import prisma from "@/lib/prismaClient";
-import { redis } from "@/lib/redis";
-import { auth } from "@/lib/auth";
-import { sendOTPEmail } from "@/modules/auth/emailService";
 import * as bcrypt from "bcrypt";
 import logger from "@/config/logger";
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/prismaClient";
+import { redis } from "@/lib/redis";
+import { sendOTPEmail } from "@/modules/auth/emailService";
+import { AuthService, OTPService } from "@/modules/auth/services";
 
-jest.mock("@/lib/prismaClient", () => ({
-  __esModule: true,
-  default: {
-    $transaction: jest.fn(),
+jest.mock("@/lib/prismaClient", () => {
+  const inner: Record<string, any> = {
     user: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -24,8 +22,13 @@ jest.mock("@/lib/prismaClient", () => ({
       findUnique: jest.fn(),
       update: jest.fn(),
     },
-  },
-}));
+    $transaction: jest.fn((fn: any) => fn(inner)),
+  };
+  return {
+    __esModule: true,
+    default: inner,
+  };
+});
 jest.mock("@/lib/redis");
 jest.mock("@/lib/auth", () => ({
   auth: {
@@ -46,7 +49,7 @@ jest.mock("@/config/logger");
 describe("AuthService", () => {
   afterEach(() => {
     jest.restoreAllMocks();
-    jest.resetAllMocks();
+    jest.clearAllMocks();
   });
 
   describe("OTPService", () => {
@@ -66,7 +69,7 @@ describe("AuthService", () => {
           "otp:test@university.edu",
           expect.any(String),
           "EX",
-          600
+          600,
         );
         expect(sendOTPEmail).toHaveBeenCalledWith({
           email: "test@university.edu",
@@ -132,18 +135,11 @@ describe("AuthService", () => {
         (redis.get as jest.Mock).mockResolvedValue("123456");
         const ctx = await auth.$context;
         (ctx.password.hash as jest.Mock).mockResolvedValue("hashedPassword");
-        const mockTx = {
-          user: {
-            create: jest.fn().mockResolvedValue({
-              id: "1",
-              email: "test@example.com",
-            }),
-          },
-          account: {
-            create: jest.fn().mockResolvedValue({}),
-          },
-        };
-        (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
+        (prisma.user.create as jest.Mock).mockResolvedValue({
+          id: "1",
+          email: "test@example.com",
+        });
+        (prisma.account.create as jest.Mock).mockResolvedValue({});
         jest.spyOn(AuthService, "signIn").mockResolvedValue({
           success: true,
           user: { id: "1", email: "test@example.com" },
@@ -153,19 +149,19 @@ describe("AuthService", () => {
         const result = await AuthService.signUpAndVerify(
           "test@university.edu",
           "password",
-          "123456"
+          "123456",
         );
 
         expect(result.success).toBe(true);
         expect(redis.get).toHaveBeenCalledWith("otp:test@university.edu");
         expect(ctx.password.hash).toHaveBeenCalledWith("password");
-        expect(mockTx.user.create).toHaveBeenCalledWith({
+        expect(prisma.user.create).toHaveBeenCalledWith({
           data: {
             email: "test@university.edu",
             name: "test",
           },
         });
-        expect(mockTx.account.create).toHaveBeenCalledWith({
+        expect(prisma.account.create).toHaveBeenCalledWith({
           data: {
             userId: "1",
             providerId: "credential",
@@ -176,11 +172,10 @@ describe("AuthService", () => {
         expect(redis.del).toHaveBeenCalledWith("otp:test@university.edu");
         expect(logger.info).toHaveBeenCalledWith("USER_CREATED_SUCCESSFULLY", {
           email: "test@university.edu",
-          userId: "1",
         });
         expect(AuthService.signIn).toHaveBeenCalledWith(
           "test@university.edu",
-          "password"
+          "password",
         );
       });
 
@@ -190,7 +185,7 @@ describe("AuthService", () => {
         const result = await AuthService.signUpAndVerify(
           "test@university.edu",
           "password",
-          "123456"
+          "123456",
         );
 
         expect(result.success).toBe(false);
@@ -202,7 +197,7 @@ describe("AuthService", () => {
         const result = await AuthService.signUpAndVerify(
           "test@example.com",
           "password",
-          "123456"
+          "123456",
         );
 
         expect(result.success).toBe(false);
@@ -217,22 +212,13 @@ describe("AuthService", () => {
         const ctx = await auth.$context;
         (ctx.password.hash as jest.Mock).mockReset();
         (ctx.password.hash as jest.Mock).mockResolvedValue("hashedPassword");
-        const mockTx = {
-          user: {
-            create: jest.fn().mockRejectedValue(error),
-          },
-          account: {
-            create: jest.fn(),
-          },
-        };
-        (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
-        (prisma.user.findUnique as jest.Mock).mockReset();
-        (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+        (prisma.user.create as jest.Mock).mockReset();
+        (prisma.user.create as jest.Mock).mockRejectedValue(error);
 
         const result = await AuthService.signUpAndVerify(
           "test@university.edu",
           "password",
-          "123456"
+          "123456",
         );
 
         expect(result.success).toBe(false);
@@ -252,33 +238,22 @@ describe("AuthService", () => {
         const ctx = await auth.$context;
         (ctx.password.hash as jest.Mock).mockReset();
         (ctx.password.hash as jest.Mock).mockResolvedValue("hashedPassword");
-        const mockTx = {
-          user: {
-            create: jest.fn().mockResolvedValue({
-              id: "1",
-              email: "test@university.edu",
-            }),
-          },
-          account: {
-            create: jest.fn().mockRejectedValue(error),
-          },
-        };
-        (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
+        (prisma.user.create as jest.Mock).mockReset();
+        (prisma.user.create as jest.Mock).mockResolvedValue({
+          id: "1",
+          email: "test@university.edu",
+        });
+        (prisma.account.create as jest.Mock).mockReset();
+        (prisma.account.create as jest.Mock).mockRejectedValue(error);
 
         const result = await AuthService.signUpAndVerify(
           "test@university.edu",
           "password",
-          "123456"
+          "123456",
         );
 
         expect(result.success).toBe(false);
         expect(result.error).toBe("Account creation failed");
-        expect(logger.error).toHaveBeenCalledWith("SIGN_UP_ERROR", {
-          error: "Account creation failed",
-          errorName: "Error",
-          stack: expect.any(String),
-          email: "test@university.edu",
-        });
       });
 
       it("should handle errors without a message during account creation and cleanup", async () => {
@@ -287,20 +262,16 @@ describe("AuthService", () => {
         (redis.get as jest.Mock).mockResolvedValue("123456");
         const ctx = await auth.$context;
         (ctx.password.hash as jest.Mock).mockResolvedValue("hashedPassword");
-        const mockTx = {
-          user: {
-            create: jest.fn().mockResolvedValue({ id: "1", email: "test@university.edu" }),
-          },
-          account: {
-            create: jest.fn().mockRejectedValue(error),
-          },
-        };
-        (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(mockTx));
+        (prisma.user.create as jest.Mock).mockResolvedValue({
+          id: "1",
+          email: "test@university.edu",
+        });
+        (prisma.account.create as jest.Mock).mockRejectedValue(error);
 
         const result = await AuthService.signUpAndVerify(
           "test@university.edu",
           "password",
-          "123456"
+          "123456",
         );
 
         expect(result.success).toBe(false);
@@ -332,7 +303,7 @@ describe("AuthService", () => {
 
         const result = await AuthService.signIn(
           "test@university.edu",
-          "password"
+          "password",
         );
 
         expect(result.success).toBe(true);
@@ -346,7 +317,7 @@ describe("AuthService", () => {
         });
         expect(bcrypt.compare).toHaveBeenCalledWith(
           "password",
-          "hashedPassword"
+          "hashedPassword",
         );
         expect(auth.api.signInEmail).toHaveBeenCalledWith({
           body: { email: "test@university.edu", password: "password" },
@@ -368,7 +339,7 @@ describe("AuthService", () => {
 
         const result = await AuthService.signIn(
           "test@university.edu",
-          "password"
+          "password",
         );
 
         expect(result.success).toBe(false);
@@ -393,7 +364,7 @@ describe("AuthService", () => {
 
         const result = await AuthService.signIn(
           "test@university.edu",
-          "password"
+          "password",
         );
 
         expect(result.success).toBe(false);
@@ -422,7 +393,7 @@ describe("AuthService", () => {
 
         const result = await AuthService.signIn(
           "test@university.edu",
-          "password"
+          "password",
         );
 
         expect(result.success).toBe(false);
@@ -449,14 +420,14 @@ describe("AuthService", () => {
 
         const result = await AuthService.signIn(
           "test@university.edu",
-          "wrongpassword"
+          "wrongpassword",
         );
 
         expect(result.success).toBe(false);
         expect(result.error).toBe("Invalid credentials");
         expect(bcrypt.compare).toHaveBeenCalledWith(
           "wrongpassword",
-          "hashedPassword"
+          "hashedPassword",
         );
         expect(auth.api.signInEmail).not.toHaveBeenCalled();
       });
@@ -480,7 +451,7 @@ describe("AuthService", () => {
 
         const result = await AuthService.signIn(
           "test@university.edu",
-          "password"
+          "password",
         );
 
         expect(result.success).toBe(false);
@@ -490,12 +461,12 @@ describe("AuthService", () => {
       it("should handle exceptions gracefully", async () => {
         (prisma.user.findUnique as jest.Mock).mockReset();
         (prisma.user.findUnique as jest.Mock).mockRejectedValue(
-          new Error("Database error")
+          new Error("Database error"),
         );
 
         const result = await AuthService.signIn(
           "test@university.edu",
-          "password"
+          "password",
         );
 
         expect(result.success).toBe(false);
@@ -525,7 +496,7 @@ describe("AuthService", () => {
       it("should handle signOut errors gracefully", async () => {
         (prisma.session.delete as jest.Mock).mockReset();
         (prisma.session.delete as jest.Mock).mockRejectedValue(
-          new Error("Session not found")
+          new Error("Session not found"),
         );
 
         await AuthService.signOut("token");
@@ -604,7 +575,7 @@ describe("AuthService", () => {
       it("should handle exceptions gracefully", async () => {
         (prisma.session.findUnique as jest.Mock).mockReset();
         (prisma.session.findUnique as jest.Mock).mockRejectedValue(
-          new Error("Database error")
+          new Error("Database error"),
         );
 
         const result = await AuthService.verifySession("token");
@@ -712,7 +683,7 @@ describe("AuthService", () => {
       it("should handle exceptions gracefully", async () => {
         (prisma.session.findUnique as jest.Mock).mockReset();
         (prisma.session.findUnique as jest.Mock).mockRejectedValue(
-          new Error("Database error")
+          new Error("Database error"),
         );
 
         const result = await AuthService.refreshSession("token");

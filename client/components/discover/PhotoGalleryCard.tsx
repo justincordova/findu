@@ -1,13 +1,13 @@
-import { useCallback, useState, useEffect } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import { useCallback, useEffect, useState } from "react";
 import {
   Dimensions,
   Image,
   Pressable,
   StyleSheet,
-  View,
   Text,
+  View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 
 interface PhotoGalleryCardProps {
   photos: string[];

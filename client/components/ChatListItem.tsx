@@ -1,19 +1,23 @@
-import React, { useState } from "react";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
+  Animated,
+  Image,
+  // @ts-expect-error Menu exists at runtime
+  Menu,
+  // @ts-expect-error MenuOption exists at runtime
+  MenuOption,
+  // @ts-expect-error MenuOptions exists at runtime
+  MenuOptions,
+  // @ts-expect-error MenuTrigger exists at runtime
+  MenuTrigger,
   Pressable,
   StyleSheet,
-  View,
   Text,
-  Image,
-  Animated,
-  Menu,
-  MenuOptions,
-  MenuOption,
-  MenuTrigger,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
-import { MatchWithLastMessage } from "@/store/matchStore";
+import type { MatchWithLastMessage } from "@/store/matchStore";
 
 interface ChatListItemProps {
   match: MatchWithLastMessage;
@@ -46,7 +50,8 @@ export function ChatListItem({ match, onDelete }: ChatListItemProps) {
     }).start();
   };
 
-  const isUnread = lastMessage && !lastMessage.isRead && !lastMessage.senderIsMe;
+  const isUnread =
+    lastMessage && !lastMessage.isRead && !lastMessage.senderIsMe;
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -64,7 +69,7 @@ export function ChatListItem({ match, onDelete }: ChatListItemProps) {
   };
 
   const truncateText = (text: string, length: number = 50) => {
-    return text.length > length ? text.substring(0, length) + "..." : text;
+    return text.length > length ? `${text.substring(0, length)}...` : text;
   };
 
   const previewText = lastMessage
@@ -120,11 +125,9 @@ export function ChatListItem({ match, onDelete }: ChatListItemProps) {
             {/* Status Indicators */}
             <View style={styles.rightContainer}>
               {isUnread && <View style={styles.unreadDot} />}
-              {!isUnread &&
-                lastMessage?.senderIsMe &&
-                lastMessage?.isRead && (
-                  <Text style={styles.readReceipt}>✓✓</Text>
-                )}
+              {!isUnread && lastMessage?.senderIsMe && lastMessage?.isRead && (
+                <Text style={styles.readReceipt}>✓✓</Text>
+              )}
             </View>
           </Pressable>
         </Animated.View>

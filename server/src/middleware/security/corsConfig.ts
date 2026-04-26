@@ -1,6 +1,6 @@
 import corsLib from "cors";
+import type { RequestHandler } from "express";
 import logger from "@/config/logger";
-import { RequestHandler } from "express";
 
 const getAllowedOrigins = (): string[] => {
   const prodFrontend = process.env.FRONTEND_URL;

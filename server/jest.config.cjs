@@ -4,13 +4,14 @@ const tsJestTransformCfg = createDefaultPreset().transform;
 
 /** @type {import("jest").Config} **/
 module.exports = {
+  testPathIgnorePatterns: ["/node_modules/", "/dist/"],
   testEnvironment: "node",
   transform: {
     ...tsJestTransformCfg,
     '^.+\\.(js|mjs)$': 'babel-jest',
   },
   transformIgnorePatterns: [
-    "/node_modules/(?!(@better-auth|jose|@noble|drizzle-orm|drizzle-kit)/)"
+    "/node_modules/(?!(uuid|@better-auth|jose|@noble|drizzle-orm|drizzle-kit|better-auth|@prisma|oauth4webapi|pkce-challenge)/)"
   ],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",

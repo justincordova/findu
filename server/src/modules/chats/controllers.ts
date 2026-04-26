@@ -1,22 +1,29 @@
-import { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
+import prisma from "@/lib/prismaClient";
 import {
   createMessage,
-  getChatHistory,
-  markMessagesAsRead,
   deleteMessage,
   editMessage,
+  getChatHistory,
   getLatestMessage,
+  markMessagesAsRead,
 } from "./services";
 import { uploadChatMedia } from "./storage";
-import prisma from "@/lib/prismaClient";
 
 /**
  * POST /api/chats/send
  * Create a new message
  */
-export async function sendMessage(req: Request, res: Response, next: NextFunction) {
+export async function sendMessage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { match_id, message, media_url, message_type } = req.body;
 
     const result = await createMessage({
@@ -37,14 +44,18 @@ export async function sendMessage(req: Request, res: Response, next: NextFunctio
  * GET /api/chats/:match_id/history
  * Fetch chat history with pagination
  */
-export async function getChatHistoryHandler(req: Request, res: Response, next: NextFunction) {
+export async function getChatHistoryHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const { match_id } = req.params;
     const { limit, cursor } = req.query;
 
     const messages = await getChatHistory({
       match_id,
-      limit: limit ? parseInt(limit as string) : 50,
+      limit: limit ? parseInt(limit as string, 10) : 50,
       cursor: cursor as string | undefined,
     });
 
@@ -58,7 +69,11 @@ export async function getChatHistoryHandler(req: Request, res: Response, next: N
  * GET /api/chats/:match_id/latest
  * Get latest message in a match (for unread indicator)
  */
-export async function getLatestMessageHandler(req: Request, res: Response, next: NextFunction) {
+export async function getLatestMessageHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const { match_id } = req.params;
 
@@ -78,9 +93,16 @@ export async function getLatestMessageHandler(req: Request, res: Response, next:
  * PUT /api/chats/:match_id/read
  * Mark all messages in a match as read
  */
-export async function markAsRead(req: Request, res: Response, next: NextFunction) {
+export async function markAsRead(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { match_id } = req.params;
 
     const count = await markMessagesAsRead(match_id, userId);
@@ -95,9 +117,16 @@ export async function markAsRead(req: Request, res: Response, next: NextFunction
  * PATCH /api/chats/:message_id
  * Edit a message
  */
-export async function editMessageHandler(req: Request, res: Response, next: NextFunction) {
+export async function editMessageHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { message_id } = req.params;
     const { message } = req.body;
 
@@ -113,9 +142,16 @@ export async function editMessageHandler(req: Request, res: Response, next: Next
  * DELETE /api/chats/:message_id
  * Hard delete a message
  */
-export async function deleteMessageHandler(req: Request, res: Response, next: NextFunction) {
+export async function deleteMessageHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { message_id } = req.params;
 
     const result = await deleteMessage(message_id, userId);
@@ -131,9 +167,16 @@ export async function deleteMessageHandler(req: Request, res: Response, next: Ne
  * Upload media file for chat
  * Expects multipart form with "file" field
  */
-export async function uploadMedia(req: Request, res: Response, next: NextFunction) {
+export async function uploadMedia(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     const { match_id } = req.params;
     const file = (req as any).file;
 
@@ -150,7 +193,12 @@ export async function uploadMedia(req: Request, res: Response, next: NextFunctio
       return res.status(403).json({ error: "Unauthorized" });
     }
 
-    const publicUrl = await uploadChatMedia(match_id, file.path, file.originalname);
+    const publicUrl = await uploadChatMedia(
+      match_id,
+      file.path,
+      file.originalname,
+      file.mimetype,
+    );
 
     res.json({ media_url: publicUrl });
   } catch (error) {

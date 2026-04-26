@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import logger from "@/config/logger";
-import { ChatState, ChatMessage, ChatConversation } from "@/types/chat";
+import type { ChatConversation, ChatMessage, ChatState } from "@/types/chat";
 
 /**
  * Default conversation state template
@@ -70,7 +70,9 @@ export const useChatStore = create<ChatState>((set) => ({
       }
 
       // Double-check in state (belt and suspenders)
-      const messageExists = conversation.messages.some((msg) => msg.id === message.id);
+      const messageExists = conversation.messages.some(
+        (msg) => msg.id === message.id,
+      );
       if (messageExists) {
         return state;
       }
@@ -105,7 +107,9 @@ export const useChatStore = create<ChatState>((set) => ({
           ...state.conversations,
           [matchId]: {
             ...conversation,
-            messages: conversation.messages.filter((msg) => msg.id !== messageId),
+            messages: conversation.messages.filter(
+              (msg) => msg.id !== messageId,
+            ),
           },
         },
       };
@@ -138,7 +142,7 @@ export const useChatStore = create<ChatState>((set) => ({
                     message: newText,
                     edited_at: new Date().toISOString(),
                   }
-                : msg
+                : msg,
             ),
           },
         },
@@ -165,7 +169,9 @@ export const useChatStore = create<ChatState>((set) => ({
     });
 
     // Add all message IDs to processed set to prevent socket duplicates
-    uniqueMessages.forEach((msg) => processedMessageIds.add(msg.id));
+    uniqueMessages.forEach((msg) => {
+      processedMessageIds.add(msg.id);
+    });
 
     set((state) => {
       return {
@@ -314,7 +320,9 @@ export const useChatStore = create<ChatState>((set) => ({
           [matchId]: {
             ...conversation,
             messages: conversation.messages.map((msg) =>
-              msg.is_read ? msg : { ...msg, is_read: true, read_at: new Date().toISOString() }
+              msg.is_read
+                ? msg
+                : { ...msg, is_read: true, read_at: new Date().toISOString() },
             ),
           },
         },

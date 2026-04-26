@@ -1,5 +1,5 @@
+import type { RequestHandler } from "express";
 import morganLib from "morgan";
-import { RequestHandler } from "express";
 import logger from "@/config/logger";
 
 /**

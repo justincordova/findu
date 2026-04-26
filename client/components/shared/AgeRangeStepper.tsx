@@ -1,11 +1,10 @@
 // React core
-import React, { useCallback } from "react";
-
-// React Native
-import { StyleSheet, Text, View, Pressable } from "react-native";
 
 // Third-party
 import { Ionicons } from "@expo/vector-icons";
+import { useCallback } from "react";
+// React Native
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 // Project imports
 import { MUTED, PRIMARY } from "@/constants/theme";

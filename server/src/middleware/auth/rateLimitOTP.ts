@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from "express";
-import { redis } from "@/lib/redis";
+import type { NextFunction, Request, Response } from "express";
 import logger from "@/config/logger";
+import { redis } from "@/lib/redis";
 
 // Rate limiting configuration for OTP requests
 const OTP_RATE_LIMIT_ENABLED = process.env.OTP_RATE_LIMIT_ENABLED !== "false";
@@ -15,7 +15,7 @@ const OTP_RATE_LIMIT_KEY_PREFIX = "otp_rate_limit:";
 export async function rateLimitOTP(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   // Skip rate limiting if disabled via environment variable
   if (!OTP_RATE_LIMIT_ENABLED) {
@@ -65,5 +65,3 @@ export async function rateLimitOTP(
     next();
   }
 }
-
-

@@ -1,7 +1,7 @@
+import logger from "@/config/logger";
 import prisma from "@/lib/prismaClient";
 import { redis } from "@/lib/redis";
-import logger from "@/config/logger";
-import { Like, CreateLikeResult } from "@/types/Like";
+import type { CreateLikeResult, Like } from "@/types/Like";
 
 // Configuration constants
 const DAILY_SUPERLIKE_LIMIT = 5; // Adjust based on your business logic
@@ -15,12 +15,12 @@ const DAILY_SUPERLIKE_LIMIT = 5; // Adjust based on your business logic
 const invalidateDiscoverCache = async (userId: string): Promise<void> => {
   try {
     const pattern = `discover:${userId}:*`;
-    let cursor = '0';
+    let cursor = "0";
     let totalDeleted = 0;
 
     // Iterate through all batches using SCAN cursor
     do {
-      const result = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      const result = await redis.scan(cursor, "MATCH", pattern, "COUNT", 100);
       cursor = result[0]; // Next cursor
       const keys = result[1]; // Keys in this batch
 
@@ -28,16 +28,16 @@ const invalidateDiscoverCache = async (userId: string): Promise<void> => {
         await redis.del(...keys);
         totalDeleted += keys.length;
       }
-    } while (cursor !== '0');
+    } while (cursor !== "0");
 
     if (totalDeleted > 0) {
-      logger.debug('CACHE_INVALIDATED', { userId, keysDeleted: totalDeleted });
+      logger.debug("CACHE_INVALIDATED", { userId, keysDeleted: totalDeleted });
     }
   } catch (error) {
     // Log but don't throw - cache invalidation failure shouldn't break the operation
-    logger.error('CACHE_INVALIDATION_FAILED', {
+    logger.error("CACHE_INVALIDATION_FAILED", {
       userId,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
@@ -53,32 +53,32 @@ const invalidateDiscoverCache = async (userId: string): Promise<void> => {
 export const createLike = async (data: Like): Promise<CreateLikeResult> => {
   // Input validation
   if (data.from_user === data.to_user) {
-    throw new Error('Users cannot like themselves');
+    throw new Error("Users cannot like themselves");
   }
 
   if (!data.from_user || !data.to_user) {
-    throw new Error('Both from_user and to_user are required');
+    throw new Error("Both from_user and to_user are required");
   }
 
   // Pre-transaction validation to avoid unnecessary DB load
   const [fromProfile, toProfile] = await Promise.all([
     prisma.profiles.findUnique({
       where: { user_id: data.from_user },
-      select: { university_id: true, user_id: true }
+      select: { university_id: true, user_id: true },
     }),
     prisma.profiles.findUnique({
       where: { user_id: data.to_user },
-      select: { university_id: true, user_id: true }
+      select: { university_id: true, user_id: true },
     }),
   ]);
 
   if (!fromProfile || !toProfile) {
-    throw new Error('User profiles not found');
+    throw new Error("User profiles not found");
   }
 
   // Enforce campus-only matching
   if (fromProfile.university_id !== toProfile.university_id) {
-    throw new Error('Users must be from the same university');
+    throw new Error("Users must be from the same university");
   }
 
   // Check for blocks
@@ -92,7 +92,7 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
   });
 
   if (blocked) {
-    throw new Error('Cannot like blocked user');
+    throw new Error("Cannot like blocked user");
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -105,7 +105,7 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
     });
 
     if (existingLike) {
-      throw new Error('Like already exists');
+      throw new Error("Like already exists");
     }
 
     // Validate superlike limits
@@ -122,7 +122,9 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
       });
 
       if (superlikesToday >= DAILY_SUPERLIKE_LIMIT) {
-        throw new Error(`Daily superlike limit of ${DAILY_SUPERLIKE_LIMIT} reached`);
+        throw new Error(
+          `Daily superlike limit of ${DAILY_SUPERLIKE_LIMIT} reached`,
+        );
       }
     }
 
@@ -146,20 +148,20 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
     // We can still check for reciprocal to return 'matched: true' to the UI.
 
     if (reciprocal) {
-       // We can try to fetch the match if the trigger ran, or just assume it will be created.
-       // The UI might expect a matchId.
-       // If the trigger runs AFTER the transaction commits, we won't see it here.
-       // If it runs AFTER INSERT (which it does), it runs within the same transaction context usually.
-       // Let's try to find it.
-       const match = await tx.matches.findFirst({
-         where: {
-            OR: [
-              { user1: data.from_user, user2: data.to_user },
-              { user1: data.to_user, user2: data.from_user },
-            ]
-         }
-       });
-       matchId = match?.id || null;
+      // We can try to fetch the match if the trigger ran, or just assume it will be created.
+      // The UI might expect a matchId.
+      // If the trigger runs AFTER the transaction commits, we won't see it here.
+      // If it runs AFTER INSERT (which it does), it runs within the same transaction context usually.
+      // Let's try to find it.
+      const match = await tx.matches.findFirst({
+        where: {
+          OR: [
+            { user1: data.from_user, user2: data.to_user },
+            { user1: data.to_user, user2: data.from_user },
+          ],
+        },
+      });
+      matchId = match?.id || null;
     }
 
     return {
@@ -173,11 +175,11 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
   // This ensures they see updated results (the user they liked is removed from their feed)
   await Promise.all([
     invalidateDiscoverCache(data.from_user),
-    invalidateDiscoverCache(data.to_user)
-  ]).catch(error => {
+    invalidateDiscoverCache(data.to_user),
+  ]).catch((error) => {
     // Log but don't throw - cache invalidation failure shouldn't break the operation
-    logger.error('CACHE_INVALIDATION_FAILED', {
-      error: error instanceof Error ? error.message : 'Unknown error'
+    logger.error("CACHE_INVALIDATION_FAILED", {
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   });
 
@@ -192,9 +194,13 @@ export const createLike = async (data: Like): Promise<CreateLikeResult> => {
  * @param offset - Number of likes to skip (for pagination)
  * @returns Array of likes with recipient profile data
  */
-export const getSentLikes = async (userId: string, limit: number = 50, offset: number = 0) => {
+export const getSentLikes = async (
+  userId: string,
+  limit: number = 50,
+  offset: number = 0,
+) => {
   if (!userId) {
-    throw new Error('User ID is required');
+    throw new Error("User ID is required");
   }
 
   return prisma.likes.findMany({
@@ -209,12 +215,12 @@ export const getSentLikes = async (userId: string, limit: number = 50, offset: n
               university_id: true,
               bio: true,
               birthdate: true, // For age calculation
-            }
-          }
-        }
-      }
+            },
+          },
+        },
+      },
     },
-    orderBy: { created_at: 'desc' },
+    orderBy: { created_at: "desc" },
     take: limit,
     skip: offset,
   });
@@ -229,9 +235,13 @@ export const getSentLikes = async (userId: string, limit: number = 50, offset: n
  * @param offset - Number of likes to skip (for pagination)
  * @returns Array of likes with sender profile data
  */
-export const getReceivedLikes = async (userId: string, limit: number = 50, offset: number = 0) => {
+export const getReceivedLikes = async (
+  userId: string,
+  limit: number = 50,
+  offset: number = 0,
+) => {
   if (!userId) {
-    throw new Error('User ID is required');
+    throw new Error("User ID is required");
   }
 
   return prisma.likes.findMany({
@@ -246,12 +256,12 @@ export const getReceivedLikes = async (userId: string, limit: number = 50, offse
               university_id: true,
               bio: true,
               birthdate: true, // For age calculation
-            }
-          }
-        }
-      }
+            },
+          },
+        },
+      },
     },
-    orderBy: { created_at: 'desc' },
+    orderBy: { created_at: "desc" },
     take: limit,
     skip: offset,
   });
@@ -263,9 +273,11 @@ export const getReceivedLikes = async (userId: string, limit: number = 50, offse
  * @param userId - ID of the user
  * @returns Count of received likes
  */
-export const getReceivedLikesCount = async (userId: string): Promise<number> => {
+export const getReceivedLikesCount = async (
+  userId: string,
+): Promise<number> => {
   if (!userId) {
-    throw new Error('User ID is required');
+    throw new Error("User ID is required");
   }
 
   return prisma.likes.count({
@@ -279,9 +291,11 @@ export const getReceivedLikesCount = async (userId: string): Promise<number> => 
  * @param userId - ID of the user
  * @returns Count of superlikes sent today
  */
-export const getTodaysSuperlikeCount = async (userId: string): Promise<number> => {
+export const getTodaysSuperlikeCount = async (
+  userId: string,
+): Promise<number> => {
   if (!userId) {
-    throw new Error('User ID is required');
+    throw new Error("User ID is required");
   }
 
   const today = new Date();
@@ -314,7 +328,10 @@ export const canSendSuperlike = async (userId: string): Promise<boolean> => {
  * @param user2Id - Second user ID
  * @returns Boolean indicating if users are matched
  */
-export const areUsersMatched = async (user1Id: string, user2Id: string): Promise<boolean> => {
+export const areUsersMatched = async (
+  user1Id: string,
+  user2Id: string,
+): Promise<boolean> => {
   if (!user1Id || !user2Id || user1Id === user2Id) {
     return false;
   }
@@ -341,7 +358,7 @@ export const areUsersMatched = async (user1Id: string, user2Id: string): Promise
  */
 export const removeLike = async (likeId: string, userId: string) => {
   if (!likeId || !userId) {
-    throw new Error('Like ID and User ID are required');
+    throw new Error("Like ID and User ID are required");
   }
 
   // Verify the like belongs to the user
@@ -353,7 +370,7 @@ export const removeLike = async (likeId: string, userId: string) => {
   });
 
   if (!like) {
-    throw new Error('Like not found or unauthorized');
+    throw new Error("Like not found or unauthorized");
   }
 
   const deletedLike = await prisma.likes.delete({
@@ -363,7 +380,7 @@ export const removeLike = async (likeId: string, userId: string) => {
   // Invalidate discover cache for both users
   await Promise.all([
     invalidateDiscoverCache(userId),
-    invalidateDiscoverCache(deletedLike.to_user)
+    invalidateDiscoverCache(deletedLike.to_user),
   ]);
 
   return deletedLike;

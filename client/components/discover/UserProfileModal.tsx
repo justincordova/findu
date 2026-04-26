@@ -1,12 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import Animated, {
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  runOnJS,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
 
 import ProfileView from "@/components/profile/ProfileView";
 
@@ -60,7 +60,11 @@ export default function UserProfileModal({
 
         {/* Profile content - scrollable */}
         <View style={styles.content}>
-          <ProfileView userId={userId} isEditable={false} shouldFetch={visible} />
+          <ProfileView
+            userId={userId}
+            isEditable={false}
+            shouldFetch={visible}
+          />
         </View>
       </Animated.View>
     </Modal>

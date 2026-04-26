@@ -1,6 +1,6 @@
-import { Request, Response } from "express";
-import * as LikesService from "./services";
+import type { Request, Response } from "express";
 import logger from "@/config/logger";
+import * as LikesService from "./services";
 
 /**
  * Create a like or superlike from one user to another
@@ -8,14 +8,24 @@ import logger from "@/config/logger";
  */
 export const createLike = async (req: Request, res: Response) => {
   try {
-    const { from_user, to_user, is_superlike } = req.body;
-    const result = await LikesService.createLike(req.body);
+    const authenticatedUserId = req.user?.id;
+    if (!authenticatedUserId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { to_user, is_superlike } = req.body;
+
+    const result = await LikesService.createLike({
+      from_user: authenticatedUserId,
+      to_user,
+      is_superlike,
+    });
 
     logger.info("Like created successfully", {
-      fromUser: from_user,
+      fromUser: authenticatedUserId,
       toUser: to_user,
       isSuperlike: is_superlike,
-      matched: result.matched
+      matched: result.matched,
     });
 
     return res.status(201).json({
@@ -24,13 +34,15 @@ export const createLike = async (req: Request, res: Response) => {
       matchId: result.matchId,
     });
   } catch (err: any) {
-    if (err.message.includes("Users cannot like themselves") ||
-        err.message.includes("Both from_user and to_user are required") ||
-        err.message.includes("User profiles not found") ||
-        err.message.includes("Users must be from the same university") ||
-        err.message.includes("Cannot like blocked user") ||
-        err.message.includes("Like already exists") ||
-        err.message.includes("Daily superlike limit")) {
+    if (
+      err.message.includes("Users cannot like themselves") ||
+      err.message.includes("Both from_user and to_user are required") ||
+      err.message.includes("User profiles not found") ||
+      err.message.includes("Users must be from the same university") ||
+      err.message.includes("Cannot like blocked user") ||
+      err.message.includes("Like already exists") ||
+      err.message.includes("Daily superlike limit")
+    ) {
       return res.status(400).json({ message: err.message });
     }
     return res.status(500).json({ message: err.message });
@@ -43,11 +55,13 @@ export const createLike = async (req: Request, res: Response) => {
  */
 export const getSentLikes = async (req: Request, res: Response) => {
   const { userId } = req.params;
-  const authenticatedUserId = (req as any).user?.id;
+  const authenticatedUserId = req.user?.id;
 
   // Authorization check: user can only view their own sent likes
   if (authenticatedUserId !== userId) {
-    return res.status(403).json({ message: "Unauthorized: Cannot view another user's sent likes" });
+    return res
+      .status(403)
+      .json({ message: "Unauthorized: Cannot view another user's sent likes" });
   }
 
   try {
@@ -64,11 +78,13 @@ export const getSentLikes = async (req: Request, res: Response) => {
  */
 export const getReceivedLikes = async (req: Request, res: Response) => {
   const { userId } = req.params;
-  const authenticatedUserId = (req as any).user?.id;
+  const authenticatedUserId = req.user?.id;
 
   // Authorization check: user can only view their own received likes
   if (authenticatedUserId !== userId) {
-    return res.status(403).json({ message: "Unauthorized: Cannot view another user's received likes" });
+    return res.status(403).json({
+      message: "Unauthorized: Cannot view another user's received likes",
+    });
   }
 
   try {
@@ -85,7 +101,10 @@ export const getReceivedLikes = async (req: Request, res: Response) => {
  */
 export const deleteLike = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const authenticatedUserId = (req as any).user?.id; // Use authenticated user, not body parameter
+  const authenticatedUserId = req.user?.id;
+  if (!authenticatedUserId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
   try {
     await LikesService.removeLike(id, authenticatedUserId);
     return res.status(204).send();

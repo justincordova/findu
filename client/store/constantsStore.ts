@@ -1,7 +1,7 @@
-import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { create } from "zustand";
+import { type Constants, ConstantsAPI } from "@/api/constants";
 import logger from "@/config/logger";
-import { ConstantsAPI, Constants } from "@/api/constants";
 import { FALLBACK_CONSTANTS } from "@/constants/fallbackConstants";
 
 const CONSTANTS_CACHE_KEY = "findu_constants_cache";
@@ -47,7 +47,10 @@ export const useConstantsStore = create<ConstantsState>((set, get) => {
    */
   const saveToCache = async (constants: Constants) => {
     try {
-      await AsyncStorage.setItem(CONSTANTS_CACHE_KEY, JSON.stringify(constants));
+      await AsyncStorage.setItem(
+        CONSTANTS_CACHE_KEY,
+        JSON.stringify(constants),
+      );
       logger.debug("ConstantsStore: saved to cache");
     } catch (error) {
       logger.error("ConstantsStore: cache write failed", error);
@@ -92,7 +95,9 @@ export const useConstantsStore = create<ConstantsState>((set, get) => {
           logger.debug("ConstantsStore: loaded from cache");
           return parsed;
         }
-        logger.warn("ConstantsStore: cached data has invalid structure, discarding");
+        logger.warn(
+          "ConstantsStore: cached data has invalid structure, discarding",
+        );
       }
     } catch (error) {
       logger.error("ConstantsStore: cache read failed", error);
@@ -110,8 +115,11 @@ export const useConstantsStore = create<ConstantsState>((set, get) => {
       return await ConstantsAPI.getAll();
     } catch (error) {
       if (attempt < MAX_RETRIES) {
-        const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
-        logger.debug(`ConstantsStore: retry ${attempt}/${MAX_RETRIES} after ${delay}ms`, error);
+        const delay = INITIAL_RETRY_DELAY_MS * 2 ** (attempt - 1);
+        logger.debug(
+          `ConstantsStore: retry ${attempt}/${MAX_RETRIES} after ${delay}ms`,
+          error,
+        );
         await new Promise((resolve) => setTimeout(resolve, delay));
         return fetchWithRetry(attempt + 1);
       }
@@ -175,7 +183,6 @@ export const useConstantsStore = create<ConstantsState>((set, get) => {
     },
 
     // Action: Reset all constants state
-    reset: () =>
-      logAndSet({ constants: null, isLoading: false, error: null }),
+    reset: () => logAndSet({ constants: null, isLoading: false, error: null }),
   };
 });

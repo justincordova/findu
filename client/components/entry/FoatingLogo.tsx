@@ -32,7 +32,7 @@ export default function FloatingLogo() {
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
   }, [translateY]);
 

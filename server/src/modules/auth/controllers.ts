@@ -1,7 +1,7 @@
-import { Request, Response } from 'express';
-import { OTPService, AuthService } from './services';
-import { checkValidationErrors } from '@/utils/handleValidationErrors';
-import logger from '@/config/logger';
+import type { Request, Response } from "express";
+import logger from "@/config/logger";
+import { checkValidationErrors } from "@/utils/handleValidationErrors";
+import { AuthService, OTPService } from "./services";
 
 /**
  * Controller to handle sending OTP to a user's email.
@@ -26,11 +26,13 @@ export const sendOtpController = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: 'OTP sent to your email. Please check your inbox.',
+      message: "OTP sent to your email. Please check your inbox.",
     });
   } catch (error) {
-    logger.error('SEND_OTP_CONTROLLER_ERROR', { error });
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    logger.error("SEND_OTP_CONTROLLER_ERROR", { error });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -57,13 +59,15 @@ export const signupController = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Account created successfully.',
+      message: "Account created successfully.",
       user: result.user,
       token: result.token,
     });
   } catch (error) {
-    logger.error('SIGNUP_CONTROLLER_ERROR', { error });
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    logger.error("SIGNUP_CONTROLLER_ERROR", { error });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -90,11 +94,13 @@ export const verifyOtpController = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: 'OTP verified successfully. You can now create your account.',
+      message: "OTP verified successfully. You can now create your account.",
     });
   } catch (error) {
-    logger.error('VERIFY_OTP_CONTROLLER_ERROR', { error });
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    logger.error("VERIFY_OTP_CONTROLLER_ERROR", { error });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -121,13 +127,15 @@ export const createAccountController = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Account created successfully.',
+      message: "Account created successfully.",
       user: result.user,
       token: result.token,
     });
   } catch (error) {
-    logger.error('CREATE_ACCOUNT_CONTROLLER_ERROR', { error });
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    logger.error("CREATE_ACCOUNT_CONTROLLER_ERROR", { error });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -154,13 +162,15 @@ export const signinController = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       user: result.user,
       token: result.token,
     });
   } catch (error) {
-    logger.error('SIGNIN_CONTROLLER_ERROR', { error });
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    logger.error("SIGNIN_CONTROLLER_ERROR", { error });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -176,26 +186,33 @@ export const signinController = async (req: Request, res: Response) => {
 export const refreshSessionController = async (req: Request, res: Response) => {
   try {
     const { authorization: authHeader } = req.headers;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ success: false, message: "Missing or invalid Authorization header" });
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Missing or invalid Authorization header",
+      });
     }
 
     const token = authHeader.replace("Bearer ", "");
     const result = await AuthService.refreshSession(token);
 
     if (!result) {
-      return res.status(401).json({ success: false, message: "Invalid or expired session" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid or expired session" });
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Session refreshed',
+      message: "Session refreshed",
       user: result.user,
       token: result.token,
     });
   } catch (error) {
-    logger.error('REFRESH_SESSION_CONTROLLER_ERROR', { error });
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    logger.error("REFRESH_SESSION_CONTROLLER_ERROR", { error });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -210,21 +227,28 @@ export const refreshSessionController = async (req: Request, res: Response) => {
 export const sessionController = async (req: Request, res: Response) => {
   try {
     const { authorization: authHeader } = req.headers;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ success: false, message: "Missing or invalid Authorization header" });
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Missing or invalid Authorization header",
+      });
     }
 
     const token = authHeader.replace("Bearer ", "");
     const user = await AuthService.verifySession(token);
 
     if (!user) {
-      return res.status(401).json({ success: false, message: "Invalid or expired session" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid or expired session" });
     }
 
     return res.status(200).json({ success: true, user });
   } catch (error) {
-    logger.error('SESSION_CONTROLLER_ERROR', { error });
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    logger.error("SESSION_CONTROLLER_ERROR", { error });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -239,7 +263,7 @@ export const sessionController = async (req: Request, res: Response) => {
 export const signoutController = async (req: Request, res: Response) => {
   try {
     const { authorization: authHeader } = req.headers;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader?.startsWith("Bearer ")) {
       // Still return 200 to not leak info, but log it.
       logger.warn("SIGNOUT_ATTEMPT_WITHOUT_HEADER");
       return res.status(200).json({ success: true, message: "Signed out" });
@@ -248,9 +272,11 @@ export const signoutController = async (req: Request, res: Response) => {
     const token = authHeader.replace("Bearer ", "");
     await AuthService.signOut(token);
 
-    return res.status(200).json({ success: true, message: "Signed out successfully" });
+    return res
+      .status(200)
+      .json({ success: true, message: "Signed out successfully" });
   } catch (error) {
-    logger.error('SIGNOUT_CONTROLLER_ERROR', { error });
+    logger.error("SIGNOUT_CONTROLLER_ERROR", { error });
     // Fail gracefully to the client
     return res.status(200).json({ success: true, message: "Signed out" });
   }

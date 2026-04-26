@@ -1,6 +1,6 @@
-import { handleResponse } from "./utils";
 import { useAuthStore } from "@/store/authStore";
-import { ChatMessage } from "@/types/chat";
+import type { ChatMessage } from "@/types/chat";
+import { handleResponse } from "./utils";
 
 const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/chats`;
 
@@ -18,7 +18,7 @@ async function sendMessage(
   matchId: string,
   message: string,
   mediaUrl?: string,
-  messageType?: "TEXT" | "IMAGE" | "VIDEO"
+  messageType?: "TEXT" | "IMAGE" | "VIDEO",
 ): Promise<ChatMessage> {
   const res = await fetch(`${API_BASE}/send`, {
     method: "POST",
@@ -48,7 +48,7 @@ async function getChatHistory(
   token: string,
   matchId: string,
   limit?: number,
-  cursor?: string
+  cursor?: string,
 ): Promise<ChatMessage[]> {
   const params = new URLSearchParams();
   if (limit) params.append("limit", limit.toString());
@@ -72,14 +72,14 @@ async function getChatHistory(
  */
 async function getLatestMessage(
   token: string,
-  matchId: string
+  matchId: string,
 ): Promise<ChatMessage | null> {
   try {
     const res = await fetch(`${API_BASE}/${matchId}/latest`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return handleResponse<ChatMessage>(res, "getLatestMessage");
-  } catch (err) {
+  } catch (_err) {
     return null;
   }
 }
@@ -92,7 +92,7 @@ async function getLatestMessage(
  */
 async function markMessagesAsRead(
   token: string,
-  matchId: string
+  matchId: string,
 ): Promise<{ updated: number }> {
   const res = await fetch(`${API_BASE}/${matchId}/read`, {
     method: "PUT",
@@ -109,7 +109,7 @@ async function markMessagesAsRead(
  */
 async function deleteMessage(
   token: string,
-  messageId: string
+  messageId: string,
 ): Promise<{ id: string }> {
   const res = await fetch(`${API_BASE}/${messageId}`, {
     method: "DELETE",
@@ -128,7 +128,7 @@ async function deleteMessage(
 async function editMessage(
   token: string,
   messageId: string,
-  newMessage: string
+  newMessage: string,
 ): Promise<ChatMessage> {
   const res = await fetch(`${API_BASE}/${messageId}`, {
     method: "PATCH",
@@ -151,7 +151,7 @@ async function editMessage(
 async function uploadMedia(
   token: string,
   matchId: string,
-  file: File
+  file: File,
 ): Promise<{ media_url: string }> {
   const formData = new FormData();
   formData.append("file", file);
@@ -183,7 +183,7 @@ export const ChatsAPI = {
     matchId: string,
     message: string,
     mediaUrl?: string,
-    messageType?: "TEXT" | "IMAGE" | "VIDEO"
+    messageType?: "TEXT" | "IMAGE" | "VIDEO",
   ): Promise<ChatMessage> => {
     const { token } = useAuthStore.getState();
     if (!token) throw new Error("No authentication token available");
@@ -200,7 +200,7 @@ export const ChatsAPI = {
   getChatHistory: async (
     matchId: string,
     limit?: number,
-    cursor?: string
+    cursor?: string,
   ): Promise<ChatMessage[]> => {
     const { token } = useAuthStore.getState();
     if (!token) throw new Error("No authentication token available");
@@ -249,7 +249,7 @@ export const ChatsAPI = {
    */
   editMessage: async (
     messageId: string,
-    newMessage: string
+    newMessage: string,
   ): Promise<ChatMessage> => {
     const { token } = useAuthStore.getState();
     if (!token) throw new Error("No authentication token available");
@@ -264,7 +264,7 @@ export const ChatsAPI = {
    */
   uploadMedia: async (
     matchId: string,
-    file: File
+    file: File,
   ): Promise<{ media_url: string }> => {
     const { token } = useAuthStore.getState();
     if (!token) throw new Error("No authentication token available");

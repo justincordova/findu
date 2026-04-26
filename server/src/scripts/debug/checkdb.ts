@@ -42,7 +42,9 @@ async function checkDatabase() {
     },
   });
 
-  console.log(`Found ${allProfiles.length} other profiles at same university\n`);
+  console.log(
+    `Found ${allProfiles.length} other profiles at same university\n`,
+  );
 
   if (allProfiles.length === 0) {
     console.log("❌ NO OTHER PROFILES AT SAME UNIVERSITY");
@@ -54,10 +56,10 @@ async function checkDatabase() {
 
   // 1. Campus filter
   const campusFiltered = allProfiles.filter(
-    (p) => p.campus_id === user.campus_id
+    (p) => p.campus_id === user.campus_id,
   );
   console.log(
-    `1. Campus Filter (campus_id: ${user.campus_id}): ${campusFiltered.length}/${allProfiles.length} profiles`
+    `1. Campus Filter (campus_id: ${user.campus_id}): ${campusFiltered.length}/${allProfiles.length} profiles`,
   );
   if (user.campus_id && campusFiltered.length === 0) {
     console.log("   ❌ PROBLEM: No profiles match campus_id");
@@ -67,33 +69,33 @@ async function checkDatabase() {
   }
 
   // 2. Gender filter
-  const allowedGenders = user.gender_preference.includes('All')
-    ? ['Male', 'Female', 'Non-binary', 'Other']
+  const allowedGenders = user.gender_preference.includes("All")
+    ? ["Male", "Female", "Non-binary", "Other"]
     : genderPreferencesToIdentities(user.gender_preference);
 
   const genderFiltered = campusFiltered.filter((p) =>
-    allowedGenders.includes(p.gender)
+    allowedGenders.includes(p.gender),
   );
   console.log(
-    `2. Gender Filter (user wants: ${user.gender_preference} -> ${allowedGenders}): ${genderFiltered.length}/${campusFiltered.length} profiles`
+    `2. Gender Filter (user wants: ${user.gender_preference} -> ${allowedGenders}): ${genderFiltered.length}/${campusFiltered.length} profiles`,
   );
   if (genderFiltered.length === 0) {
     console.log("   ❌ PROBLEM: No profiles match gender preferences");
     console.log(
       "   Available genders:",
-      [...new Set(campusFiltered.map((p) => p.gender))].join(", ")
+      [...new Set(campusFiltered.map((p) => p.gender))].join(", "),
     );
   }
 
   // 3. Age reciprocal filter
   const userAge = Math.floor(
-    (Date.now() - user.birthdate.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+    (Date.now() - user.birthdate.getTime()) / (1000 * 60 * 60 * 24 * 365.25),
   );
   const ageFiltered = genderFiltered.filter(
-    (p) => p.min_age <= userAge && p.max_age >= userAge
+    (p) => p.min_age <= userAge && p.max_age >= userAge,
   );
   console.log(
-    `\n3. Age Reciprocal Filter (candidates must want age ${userAge}): ${ageFiltered.length}/${genderFiltered.length} profiles`
+    `\n3. Age Reciprocal Filter (candidates must want age ${userAge}): ${ageFiltered.length}/${genderFiltered.length} profiles`,
   );
 
   console.log("\n=== Summary ===");

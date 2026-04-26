@@ -1,11 +1,11 @@
 import dotenv from "dotenv";
+
 dotenv.config({ quiet: true });
 
+import { createServer, type Server as HTTPServer } from "node:http";
 import app from "@/app";
 import { PORT } from "@/config/env";
-import { Server as HTTPServer } from "http";
-import { createServer } from "http";
-import logger, { logError, logStartup, logShutdown } from "@/config/logger";
+import logger, { logError, logShutdown, logStartup } from "@/config/logger";
 import { initializeSocket } from "@/websocket/socketManager";
 
 // Ensure PORT is a number
@@ -56,7 +56,7 @@ process.on(
       promise: promise.toString(),
     });
     gracefulShutdown("unhandledRejection");
-  }
+  },
 );
 
 // Handle uncaught exceptions

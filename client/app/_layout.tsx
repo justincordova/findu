@@ -1,13 +1,6 @@
 // Polyfill setup
 import "react-native-url-polyfill/auto";
 
-// React Native core
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { useEffect } from "react";
-
-// Expo & Navigation
-import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -15,6 +8,12 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+// Expo & Navigation
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+// React Native core
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Project imports
@@ -28,8 +27,10 @@ import { useConstantsStore } from "@/store/constantsStore";
 SplashScreen.preventAutoHideAsync();
 
 // Get store methods outside of component to avoid recreation
-const fetchConstantsFromStore = () => useConstantsStore.getState().fetchConstants();
-const loadCachedConstantsFromStore = () => useConstantsStore.getState().loadCachedConstants();
+const fetchConstantsFromStore = () =>
+  useConstantsStore.getState().fetchConstants();
+const loadCachedConstantsFromStore = () =>
+  useConstantsStore.getState().loadCachedConstants();
 
 // Constants
 const DEFAULT_FONT_FAMILY = "Inter_400Regular";
@@ -69,18 +70,18 @@ export default function RootLayout() {
 
     // Load cached constants immediately for instant availability
     loadCachedConstantsFromStore().catch((error) =>
-      logger.error("Failed to load cached constants", { error })
+      logger.error("Failed to load cached constants", { error }),
     );
 
     // Restore session in background (non-blocking)
     // App navigation routing handles unauthenticated users automatically
     restoreSession().catch((error) =>
-      logger.error("Failed to restore session", { error })
+      logger.error("Failed to restore session", { error }),
     );
 
     // Fetch fresh constants in background (non-blocking)
     fetchConstantsFromStore().catch((error) =>
-      logger.error("Failed to fetch fresh constants", { error })
+      logger.error("Failed to fetch fresh constants", { error }),
     );
   }, [restoreSession]);
 
@@ -166,7 +167,13 @@ export default function RootLayout() {
 
         {/* Development navigation shortcut (only in dev builds) */}
         {false && __DEV__ && (
-          <View style={{ position: "absolute", top: DEV_BUTTON_TOP, right: DEV_BUTTON_RIGHT }}>
+          <View
+            style={{
+              position: "absolute",
+              top: DEV_BUTTON_TOP,
+              right: DEV_BUTTON_RIGHT,
+            }}
+          >
             <DevButton route={DEV_BUTTON_ROUTE} />
           </View>
         )}

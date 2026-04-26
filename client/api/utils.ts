@@ -9,7 +9,7 @@ export class APIError extends Error {
   constructor(
     public statusCode: number,
     message: string,
-    public originalError?: any
+    public originalError?: any,
   ) {
     super(message);
     Object.setPrototypeOf(this, APIError.prototype);
@@ -28,7 +28,7 @@ export class APIError extends Error {
  */
 export async function handleResponse<T>(
   res: Response,
-  context: string = "API call"
+  context: string = "API call",
 ): Promise<T> {
   let data: any;
 
@@ -38,7 +38,7 @@ export async function handleResponse<T>(
     throw new APIError(
       res.status,
       `Failed to parse response from ${context}`,
-      parseError
+      parseError,
     );
   }
 
@@ -90,9 +90,11 @@ export function getErrorStatus(error: unknown): number {
  */
 export function isNetworkError(error: unknown): boolean {
   if (error instanceof TypeError) {
-    return error.message.includes("network") ||
+    return (
+      error.message.includes("network") ||
       error.message.includes("Failed to fetch") ||
-      error.message.includes("fetch failed");
+      error.message.includes("fetch failed")
+    );
   }
 
   return false;
@@ -139,7 +141,7 @@ export function isRetryableError(error: unknown): boolean {
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
-  initialDelayMs: number = 1000
+  initialDelayMs: number = 1000,
 ): Promise<T> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -156,13 +158,13 @@ export async function withRetry<T>(
       }
 
       // Exponential backoff with jitter before next attempt
-      const delayMs = initialDelayMs * Math.pow(2, attempt) + Math.random() * 1000;
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      const delayMs = initialDelayMs * 2 ** attempt + Math.random() * 1000;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
 
   // Should never reach here, but TypeScript requires a return
-  throw new Error('Retry loop failed unexpectedly');
+  throw new Error("Retry loop failed unexpectedly");
 }
 
 /**
@@ -175,15 +177,15 @@ export async function withRetry<T>(
  */
 export function withTimeout<T>(
   promise: Promise<T>,
-  timeoutMs: number = 30000
+  timeoutMs: number = 30000,
 ): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
       setTimeout(
         () => reject(new Error(`Request timeout after ${timeoutMs}ms`)),
-        timeoutMs
-      )
+        timeoutMs,
+      ),
     ),
   ]);
 }
@@ -191,7 +193,9 @@ export function withTimeout<T>(
 /**
  * Type guard to validate auth response structure
  */
-export function isAuthResponse(data: unknown): data is { token: string; user: { id: string; email: string } } {
+export function isAuthResponse(
+  data: unknown,
+): data is { token: string; user: { id: string; email: string } } {
   return (
     typeof data === "object" &&
     data !== null &&
@@ -271,8 +275,8 @@ export function isArrayResponse<T>(data: unknown): data is T[] {
  */
 export function validateResponse<T>(
   data: unknown,
-  validator: (data: unknown) => data is T,
-  context: string = "response"
+  validator: (val: unknown) => val is T,
+  context: string = "response",
 ): T {
   if (!validator(data)) {
     throw new APIError(400, `Invalid ${context} structure`);
@@ -290,7 +294,9 @@ let tokenRefreshCallback: (() => Promise<boolean>) | null = null;
  * Set the token refresh callback (called by auth service during initialization)
  * @param callback - Async function that refreshes the token and returns success status
  */
-export function setTokenRefreshCallback(callback: () => Promise<boolean>): void {
+export function setTokenRefreshCallback(
+  callback: () => Promise<boolean>,
+): void {
   tokenRefreshCallback = callback;
 }
 
@@ -303,21 +309,23 @@ export function setTokenRefreshCallback(callback: () => Promise<boolean>): void 
  * @returns Result of successful API call
  * @throws APIError if call fails or refresh fails
  */
-export async function withTokenRefresh<T>(
-  apiFn: () => Promise<T>
-): Promise<T> {
+export async function withTokenRefresh<T>(apiFn: () => Promise<T>): Promise<T> {
   try {
     return await apiFn();
   } catch (error) {
     // If 401 and we have a refresh callback, try to refresh and retry
-    if (error instanceof APIError && error.statusCode === 401 && tokenRefreshCallback) {
+    if (
+      error instanceof APIError &&
+      error.statusCode === 401 &&
+      tokenRefreshCallback
+    ) {
       try {
         const refreshed = await tokenRefreshCallback();
         if (refreshed) {
           // Token was refreshed, retry the original call
           return await apiFn();
         }
-      } catch (refreshError) {
+      } catch (_refreshError) {
         // Refresh failed, throw original error
         throw error;
       }

@@ -26,21 +26,13 @@ const otpValidation = body("otp")
   .withMessage("OTP must contain only digits");
 
 // For requesting an OTP
-export const validateEmail = [
-  emailValidation,
-];
+export const validateEmail = [emailValidation];
 
 // For verifying OTP only (after email sent)
-export const validateVerifyOtp = [
-  emailValidation,
-  otpValidation,
-];
+export const validateVerifyOtp = [emailValidation, otpValidation];
 
 // For creating account with password (after OTP verified)
-export const validateCreateAccount = [
-  emailValidation,
-  passwordValidation,
-];
+export const validateCreateAccount = [emailValidation, passwordValidation];
 
 // For signing up with email, password, and OTP (deprecated - use validateVerifyOtp + validateCreateAccount)
 export const validateSignup = [

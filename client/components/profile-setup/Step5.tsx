@@ -19,11 +19,11 @@ interface Step5Props {
 /**
  * Step 5: Gender preferences - select preferred genders
  */
-export default function Step5({
-  onValidityChange,
-}: Step5Props) {
+export default function Step5({ onValidityChange }: Step5Props) {
   const profileData = useProfileSetupStore((state) => state.data);
-  const setProfileField = useProfileSetupStore((state) => state.setProfileField);
+  const setProfileField = useProfileSetupStore(
+    (state) => state.setProfileField,
+  );
 
   /** Slider change handler */
   const handleSliderChange = useCallback(
@@ -31,7 +31,7 @@ export default function Step5({
       setProfileField("min_age", low);
       setProfileField("max_age", high);
     },
-    [setProfileField]
+    [setProfileField],
   );
 
   /** Validity check */
@@ -42,7 +42,7 @@ export default function Step5({
       profileData?.min_age > 0 &&
       profileData?.max_age > 0 &&
       profileData?.min_age <= profileData?.max_age,
-    [profileData?.min_age, profileData?.max_age]
+    [profileData?.min_age, profileData?.max_age],
   );
 
   useEffect(() => {
@@ -53,11 +53,11 @@ export default function Step5({
   const renderThumb = useCallback(() => <View style={styles.thumb} />, []);
   const renderRail = useCallback(
     () => <View style={styles.railBackground} />,
-    []
+    [],
   );
   const renderRailSelected = useCallback(
     () => <View style={styles.railSelected} />,
-    []
+    [],
   );
 
   return (

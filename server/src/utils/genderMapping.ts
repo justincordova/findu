@@ -4,10 +4,10 @@
  * Identity (what you are): Male, Female, Non-binary, Other
  */
 const PREFERENCE_TO_IDENTITY_MAP: Record<string, string> = {
-  'Men': 'Male',
-  'Women': 'Female',
-  'Non-binary': 'Non-binary',
-  'Other': 'Other',
+  Men: "Male",
+  Women: "Female",
+  "Non-binary": "Non-binary",
+  Other: "Other",
 };
 
 /**
@@ -15,8 +15,8 @@ const PREFERENCE_TO_IDENTITY_MAP: Record<string, string> = {
  * Example: ['Men', 'Women'] -> ['Male', 'Female']
  */
 export function genderPreferencesToIdentities(preferences: string[]): string[] {
-  if (preferences.includes('All')) {
-    return ['Male', 'Female', 'Non-binary', 'Other'];
+  if (preferences.includes("All")) {
+    return ["Male", "Female", "Non-binary", "Other"];
   }
-  return preferences.map(pref => PREFERENCE_TO_IDENTITY_MAP[pref] || pref);
+  return preferences.map((pref) => PREFERENCE_TO_IDENTITY_MAP[pref] || pref);
 }

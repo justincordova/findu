@@ -1,34 +1,33 @@
 // React core
-import React, { useCallback, useEffect, useRef, useState } from "react";
 
+import { useFocusEffect } from "@react-navigation/native";
+import { useRouter } from "expo-router";
+import { MessageCircle } from "lucide-react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
 // React Native
 import {
   Alert,
   AppState,
+  type AppStateStatus,
   FlatList,
   Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  type AppStateStatus,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
-import { useRouter } from "expo-router";
-import { MessageCircle } from "lucide-react-native";
-
-// Project imports
-import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
+import { MatchesAPI } from "@/api/matches";
+import UserProfileModal from "@/components/discover/UserProfileModal";
 import ActionMenu from "@/components/shared/ActionMenu";
 import AlertModal from "@/components/shared/AlertModal";
-import UserProfileModal from "@/components/discover/UserProfileModal";
 import { SkeletonCard } from "@/components/shared/SkeletonLoader";
+import logger from "@/config/logger";
+// Project imports
+import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
 import { blockUser } from "@/services/blocksService";
-import { MatchesAPI } from "@/api/matches";
 import { useAuthStore } from "@/store/authStore";
 import { useMatchesStore } from "@/store/matchesStore";
-import logger from "@/config/logger";
 
 // Types
 interface Match {
@@ -54,16 +53,21 @@ const AVATAR_MARGIN_RIGHT = 16;
 export default function MatchesScreen() {
   const router = useRouter();
   const { token } = useAuthStore();
-  const { matches, isLoading, startPolling, stopPolling, removeMatch } = useMatchesStore();
+  const { matches, isLoading, startPolling, stopPolling, removeMatch } =
+    useMatchesStore();
 
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [unmatchingMatchId, setUnmatchingMatchId] = useState<string | null>(null);
+  const [unmatchingMatchId, setUnmatchingMatchId] = useState<string | null>(
+    null,
+  );
   const [blockingUserId, setBlockingUserId] = useState<string | null>(null);
   const [isActionInProgress, setIsActionInProgress] = useState(false);
 
   const appStateRef = useRef(AppState.currentState);
-  const subscriptionRef = useRef<ReturnType<typeof AppState.addEventListener> | null>(null);
+  const subscriptionRef = useRef<ReturnType<
+    typeof AppState.addEventListener
+  > | null>(null);
 
   const handleAppStateChange = useCallback(
     (state: AppStateStatus) => {
@@ -76,7 +80,7 @@ export default function MatchesScreen() {
         stopPolling();
       }
     },
-    [startPolling, stopPolling]
+    [startPolling, stopPolling],
   );
 
   // Start polling when tab becomes visible
@@ -90,7 +94,10 @@ export default function MatchesScreen() {
       if (subscriptionRef.current) {
         subscriptionRef.current.remove();
       }
-      subscriptionRef.current = AppState.addEventListener("change", handleAppStateChange);
+      subscriptionRef.current = AppState.addEventListener(
+        "change",
+        handleAppStateChange,
+      );
 
       return () => {
         logger.debug("MatchesScreen: unfocused, stopping polling");
@@ -100,7 +107,7 @@ export default function MatchesScreen() {
           subscriptionRef.current = null;
         }
       };
-    }, [startPolling, stopPolling, handleAppStateChange])
+    }, [startPolling, stopPolling, handleAppStateChange]),
   );
 
   // Cleanup on unmount
@@ -178,7 +185,10 @@ export default function MatchesScreen() {
         onPress={() => handleViewProfile(item.otherUser.id)}
         disabled={isActionInProgress || showProfileModal}
       >
-        <Image source={{ uri: item.otherUser.avatar_url }} style={styles.avatar} />
+        <Image
+          source={{ uri: item.otherUser.avatar_url }}
+          style={styles.avatar}
+        />
         <View style={styles.info}>
           <Text style={styles.name}>{item.otherUser.name}</Text>
           <Text style={styles.timestamp}>
@@ -190,7 +200,10 @@ export default function MatchesScreen() {
       <TouchableOpacity
         style={styles.chatButton}
         onPress={() => {
-          logger.info("Chat with match", { matchId: item.id, userId: item.otherUser.id });
+          logger.info("Chat with match", {
+            matchId: item.id,
+            userId: item.otherUser.id,
+          });
           router.push({
             pathname: "/(app)/chat-detail",
             params: {
@@ -264,7 +277,9 @@ export default function MatchesScreen() {
         title="Unmatch?"
         message="You will no longer be able to message this person. You can still see them in discover if you want to connect again."
         type="warning"
-        onConfirm={() => handleUnmatch(unmatchingMatchId!)}
+        onConfirm={() => {
+          if (unmatchingMatchId) handleUnmatch(unmatchingMatchId);
+        }}
         onClose={() => !isActionInProgress && setUnmatchingMatchId(null)}
       />
       <AlertModal
@@ -272,7 +287,9 @@ export default function MatchesScreen() {
         title="Block User"
         message="This person will be removed from your matches and you won't see each other anymore."
         type="warning"
-        onConfirm={() => handleBlockUser(blockingUserId!)}
+        onConfirm={() => {
+          if (blockingUserId) handleBlockUser(blockingUserId);
+        }}
         onClose={() => !isActionInProgress && setBlockingUserId(null)}
       />
       {selectedUserId && (

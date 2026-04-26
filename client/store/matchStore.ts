@@ -24,7 +24,7 @@ interface MatchState {
     message: string,
     sentAt: string,
     isRead: boolean,
-    senderIsMe: boolean
+    senderIsMe: boolean,
   ) => void;
   deleteMatch: (matchId: string) => void;
 }
@@ -47,7 +47,7 @@ export const useMatchStore = create<MatchState>((set) => ({
                 senderIsMe,
               },
             }
-          : match
+          : match,
       ),
     }));
   },

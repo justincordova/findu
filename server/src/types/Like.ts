@@ -4,7 +4,7 @@ export interface Like {
   is_superlike?: boolean;
 }
 export interface CreateLikeResult {
-  like: any; 
+  like: any;
   matched: boolean;
   matchId: string | null;
 }

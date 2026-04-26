@@ -1,7 +1,6 @@
 import axios from "axios";
-import { useAuthStore } from "@/store/authStore";
 import logger from "@/config/logger";
-import { getErrorMessage } from "./utils";
+import { useAuthStore } from "@/store/authStore";
 
 const API_BASE = `${process.env.EXPO_PUBLIC_API_URL}/api/storage`;
 
@@ -17,20 +16,20 @@ const getAuthHeaders = () => {
 export const storageApi = {
   /**
    * Request a signed upload URL from backend for Supabase direct upload
-   * Signed URLs allow direct uploads to storage without backend proxying
-   * @param {string} userId - ID of the user uploading the file
+   * Signed URLs allow direct uploads to storage without backend proxying.
+   * The uploading user is derived from the auth token server-side.
    * @param {string} filename - Name of the file to upload
    * @param {"setup" | "update"} mode - Upload mode (setup during profile creation, update for existing)
    * @returns {Promise<{uploadUrl: string; path: string}>} Signed URL and storage path
    */
-  getUploadUrl: async (userId: string, filename: string, mode: "setup" | "update") => {
+  getUploadUrl: async (filename: string, mode: "setup" | "update") => {
     const headers = getAuthHeaders();
     logger.debug("Requesting signed URL", { filename });
 
     const { data } = await axios.post(
       `${API_BASE}/url`,
-      { userId, filename, mode },
-      { headers }
+      { filename, mode },
+      { headers },
     );
 
     logger.debug("Signed URL received", {
@@ -62,4 +61,3 @@ export const storageApi = {
     logger.info("File uploaded", { uploadUrl });
   },
 };
-

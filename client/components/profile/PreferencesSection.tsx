@@ -1,6 +1,9 @@
 // React core
-import { useCallback, useMemo, useState } from "react";
 
+// Third-party
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useCallback, useMemo, useState } from "react";
 // React Native
 import {
   Alert,
@@ -13,20 +16,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-// Third-party
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-
-// Project imports
-import { profileStyles } from "./shared/profileStyles";
-import { useProfile } from "@/contexts/ProfileContext";
-import { useAuthStore } from "@/store/authStore";
-import { useConstantsStore } from "@/store/constantsStore";
 import { profileApi } from "@/api/profile";
 import AgeRangeStepper from "@/components/shared/AgeRangeStepper";
 import logger from "@/config/logger";
-import { PRIMARY, GRADIENT } from "@/constants/theme";
+import { GRADIENT, PRIMARY } from "@/constants/theme";
+import { useProfile } from "@/contexts/ProfileContext";
+import { useAuthStore } from "@/store/authStore";
+import { useConstantsStore } from "@/store/constantsStore";
+// Project imports
+import { profileStyles } from "./shared/profileStyles";
 
 /**
  * PreferencesSection Component
@@ -56,14 +54,14 @@ export default function PreferencesSection() {
       min_age: profile?.min_age || 18,
       max_age: profile?.max_age || 26,
     }),
-    [profile?.min_age, profile?.max_age]
+    [profile?.min_age, profile?.max_age],
   );
   const genderPreferences = useMemo(
     () =>
       Array.isArray(profile?.gender_preference)
         ? profile.gender_preference
         : [],
-    [profile?.gender_preference]
+    [profile?.gender_preference],
   );
 
   // Dropdown options from constants store
@@ -71,7 +69,7 @@ export default function PreferencesSection() {
     (value) => ({
       label: value.charAt(0).toUpperCase() + value.slice(1),
       value,
-    })
+    }),
   );
 
   const intentOptions = (constants?.intents || []).map((value) => ({
@@ -83,18 +81,17 @@ export default function PreferencesSection() {
 
   // Modal state
   const [mainModalVisible, setMainModalVisible] = useState(false);
-  const [activeOrientationDropdown, setActiveOrientationDropdown] = useState(false);
+  const [activeOrientationDropdown, setActiveOrientationDropdown] =
+    useState(false);
   const [activeIntentDropdown, setActiveIntentDropdown] = useState(false);
 
   // Editing state
-  const [editingSexualOrientation, setEditingSexualOrientation] = useState(
-    sexualOrientation
-  );
+  const [editingSexualOrientation, setEditingSexualOrientation] =
+    useState(sexualOrientation);
   const [editingIntent, setEditingIntent] = useState(intent);
   const [editingAgeRange, setEditingAgeRange] = useState(ageRange);
-  const [editingGenderPreference, setEditingGenderPreference] = useState(
-    genderPreferences
-  );
+  const [editingGenderPreference, setEditingGenderPreference] =
+    useState(genderPreferences);
   const [isSaving, setIsSaving] = useState(false);
 
   // Open main edit modal
@@ -137,12 +134,9 @@ export default function PreferencesSection() {
   }, []);
 
   // Handle age range change
-  const handleAgeRangeChange = useCallback(
-    (minAge: number, maxAge: number) => {
-      setEditingAgeRange({ min_age: minAge, max_age: maxAge });
-    },
-    []
-  );
+  const handleAgeRangeChange = useCallback((minAge: number, maxAge: number) => {
+    setEditingAgeRange({ min_age: minAge, max_age: maxAge });
+  }, []);
 
   /**
    * Save preferences to profile
@@ -194,7 +188,15 @@ export default function PreferencesSection() {
     } finally {
       setIsSaving(false);
     }
-  }, [userId, editingSexualOrientation, editingIntent, editingAgeRange, editingGenderPreference, refetch, handleCloseModal]);
+  }, [
+    userId,
+    editingSexualOrientation,
+    editingIntent,
+    editingAgeRange,
+    editingGenderPreference,
+    refetch,
+    handleCloseModal,
+  ]);
 
   return (
     <View style={styles.container}>
@@ -229,7 +231,9 @@ export default function PreferencesSection() {
             <View style={profileStyles.infoTextContainer}>
               <Text style={profileStyles.infoLabel}>Looking For</Text>
               <Text style={profileStyles.infoValue}>
-                {intent ? intent.charAt(0).toUpperCase() + intent.slice(1) : "Not specified"}
+                {intent
+                  ? intent.charAt(0).toUpperCase() + intent.slice(1)
+                  : "Not specified"}
               </Text>
             </View>
           </View>
@@ -260,7 +264,11 @@ export default function PreferencesSection() {
                       end={{ x: 1, y: 0 }}
                       style={profileStyles.interestBadge}
                     >
-                      <Text style={[profileStyles.interestText, { color: "white" }]}>{gender}</Text>
+                      <Text
+                        style={[profileStyles.interestText, { color: "white" }]}
+                      >
+                        {gender}
+                      </Text>
                     </LinearGradient>
                   ))}
                 </View>
@@ -315,16 +323,17 @@ export default function PreferencesSection() {
                     <Text style={profileStyles.dropdownText}>
                       {editingSexualOrientation || "Select sexual orientation"}
                     </Text>
-                    <Ionicons
-                      name="chevron-down"
-                      size={20}
-                      color="#9CA3AF"
-                    />
+                    <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
                   </TouchableOpacity>
 
                   {/* Inline Sexual Orientation Dropdown */}
                   {activeOrientationDropdown && (
-                    <View style={[profileStyles.dropdownModalContent, { marginTop: 4, zIndex: 1000 }]}>
+                    <View
+                      style={[
+                        profileStyles.dropdownModalContent,
+                        { marginTop: 4, zIndex: 1000 },
+                      ]}
+                    >
                       {sexualOrientationOptions.map((option) => (
                         <TouchableOpacity
                           key={option.value}
@@ -369,16 +378,17 @@ export default function PreferencesSection() {
                           editingIntent.slice(1)
                         : "Select looking for"}
                     </Text>
-                    <Ionicons
-                      name="chevron-down"
-                      size={20}
-                      color="#9CA3AF"
-                    />
+                    <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
                   </TouchableOpacity>
 
                   {/* Inline Intent Dropdown */}
                   {activeIntentDropdown && (
-                    <View style={[profileStyles.dropdownModalContent, { marginTop: 4, zIndex: 1000 }]}>
+                    <View
+                      style={[
+                        profileStyles.dropdownModalContent,
+                        { marginTop: 4, zIndex: 1000 },
+                      ]}
+                    >
                       {intentOptions.map((option) => (
                         <TouchableOpacity
                           key={option.value}
@@ -423,7 +433,8 @@ export default function PreferencesSection() {
                   </Text>
                   <View style={profileStyles.intentOptionsContainer}>
                     {genderPreferenceOptions.map((option) => {
-                      const isSelected = editingGenderPreference.includes(option);
+                      const isSelected =
+                        editingGenderPreference.includes(option);
                       return (
                         <TouchableOpacity
                           key={option}
@@ -437,7 +448,8 @@ export default function PreferencesSection() {
                           <Text
                             style={[
                               profileStyles.intentOptionText,
-                              isSelected && profileStyles.intentOptionTextSelected,
+                              isSelected &&
+                                profileStyles.intentOptionTextSelected,
                             ]}
                           >
                             {option}
@@ -478,7 +490,6 @@ export default function PreferencesSection() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-
     </View>
   );
 }

@@ -1,4 +1,6 @@
-import React, { useCallback, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { MessageCircle } from "lucide-react-native";
+import { useCallback, useState } from "react";
 import {
   FlatList,
   Image,
@@ -8,15 +10,13 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect, useRouter } from "expo-router";
-import { MessageCircle } from "lucide-react-native";
-import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
-import { SkeletonCard } from "@/components/shared/SkeletonLoader";
-import { MatchesAPI } from "@/api/matches";
 import { ChatsAPI } from "@/api/chats";
-import { useAuthStore } from "@/store/authStore";
-import { ChatMessage } from "@/types/chat";
+import { MatchesAPI } from "@/api/matches";
+import { SkeletonCard } from "@/components/shared/SkeletonLoader";
 import logger from "@/config/logger";
+import { BACKGROUND, DARK, MUTED, PRIMARY } from "@/constants/theme";
+import { useAuthStore } from "@/store/authStore";
+import type { ChatMessage } from "@/types/chat";
 
 interface Match {
   id: string;
@@ -58,11 +58,11 @@ export default function MessagesScreen() {
               ...match,
               lastMessage: lastMessage || undefined,
             };
-          } catch {
+          } catch (_error) {
             // 404 is expected when no messages exist yet
             return { ...match };
           }
-        })
+        }),
       );
 
       // Sort by latest message timestamp, then by matched_at
@@ -71,7 +71,7 @@ export default function MessagesScreen() {
           const aTime = a.lastMessage?.sent_at || a.matched_at;
           const bTime = b.lastMessage?.sent_at || b.matched_at;
           return new Date(bTime).getTime() - new Date(aTime).getTime();
-        }
+        },
       );
 
       setChats(sortedChats);
@@ -86,7 +86,7 @@ export default function MessagesScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchChats();
-    }, [fetchChats])
+    }, [fetchChats]),
   );
 
   const formatTimestamp = (timestamp: string) => {

@@ -1,12 +1,11 @@
 // React core
-import React, { useEffect } from "react";
-
-// React Native
-import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 // Navigation
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect } from "react";
+// React Native
+import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Project imports
 import UserProfileModal from "@/components/discover/UserProfileModal";

@@ -1,17 +1,16 @@
 // React core
-import { useEffect, useState } from "react";
 
-// React Native
-import { SafeAreaView } from "react-native-safe-area-context";
+// Expo & Navigation
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
-// Expo & Navigation
-import { useLocalSearchParams, useRouter } from "expo-router";
+// React Native
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Project imports
 import LoginForm from "@/components/auth/LoginForm";
@@ -35,7 +34,9 @@ export default function AuthIndex() {
   const { mode: modeParam } = useLocalSearchParams();
   const initialMode = modeParam === "signup" ? "signup" : "login";
   const [mode, setMode] = useState(initialMode);
-  const pillTranslate = useSharedValue(initialMode === "login" ? 0 : PILL_WIDTH);
+  const pillTranslate = useSharedValue(
+    initialMode === "login" ? 0 : PILL_WIDTH,
+  );
   const router = useRouter();
 
   // Animate pill position when mode changes
@@ -52,10 +53,7 @@ export default function AuthIndex() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: BACKGROUND }}>
       {/* Back Button */}
-      <TouchableOpacity
-        onPress={() => router.back()}
-        style={styles.backButton}
-      >
+      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
         <Text style={styles.backButtonText}>←</Text>
       </TouchableOpacity>
 

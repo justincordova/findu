@@ -1,9 +1,9 @@
 // React Native
-import { StyleSheet, Text, View } from "react-native";
 
 // Third-party
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
+import { StyleSheet, Text, View } from "react-native";
 
 // Project imports
 import { DARK, GRADIENT } from "@/constants/theme";
@@ -21,11 +21,7 @@ export default function HeaderSection() {
   return (
     <View style={styles.container}>
       {/* Gradient masked text for brand name */}
-      <MaskedView
-        maskElement={
-          <Text style={styles.logo}>findU</Text>
-        }
-      >
+      <MaskedView maskElement={<Text style={styles.logo}>findU</Text>}>
         <LinearGradient
           colors={GRADIENT}
           start={{ x: 0, y: 0 }}
@@ -63,7 +59,6 @@ const styles = StyleSheet.create({
     marginTop: SUBTITLE_MARGIN_TOP,
   },
 });
-
 
 // Floating findU
 // import { useEffect, useRef } from "react";

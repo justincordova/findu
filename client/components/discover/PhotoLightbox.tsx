@@ -1,13 +1,13 @@
-import { Image, Modal, Pressable, StyleSheet, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useMemo } from "react";
+import { Dimensions, Image, Modal, Pressable, StyleSheet } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  runOnJS,
 } from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { useMemo, useEffect } from "react";
 
 const { width, height } = Dimensions.get("window");
 
@@ -43,7 +43,7 @@ export default function PhotoLightbox({
         .onUpdate((e) => {
           if (e.translationY > 0) {
             translateY.value = e.translationY;
-            scale.value = 1 - e.translationY / (height / 2) * 0.2;
+            scale.value = 1 - (e.translationY / (height / 2)) * 0.2;
           }
         })
         .onEnd((e) => {
@@ -59,7 +59,7 @@ export default function PhotoLightbox({
             translateY.value = withSpring(0);
           }
         }),
-    [onClose, scale, translateY]
+    [onClose, scale, translateY],
   );
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -67,7 +67,7 @@ export default function PhotoLightbox({
   }));
 
   const backdropOpacity = useAnimatedStyle(() => ({
-    opacity: 1 - translateY.value / (height / 2) * 0.3,
+    opacity: 1 - (translateY.value / (height / 2)) * 0.3,
   }));
 
   return (
@@ -86,18 +86,12 @@ export default function PhotoLightbox({
         <Animated.View style={[styles.imageContainer, animatedStyle]}>
           <Pressable
             onPress={(e) => e.stopPropagation()}
-            style={[
-              styles.imageWrapper,
-              isCircle && styles.circleWrapper,
-            ]}
+            style={[styles.imageWrapper, isCircle && styles.circleWrapper]}
             accessible={false}
           >
             <Image
               source={{ uri }}
-              style={[
-                styles.image,
-                isCircle && styles.circleImage,
-              ]}
+              style={[styles.image, isCircle && styles.circleImage]}
               resizeMode="cover"
             />
           </Pressable>

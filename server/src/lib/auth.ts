@@ -1,10 +1,9 @@
+import * as bcrypt from "bcrypt";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { PrismaClient } from "../generated/prisma";
-import * as bcrypt from "bcrypt";
-import { redis, isRedisReady } from "./redis";
+import prisma from "./prismaClient";
+import { isRedisReady, redis } from "./redis";
 
-const prisma = new PrismaClient();
 const saltRounds = 10;
 
 export const auth = betterAuth({
@@ -33,7 +32,7 @@ export const auth = betterAuth({
           try {
             const value = await redis.get(key);
             return value || null;
-          } catch {} {
+          } catch {
             return null;
           }
         },
@@ -44,14 +43,14 @@ export const auth = betterAuth({
             } else {
               await redis.set(key, value);
             }
-          } catch {} {
+          } catch {
             // Fail silently, fallback to database
           }
         },
         delete: async (key: string) => {
           try {
             await redis.del(key);
-          } catch {} {
+          } catch {
             // Fail silently
           }
         },

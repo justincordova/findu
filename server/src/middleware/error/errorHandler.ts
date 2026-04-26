@@ -1,14 +1,13 @@
-import { Request, Response, NextFunction } from 'express';
-import logger from '@/config/logger';
-
+import type { NextFunction, Request, Response } from "express";
+import logger from "@/config/logger";
 
 export const errorHandler = (
   err: Error,
   req: Request,
   res: Response,
-  _next: NextFunction
+  _next: NextFunction,
 ) => {
-  logger.error('Unhandled error occurred', {
+  logger.error("Unhandled error occurred", {
     error: err.message,
     stack: err.stack,
     url: req.url,
@@ -17,12 +16,12 @@ export const errorHandler = (
   });
 
   const response = {
-    error: 'Internal Server Error',
+    error: "Internal Server Error",
     message:
-      process.env.NODE_ENV === 'production'
-        ? 'Something went wrong on our end'
+      process.env.NODE_ENV === "production"
+        ? "Something went wrong on our end"
         : err.message,
-    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+    ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
   };
   const statusCode = (err as any).status || 500;
   res.status(statusCode).json(response);
