@@ -1,5 +1,12 @@
 # FindU - College Dating & Social Discovery App
 
+![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white)
+![React Native](https://img.shields.io/badge/React_Native-0.83-61DAFB?logo=react&logoColor=white)
+![Expo](https://img.shields.io/badge/Expo-55-000020?logo=expo&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=node.js&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-7.8-2D3748?logo=prisma&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-iOS%20%26%20Android-lightgrey?logo=apple&logoColor=white)
+
 ## Project Overview
 
 FindU is a mobile-first social discovery and dating app built exclusively for college students. Focused on authenticity and safety, it helps students connect through their campus community, shared interests, and personal goals without the distractions of generic dating platforms.
@@ -14,15 +21,16 @@ FindU is a mobile-first social discovery and dating app built exclusively for co
 
 | Layer              | Technology            | Purpose                            |
 | ------------------ | --------------------- | ---------------------------------- |
-| Frontend           | React Native + Expo   | Cross-platform mobile app          |
+| Frontend           | React Native + Expo (SDK 55) | Cross-platform mobile app          |
 | State Management   | Zustand               | Lightweight state management       |
-| Backend            | Node.js + Express     | API server                         |
+| Backend            | Node.js + Express 5   | API server                         |
 | Real-time          | Socket.IO             | Live messaging & typing indicators |
-| Authentication     | Better Auth           | Email verification & magic links   |
+| Authentication     | Better Auth           | Email verification & session auth  |
 | Database           | Supabase (PostgreSQL) | Primary data storage               |
+| ORM                | Prisma 7              | Database access with driver adapter|
 | Cache / Queue      | Redis                 | Caching, sessions, job queues      |
 | File Storage       | Supabase Storage      | Profile pictures, chat media       |
-| Hosting            | Render                | Backend deployment                 |
+| Linting            | Biome                 | Linting and formatting             |
 
 ---
 
@@ -37,16 +45,17 @@ FindU is a mobile-first social discovery and dating app built exclusively for co
 ## App Features
 
 ### Authentication
-- Email/password and magic link login
+- Email/password login
 - `.edu` email verification
 - User registration and profile setup
-- Secure session management
+- JWT-based session management
 
 ### Profile Management
 - Multi-step onboarding (photos, bio, interests)
 - Campus and school selection
 - Intent-based filtering (dating, friendship, etc.)
 - Profile editing and photo management
+- Lifestyle preferences
 
 ### Discovery
 - Swipe-based matching interface
@@ -68,6 +77,10 @@ FindU is a mobile-first social discovery and dating app built exclusively for co
 - Media sharing (images)
 - Conversation list with latest message preview
 - Unread message indicators
+
+### Lifestyle
+- Lifestyle preference matching (drinking, smoking, etc.)
+- Profile lifestyle section editing
 
 ### Safety
 - User blocking system
@@ -106,28 +119,6 @@ See [SETUP.md](./SETUP.md) for detailed setup instructions.
 
 ---
 
-## Project Structure
-
-```
-findu/
-├── client/              # React Native mobile app
-│   ├── app/            # Expo Router screens
-│   ├── components/     # Reusable UI components
-│   ├── store/          # Zustand state management
-│   ├── api/            # API client functions
-│   └── utils/          # Socket.IO and helpers
-├── server/             # Node.js backend
-│   ├── src/
-│   │   ├── modules/    # Feature modules (auth, matches, chats, etc.)
-│   │   ├── websocket/  # Socket.IO configuration
-│   │   ├── middleware/ # Express middleware
-│   │   └── lib/        # Shared utilities
-│   └── prisma/         # Database schema and migrations
-└── docs/               # Documentation and assets
-```
-
----
-
 ## Planned Features
 
 - Report functionality
@@ -137,7 +128,6 @@ findu/
 - Subscription tiers (Bachelors, Masters, PhD)
 - Boost functionality
 - SuperLikes and Icebreakers
-- Stripe payment integration
 - Instagram/Spotify integration
 - Group events and meetups
 - Campus-specific activities
@@ -150,3 +140,31 @@ findu/
 - **Project Status**: Beta
 - **Platform**: iOS & Android
 - **Target Audience**: College students (18-26)
+
+---
+
+## License
+
+This project is licensed under the MIT License.
+
+MIT License
+
+Copyright (c) 2025 Justin Cordova
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

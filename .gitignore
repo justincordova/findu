@@ -85,6 +85,9 @@ Desktop.ini
 # React Native / Expo
 *.keystore
 *.jks
+android/
+ios/
+dump.rdb
 
 # Firebase
 .firebase/
